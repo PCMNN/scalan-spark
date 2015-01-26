@@ -1,19 +1,16 @@
 package scalan.spark
 
-trait SparkDsl extends SparkContextDsl
+trait SparkDsl extends SparkContextsDsl
 with RDDsDsl
 with PairRDDsDsl
 with BroadcastsDsl
-with PartitionersDsl
 
-trait SparkDslSeq extends  SparkContextDslSeq
+trait SparkDslSeq extends  SparkContextsDslSeq
 with RDDsDslSeq
 with PairRDDsDslSeq
 with BroadcastsDslSeq
-with PartitionersDslSeq
 
-trait SparkDslExp extends SparkContextDslExp
+trait SparkDslExp extends SparkContextsDslExp
 with RDDsDslExp
 with PairRDDsDslExp
 with BroadcastsDslExp
-with PartitionersDslExp
