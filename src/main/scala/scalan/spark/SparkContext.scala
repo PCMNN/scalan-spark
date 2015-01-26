@@ -1,7 +1,6 @@
 package scalan.spark
 
 import scalan._
-import scalan.spark.{RDD, Broadcast}
 import org.apache.spark.SparkContext
 
 trait SparkContexts extends Base
