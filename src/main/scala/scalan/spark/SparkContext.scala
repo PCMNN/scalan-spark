@@ -4,7 +4,7 @@ import scalan._
 import org.apache.spark.SparkContext
 
 trait SparkContexts extends Base
-    with BaseTypes with Broadcasts with RDDs { self: SparkContextsDsl =>
+    with BaseTypes with BroadcastsDsl with RDDsDsl { self: SparkContextsDsl =>
 
   type RepSparkContext = Rep[SparkContext]
 
