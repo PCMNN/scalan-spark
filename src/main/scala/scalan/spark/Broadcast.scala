@@ -18,7 +18,7 @@ trait Broadcasts extends Base with BaseTypes { self: BroadcastsDsl =>
 
 trait BroadcastsDsl extends impl.BroadcastsAbs
 trait BroadcastsDslSeq extends impl.BroadcastsSeq {
-  trait BroadcastsSeq[A] extends SBroadcastsImpl[A] {
+  trait BroadcastSeq[A] extends SBroadcastImpl[A] {
   }
 }
 trait BroadcastsDslExp extends impl.BroadcastsExp
