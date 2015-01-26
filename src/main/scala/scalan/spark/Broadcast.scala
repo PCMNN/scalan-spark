@@ -1,7 +1,7 @@
 package scalan.spark
 
 import scalan._
-//import scalan.common.Default
+import scalan.common.Default
 import org.apache.spark.broadcast.Broadcast
 
 trait Broadcasts extends Base with BaseTypes { self: BroadcastsDsl =>
@@ -15,13 +15,12 @@ trait Broadcasts extends Base with BaseTypes { self: BroadcastsDsl =>
     /** Gets the current value of the broadcast variable */
     @External def value: Rep[A]
   }
-/*
+
   trait SBroadcastCompanion extends ExCompanion1[Broadcast]  {
     @External def empty[A:Elem]: Rep[Broadcast[A]]
   }
 
   implicit def DefaultOfBroadcast[A:Elem]: Default[Broadcast[A]] = Default.defaultVal(Broadcast.empty[A])
-  */
 }
 
 trait BroadcastsDsl extends impl.BroadcastsAbs
