@@ -32,9 +32,5 @@ trait RDDs extends Base with BaseTypes { self: RDDsDsl =>
 }
 
 trait RDDsDsl extends impl.RDDsAbs
-trait RDDsDslSeq extends impl.RDDsSeq {
-  trait SeqSRDD[A] extends SRDDImpl[A] {
-
-  }
-}
+trait RDDsDslSeq extends impl.RDDsSeq
 trait RDDsDslExp extends impl.RDDsExp

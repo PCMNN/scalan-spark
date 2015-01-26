@@ -20,8 +20,5 @@ trait PairRDDs extends Base with BaseTypes { self: PairRDDsDsl =>
 }
 
 trait PairRDDsDsl extends impl.PairRDDsAbs
-trait PairRDDsDslSeq extends impl.PairRDDsSeq {
-  trait SeqSPairRDD[A] extends SPairRDDImpl[A] {
-  }
-}
+trait PairRDDsDslSeq extends impl.PairRDDsSeq
 trait PairRDDsDslExp extends impl.PairRDDsExp
