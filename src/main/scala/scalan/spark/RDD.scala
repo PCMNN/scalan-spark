@@ -3,10 +3,10 @@ package scalan.spark
 import scalan._
 import org.apache.spark.rdd.RDD
 
-/** The trait contains the basic operations available on all RDDs */
 trait RDDs extends Base with BaseTypes { self: RDDsDsl =>
   type RepRDD[A] = Rep[RDD[A]]
 
+  /** The trait contains the basic operations available on all RDDs */
   trait SRDD[A] extends BaseTypeEx[RDD[A], SRDD[A]] { self =>
     implicit def eA: Elem[A]
 

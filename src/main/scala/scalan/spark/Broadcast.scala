@@ -3,11 +3,11 @@ package scalan.spark
 import scalan._
 import org.apache.spark.broadcast.Broadcast
 
-/** A broadcast variable. It allows to keep a read-only variable cached on each machine
-  * rather than shipping a copy of it with tasks. */
 trait Broadcasts extends Base with BaseTypes { self: BroadcastsDsl =>
   type RepBroadcast[A] = Rep[Broadcast[A]]
 
+  /** A broadcast variable. It allows to keep a read-only variable cached on each machine
+    * rather than shipping a copy of it with tasks. */
   trait SBroadcast[A] extends BaseTypeEx[Broadcast[A], SBroadcast[A]] { self =>
     implicit def eA: Elem[A]
 
