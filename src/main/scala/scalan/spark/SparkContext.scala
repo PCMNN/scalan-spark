@@ -24,6 +24,9 @@ trait SparkContexts extends Base with BaseTypes { self: SparkDsl =>
 
     /** Creates an RDD without elements and partitions */
     @External def emptyRDD[T]: RepRDD[T]
+
+    /** Shut down the SparkContext. */
+    @External def stop
   }
 
   trait SSparkContextCompanion
