@@ -39,11 +39,11 @@ trait BroadcastsAbs extends Scalan with Broadcasts
   }
 
   //default wrapper implementation
-    abstract class SBroadcastImpl[A](val value: Rep[SparkBroadcast[A]])(implicit val eA: Elem[A]) extends SBroadcast[A] {
+    abstract class SBroadcastImpl[A](val wrappedValueOfBaseType: Rep[SparkBroadcast[A]])(implicit val eA: Elem[A]) extends SBroadcast[A] {
     
-    def valueOfVar: Rep[A] =
+    def value: Rep[A] =
       methodCallEx[A](self,
-        this.getClass.getMethod("valueOfVar"),
+        this.getClass.getMethod("value"),
         List())
 
   }
@@ -59,12 +59,12 @@ trait BroadcastsAbs extends Scalan with Broadcasts
     extends Iso[SBroadcastImplData[A], SBroadcastImpl[A]] {
     override def from(p: Rep[SBroadcastImpl[A]]) =
       unmkSBroadcastImpl(p) match {
-        case Some((value)) => value
+        case Some((wrappedValueOfBaseType)) => wrappedValueOfBaseType
         case None => !!!
       }
     override def to(p: Rep[SparkBroadcast[A]]) = {
-      val value = p
-      SBroadcastImpl(value)
+      val wrappedValueOfBaseType = p
+      SBroadcastImpl(wrappedValueOfBaseType)
     }
     lazy val tag = {
       weakTypeTag[SBroadcastImpl[A]]
@@ -76,8 +76,8 @@ trait BroadcastsAbs extends Scalan with Broadcasts
   abstract class SBroadcastImplCompanionAbs extends CompanionBase[SBroadcastImplCompanionAbs] with SBroadcastImplCompanion {
     override def toString = "SBroadcastImpl"
 
-    def apply[A](value: Rep[SparkBroadcast[A]])(implicit eA: Elem[A]): Rep[SBroadcastImpl[A]] =
-      mkSBroadcastImpl(value)
+    def apply[A](wrappedValueOfBaseType: Rep[SparkBroadcast[A]])(implicit eA: Elem[A]): Rep[SBroadcastImpl[A]] =
+      mkSBroadcastImpl(wrappedValueOfBaseType)
     def unapply[A:Elem](p: Rep[SBroadcastImpl[A]]) = unmkSBroadcastImpl(p)
   }
   def SBroadcastImpl: Rep[SBroadcastImplCompanionAbs]
@@ -104,11 +104,12 @@ trait BroadcastsAbs extends Scalan with Broadcasts
     new SBroadcastImplIso[A]
 
   // 6) smart constructor and deconstructor
-  def mkSBroadcastImpl[A](value: Rep[SparkBroadcast[A]])(implicit eA: Elem[A]): Rep[SBroadcastImpl[A]]
+  def mkSBroadcastImpl[A](wrappedValueOfBaseType: Rep[SparkBroadcast[A]])(implicit eA: Elem[A]): Rep[SBroadcastImpl[A]]
   def unmkSBroadcastImpl[A:Elem](p: Rep[SBroadcastImpl[A]]): Option[(Rep[SparkBroadcast[A]])]
 }
 
-trait BroadcastsSeq extends BroadcastsAbs with BroadcastsDsl with ScalanSeq { self: SparkDslSeq =>
+trait BroadcastsSeq extends BroadcastsAbs with BroadcastsDsl with ScalanSeq
+{ self: SparkDslSeq =>
   lazy val SBroadcast: Rep[SBroadcastCompanionAbs] = new SBroadcastCompanionAbs with UserTypeSeq[SBroadcastCompanionAbs, SBroadcastCompanionAbs] {
     lazy val selfType = element[SBroadcastCompanionAbs]
     
@@ -121,14 +122,14 @@ trait BroadcastsSeq extends BroadcastsAbs with BroadcastsDsl with ScalanSeq { se
     implicit def SparkBroadcastElement[A:Elem:WeakTypeTag]: Elem[SparkBroadcast[A]] = new SeqBaseElemEx[SparkBroadcast[A], SBroadcast[A]](element[SBroadcast[A]])
 
   case class SeqSBroadcastImpl[A]
-      (override val value: Rep[SparkBroadcast[A]])
+      (override val wrappedValueOfBaseType: Rep[SparkBroadcast[A]])
       (implicit eA: Elem[A])
-    extends SBroadcastImpl[A](value)
+    extends SBroadcastImpl[A](wrappedValueOfBaseType)
         with UserTypeSeq[SBroadcast[A], SBroadcastImpl[A]] {
     lazy val selfType = element[SBroadcastImpl[A]].asInstanceOf[Elem[SBroadcast[A]]]
     
-    override def valueOfVar: Rep[A] =
-      ???//value.valueOfVar
+    override def value: Rep[A] =
+      wrappedValueOfBaseType.value
 
   }
   lazy val SBroadcastImpl = new SBroadcastImplCompanionAbs with UserTypeSeq[SBroadcastImplCompanionAbs, SBroadcastImplCompanionAbs] {
@@ -136,13 +137,14 @@ trait BroadcastsSeq extends BroadcastsAbs with BroadcastsDsl with ScalanSeq { se
   }
 
   def mkSBroadcastImpl[A]
-      (value: Rep[SparkBroadcast[A]])(implicit eA: Elem[A]) =
-      new SeqSBroadcastImpl[A](value)
+      (wrappedValueOfBaseType: Rep[SparkBroadcast[A]])(implicit eA: Elem[A]) =
+      new SeqSBroadcastImpl[A](wrappedValueOfBaseType)
   def unmkSBroadcastImpl[A:Elem](p: Rep[SBroadcastImpl[A]]) =
-    Some((p.value))
+    Some((p.wrappedValueOfBaseType))
 }
 
-trait BroadcastsExp extends BroadcastsAbs with BroadcastsDsl with ScalanExp { self: SparkDslExp =>
+trait BroadcastsExp extends BroadcastsAbs with BroadcastsDsl with ScalanExp
+{ self: SparkDslExp =>
   lazy val SBroadcast: Rep[SBroadcastCompanionAbs] = new SBroadcastCompanionAbs with UserTypeDef[SBroadcastCompanionAbs, SBroadcastCompanionAbs] {
     lazy val selfType = element[SBroadcastCompanionAbs]
     override def mirror(t: Transformer) = this
@@ -151,11 +153,11 @@ trait BroadcastsExp extends BroadcastsAbs with BroadcastsDsl with ScalanExp { se
   implicit def SparkBroadcastElement[A:Elem:WeakTypeTag]: Elem[SparkBroadcast[A]] = new ExpBaseElemEx[SparkBroadcast[A], SBroadcast[A]](element[SBroadcast[A]])
 
   case class ExpSBroadcastImpl[A]
-      (override val value: Rep[SparkBroadcast[A]])
+      (override val wrappedValueOfBaseType: Rep[SparkBroadcast[A]])
       (implicit eA: Elem[A])
-    extends SBroadcastImpl[A](value) with UserTypeDef[SBroadcast[A], SBroadcastImpl[A]] {
+    extends SBroadcastImpl[A](wrappedValueOfBaseType) with UserTypeDef[SBroadcast[A], SBroadcastImpl[A]] {
     lazy val selfType = element[SBroadcastImpl[A]].asInstanceOf[Elem[SBroadcast[A]]]
-    override def mirror(t: Transformer) = ExpSBroadcastImpl[A](t(value))
+    override def mirror(t: Transformer) = ExpSBroadcastImpl[A](t(wrappedValueOfBaseType))
   }
 
   lazy val SBroadcastImpl: Rep[SBroadcastImplCompanionAbs] = new SBroadcastImplCompanionAbs with UserTypeDef[SBroadcastImplCompanionAbs, SBroadcastImplCompanionAbs] {
@@ -170,17 +172,15 @@ trait BroadcastsExp extends BroadcastsAbs with BroadcastsDsl with ScalanExp { se
 
 
   def mkSBroadcastImpl[A]
-    (value: Rep[SparkBroadcast[A]])(implicit eA: Elem[A]) =
-    new ExpSBroadcastImpl[A](value)
+    (wrappedValueOfBaseType: Rep[SparkBroadcast[A]])(implicit eA: Elem[A]) =
+    new ExpSBroadcastImpl[A](wrappedValueOfBaseType)
   def unmkSBroadcastImpl[A:Elem](p: Rep[SBroadcastImpl[A]]) =
-    Some((p.value))
+    Some((p.wrappedValueOfBaseType))
 
   object SBroadcastMethods {
-    // WARNING: Cannot generate matcher for method `ctA`: Method's return type ClassTag[A] is not a Rep
-
-    object valueOfVar {
+    object value {
       def unapply(d: Def[_]): Option[Rep[SBroadcast[A]] forSome {type A}] = d match {
-        case MethodCall(receiver, method, _) if receiver.elem.isInstanceOf[SBroadcastElem[A, _, _] forSome {type A}] && method.getName == "valueOfVar" =>
+        case MethodCall(receiver, method, _) if receiver.elem.isInstanceOf[SBroadcastElem[A, _, _] forSome {type A}] && method.getName == "value" =>
           Some(receiver).asInstanceOf[Option[Rep[SBroadcast[A]] forSome {type A}]]
         case _ => None
       }

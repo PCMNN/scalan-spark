@@ -38,22 +38,22 @@ trait SparkConfsAbs extends Scalan with SparkConfs
   }
 
   //default wrapper implementation
-    abstract class SSparkConfImpl(val value: Rep[SparkConf]) extends SSparkConf {
+    abstract class SSparkConfImpl(val wrappedValueOfBaseType: Rep[SparkConf]) extends SSparkConf {
     
-    def setAppName(name: Rep[String]): RepSparkConf =
-      methodCallEx[SSparkConf](self,
+    def setAppName(name: Rep[String]): Rep[SparkConf] =
+      methodCallEx[SparkConf](self,
         this.getClass.getMethod("setAppName", classOf[AnyRef]),
         List(name.asInstanceOf[AnyRef]))
 
     
-    def setMaster(master: Rep[String]): RepSparkConf =
-      methodCallEx[SSparkConf](self,
+    def setMaster(master: Rep[String]): Rep[SparkConf] =
+      methodCallEx[SparkConf](self,
         this.getClass.getMethod("setMaster", classOf[AnyRef]),
         List(master.asInstanceOf[AnyRef]))
 
     
-    def set(key: Rep[String], value: Rep[String]): RepSparkConf =
-      methodCallEx[SSparkConf](self,
+    def set(key: Rep[String], value: Rep[String]): Rep[SparkConf] =
+      methodCallEx[SparkConf](self,
         this.getClass.getMethod("set", classOf[AnyRef], classOf[AnyRef]),
         List(key.asInstanceOf[AnyRef], value.asInstanceOf[AnyRef]))
 
@@ -70,12 +70,12 @@ trait SparkConfsAbs extends Scalan with SparkConfs
     extends Iso[SSparkConfImplData, SSparkConfImpl] {
     override def from(p: Rep[SSparkConfImpl]) =
       unmkSSparkConfImpl(p) match {
-        case Some((value)) => value
+        case Some((wrappedValueOfBaseType)) => wrappedValueOfBaseType
         case None => !!!
       }
     override def to(p: Rep[SparkConf]) = {
-      val value = p
-      SSparkConfImpl(value)
+      val wrappedValueOfBaseType = p
+      SSparkConfImpl(wrappedValueOfBaseType)
     }
     lazy val tag = {
       weakTypeTag[SSparkConfImpl]
@@ -87,8 +87,8 @@ trait SparkConfsAbs extends Scalan with SparkConfs
   abstract class SSparkConfImplCompanionAbs extends CompanionBase[SSparkConfImplCompanionAbs] with SSparkConfImplCompanion {
     override def toString = "SSparkConfImpl"
 
-    def apply(value: Rep[SparkConf]): Rep[SSparkConfImpl] =
-      mkSSparkConfImpl(value)
+    def apply(wrappedValueOfBaseType: Rep[SparkConf]): Rep[SSparkConfImpl] =
+      mkSSparkConfImpl(wrappedValueOfBaseType)
     def unapply(p: Rep[SSparkConfImpl]) = unmkSSparkConfImpl(p)
   }
   def SSparkConfImpl: Rep[SSparkConfImplCompanionAbs]
@@ -115,11 +115,12 @@ trait SparkConfsAbs extends Scalan with SparkConfs
     new SSparkConfImplIso
 
   // 6) smart constructor and deconstructor
-  def mkSSparkConfImpl(value: Rep[SparkConf]): Rep[SSparkConfImpl]
+  def mkSSparkConfImpl(wrappedValueOfBaseType: Rep[SparkConf]): Rep[SSparkConfImpl]
   def unmkSSparkConfImpl(p: Rep[SSparkConfImpl]): Option[(Rep[SparkConf])]
 }
 
-trait SparkConfsSeq extends SparkConfsAbs with SparkConfsDsl with ScalanSeq { self: SparkConfsDslSeq =>
+trait SparkConfsSeq extends SparkConfsAbs with SparkConfsDsl with ScalanSeq
+{ self: SparkDslSeq =>
   lazy val SSparkConf: Rep[SSparkConfCompanionAbs] = new SSparkConfCompanionAbs with UserTypeSeq[SSparkConfCompanionAbs, SSparkConfCompanionAbs] {
     lazy val selfType = element[SSparkConfCompanionAbs]
     
@@ -132,22 +133,22 @@ trait SparkConfsSeq extends SparkConfsAbs with SparkConfsDsl with ScalanSeq { se
     implicit lazy val SparkConfElement: Elem[SparkConf] = new SeqBaseElemEx[SparkConf, SSparkConf](element[SSparkConf])
 
   case class SeqSSparkConfImpl
-      (override val value: Rep[SparkConf])
+      (override val wrappedValueOfBaseType: Rep[SparkConf])
       
-    extends SSparkConfImpl(value)
+    extends SSparkConfImpl(wrappedValueOfBaseType)
         with UserTypeSeq[SSparkConf, SSparkConfImpl] {
     lazy val selfType = element[SSparkConfImpl].asInstanceOf[Elem[SSparkConf]]
     
-    override def setAppName(name: Rep[String]): RepSparkConf =
-      value.setAppName(name)
+    override def setAppName(name: Rep[String]): Rep[SparkConf] =
+      wrappedValueOfBaseType.setAppName(name)
 
     
-    override def setMaster(master: Rep[String]): RepSparkConf =
-      value.setMaster(master)
+    override def setMaster(master: Rep[String]): Rep[SparkConf] =
+      wrappedValueOfBaseType.setMaster(master)
 
     
-    override def set(key: Rep[String], value: Rep[String]): RepSparkConf =
-      value.set(key, value)
+    override def set(key: Rep[String], value: Rep[String]): Rep[SparkConf] =
+      wrappedValueOfBaseType.set(key, value)
 
   }
   lazy val SSparkConfImpl = new SSparkConfImplCompanionAbs with UserTypeSeq[SSparkConfImplCompanionAbs, SSparkConfImplCompanionAbs] {
@@ -155,13 +156,14 @@ trait SparkConfsSeq extends SparkConfsAbs with SparkConfsDsl with ScalanSeq { se
   }
 
   def mkSSparkConfImpl
-      (value: Rep[SparkConf]) =
-      new SeqSSparkConfImpl(value)
+      (wrappedValueOfBaseType: Rep[SparkConf]) =
+      new SeqSSparkConfImpl(wrappedValueOfBaseType)
   def unmkSSparkConfImpl(p: Rep[SSparkConfImpl]) =
-    Some((p.value))
+    Some((p.wrappedValueOfBaseType))
 }
 
-trait SparkConfsExp extends SparkConfsAbs with SparkConfsDsl with ScalanExp {
+trait SparkConfsExp extends SparkConfsAbs with SparkConfsDsl with ScalanExp
+{ self: SparkDslExp =>
   lazy val SSparkConf: Rep[SSparkConfCompanionAbs] = new SSparkConfCompanionAbs with UserTypeDef[SSparkConfCompanionAbs, SSparkConfCompanionAbs] {
     lazy val selfType = element[SSparkConfCompanionAbs]
     override def mirror(t: Transformer) = this
@@ -170,11 +172,11 @@ trait SparkConfsExp extends SparkConfsAbs with SparkConfsDsl with ScalanExp {
   implicit lazy val SparkConfElement: Elem[SparkConf] = new ExpBaseElemEx[SparkConf, SSparkConf](element[SSparkConf])
 
   case class ExpSSparkConfImpl
-      (override val value: Rep[SparkConf])
+      (override val wrappedValueOfBaseType: Rep[SparkConf])
       
-    extends SSparkConfImpl(value) with UserTypeDef[SSparkConf, SSparkConfImpl] {
+    extends SSparkConfImpl(wrappedValueOfBaseType) with UserTypeDef[SSparkConf, SSparkConfImpl] {
     lazy val selfType = element[SSparkConfImpl].asInstanceOf[Elem[SSparkConf]]
-    override def mirror(t: Transformer) = ExpSSparkConfImpl(t(value))
+    override def mirror(t: Transformer) = ExpSSparkConfImpl(t(wrappedValueOfBaseType))
   }
 
   lazy val SSparkConfImpl: Rep[SSparkConfImplCompanionAbs] = new SSparkConfImplCompanionAbs with UserTypeDef[SSparkConfImplCompanionAbs, SSparkConfImplCompanionAbs] {
@@ -189,10 +191,10 @@ trait SparkConfsExp extends SparkConfsAbs with SparkConfsDsl with ScalanExp {
 
 
   def mkSSparkConfImpl
-    (value: Rep[SparkConf]) =
-    new ExpSSparkConfImpl(value)
+    (wrappedValueOfBaseType: Rep[SparkConf]) =
+    new ExpSSparkConfImpl(wrappedValueOfBaseType)
   def unmkSSparkConfImpl(p: Rep[SSparkConfImpl]) =
-    Some((p.value))
+    Some((p.wrappedValueOfBaseType))
 
   object SSparkConfMethods {
     object setAppName {

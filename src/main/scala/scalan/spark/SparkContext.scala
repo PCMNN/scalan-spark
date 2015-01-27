@@ -1,8 +1,11 @@
 package scalan.spark
 
+import org.apache.spark.rdd.RDD
+
 import scalan._
 import scalan.common.Default
 import org.apache.spark.SparkContext
+import org.apache.spark.broadcast.{Broadcast => SparkBroadcast}
 
 trait SparkContexts extends Base with BaseTypes { self: SparkDsl =>
 
@@ -17,13 +20,13 @@ trait SparkContexts extends Base with BaseTypes { self: SparkDsl =>
     @External def defaultParallelism: Rep[Int]
 
     /** Creates a read-only variable in the cluster */
-    @External def broadcast[T](value: Rep[T]): RepBroadcast[T]
+    @External def broadcast[T:Elem](value: Rep[T]): Rep[SparkBroadcast[T]]
 
     /** Creates a RDD based on a Scala collection */
-    @External def makeRDD[T](seq: Rep[Seq[T]], numSlices: Rep[Int] = defaultParallelism): RepRDD[T]
+    @External def makeRDD[T:Elem](seq: Rep[Seq[T]], numSlices: Rep[Int] = defaultParallelism): Rep[RDD[T]]
 
     /** Creates an RDD without elements and partitions */
-    @External def emptyRDD[T]: RepRDD[T]
+    @External def emptyRDD[T:Elem]: Rep[RDD[T]]
   }
 
   trait SSparkContextCompanion

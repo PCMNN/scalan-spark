@@ -5,7 +5,7 @@ object SparkBoilerplateTool extends BoilerplateTool {
     "RepSparkConf" -> "SparkConf",
     "RepSparkContext" -> "SparkContext",
     "RepRDD" -> "RDD",
-    "RepPairRDD" -> "PairRDDFunctions",
+    "RepPairRDDFunctions" -> "PairRDDFunctions",
     "RepBroadcast" -> "Broadcast"
   )
   lazy val sparkConfig = CodegenConfig(
@@ -14,7 +14,7 @@ object SparkBoilerplateTool extends BoilerplateTool {
       "SparkConf.scala",
       "SparkContext.scala",
       "RDD.scala",
-      "PairRDD.scala",
+      "PairRDDFunctions.scala",
       "Broadcast.scala"
     ),
     seqContextTrait = "ScalanSeq",

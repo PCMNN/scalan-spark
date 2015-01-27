@@ -12,10 +12,9 @@ trait Broadcasts extends Base with BaseTypes { self: SparkDsl =>
     * rather than shipping a copy of it with tasks. */
   trait SBroadcast[A] extends BaseTypeEx[SparkBroadcast[A], SBroadcast[A]] { self =>
     implicit def eA: Elem[A]
-    //implicit def ctA: ClassTag[A]
 
     /** Gets the current value of the broadcast variable */
-    @External def valueOfVar: Rep[A]
+    @External def value: Rep[A]
   }
 
   trait SBroadcastCompanion

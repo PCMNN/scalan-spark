@@ -1,7 +1,10 @@
 package scalan.spark
 
+import scala.reflect.ClassTag
 import scalan._
 import org.apache.spark.rdd.RDD
+
+import scalan.common.Default
 
 trait RDDs extends Base with BaseTypes { self: SparkDsl =>
   type RepRDD[A] = Rep[RDD[A]]
@@ -11,26 +14,31 @@ trait RDDs extends Base with BaseTypes { self: SparkDsl =>
     implicit def eA: Elem[A]
 
     /** Applies a function to all elements of this RDD end returns new RDD **/
-    @External def map[B: Elem](f: Rep[A => B]): RepRDD[B]
+    @External def map[B: Elem](f: Rep[A => B]): Rep[RDD[B]]
 
     /** Applies a function to all elements of the RDD and returns flattening the results */
-    @External def flatMap[B: Elem](f: Rep[A => TraversableOnce[B]]): RepRDD[B]
+    @External def flatMap[B: Elem](f: Rep[A => TraversableOnce[B]]): Rep[RDD[B]]
 
     /** Returns the union of this RDD and another one. */
-    @External def union(other: RepRDD[A]): RepRDD[A]
-    @External def ++(other: RepRDD[A]): RepRDD[A] = this.union(other)
+    @External def union(other: Rep[RDD[A]]): Rep[RDD[A]]
+    def ++(other: Rep[RDD[A]]): Rep[RDD[A]] = this.union(other)
 
     /** Aggregates the elements of each partition, and then the results for all the partitions */
-    @External def fold(zeroValue: Rep[A])(op: Rep[(A, A) => A]): Rep[A]
+    @External def fold(zeroValue: Rep[A])(op: Rep[((A, A)) => A]): Rep[A]
 
     /** Returns the RDD of all pairs of elements (a, b) where a is in `this` and b is in `other` */
-    @External def cartesian[B: Elem](other: RepRDD[B]): RepRDD[(A, B)]
+    @External def cartesian[B: Elem](other: Rep[RDD[B]]): Rep[RDD[(A, B)]]
 
     /** Returns an RDD with the elements from `this` that are not in `other`. */
-    @External def subtract(other: RepRDD[A]): RepRDD[A]
+    @External def subtract(other: Rep[RDD[A]]): Rep[RDD[A]]
   }
 
   trait SRDDCompanion
+
+  implicit def DefaultOfRDD[A:Elem]: Default[RDD[A]] = {
+    val rdd = sparkContext.parallelize(Seq.empty[A])
+    Default.defaultVal(rdd)
+  }
 }
 
 trait RDDsDsl extends impl.RDDsAbs  { self: SparkDsl => }

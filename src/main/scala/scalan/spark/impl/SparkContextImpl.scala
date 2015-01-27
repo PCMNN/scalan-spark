@@ -1,9 +1,11 @@
 package scalan.spark
 package impl
 
+import org.apache.spark.rdd.RDD
 import scalan._
 import scalan.common.Default
 import org.apache.spark.SparkContext
+import org.apache.spark.broadcast.{Broadcast=>SparkBroadcast}
 import scala.reflect.runtime.universe._
 import scalan.common.Default
 
@@ -38,7 +40,7 @@ trait SparkContextsAbs extends Scalan with SparkContexts
   }
 
   //default wrapper implementation
-    abstract class SSparkContextImpl(val value: Rep[SparkContext]) extends SSparkContext {
+    abstract class SSparkContextImpl(val wrappedValueOfBaseType: Rep[SparkContext]) extends SSparkContext {
     
     def defaultParallelism: Rep[Int] =
       methodCallEx[Int](self,
@@ -46,19 +48,19 @@ trait SparkContextsAbs extends Scalan with SparkContexts
         List())
 
     
-    def broadcast[T:Elem](value: Rep[T]): RepBroadcast[T] =
-      methodCallEx[Broadcast[T]](self,
+    def broadcast[T:Elem](value: Rep[T]): Rep[SparkBroadcast[T]] =
+      methodCallEx[SparkBroadcast[T]](self,
         this.getClass.getMethod("broadcast", classOf[AnyRef]),
         List(value.asInstanceOf[AnyRef]))
 
     
-    def makeRDD[T:Elem](seq: Rep[Seq[T]], numSlices: Rep[Int]): RepRDD[T] =
+    def makeRDD[T:Elem](seq: Rep[Seq[T]], numSlices: Rep[Int]): Rep[RDD[T]] =
       methodCallEx[RDD[T]](self,
         this.getClass.getMethod("makeRDD", classOf[AnyRef], classOf[AnyRef]),
         List(seq.asInstanceOf[AnyRef], numSlices.asInstanceOf[AnyRef]))
 
     
-    def emptyRDD[T:Elem]: RepRDD[T] =
+    def emptyRDD[T:Elem]: Rep[RDD[T]] =
       methodCallEx[RDD[T]](self,
         this.getClass.getMethod("emptyRDD"),
         List())
@@ -76,12 +78,12 @@ trait SparkContextsAbs extends Scalan with SparkContexts
     extends Iso[SSparkContextImplData, SSparkContextImpl] {
     override def from(p: Rep[SSparkContextImpl]) =
       unmkSSparkContextImpl(p) match {
-        case Some((value)) => value
+        case Some((wrappedValueOfBaseType)) => wrappedValueOfBaseType
         case None => !!!
       }
     override def to(p: Rep[SparkContext]) = {
-      val value = p
-      SSparkContextImpl(value)
+      val wrappedValueOfBaseType = p
+      SSparkContextImpl(wrappedValueOfBaseType)
     }
     lazy val tag = {
       weakTypeTag[SSparkContextImpl]
@@ -93,8 +95,8 @@ trait SparkContextsAbs extends Scalan with SparkContexts
   abstract class SSparkContextImplCompanionAbs extends CompanionBase[SSparkContextImplCompanionAbs] with SSparkContextImplCompanion {
     override def toString = "SSparkContextImpl"
 
-    def apply(value: Rep[SparkContext]): Rep[SSparkContextImpl] =
-      mkSSparkContextImpl(value)
+    def apply(wrappedValueOfBaseType: Rep[SparkContext]): Rep[SSparkContextImpl] =
+      mkSSparkContextImpl(wrappedValueOfBaseType)
     def unapply(p: Rep[SSparkContextImpl]) = unmkSSparkContextImpl(p)
   }
   def SSparkContextImpl: Rep[SSparkContextImplCompanionAbs]
@@ -121,11 +123,12 @@ trait SparkContextsAbs extends Scalan with SparkContexts
     new SSparkContextImplIso
 
   // 6) smart constructor and deconstructor
-  def mkSSparkContextImpl(value: Rep[SparkContext]): Rep[SSparkContextImpl]
+  def mkSSparkContextImpl(wrappedValueOfBaseType: Rep[SparkContext]): Rep[SSparkContextImpl]
   def unmkSSparkContextImpl(p: Rep[SSparkContextImpl]): Option[(Rep[SparkContext])]
 }
 
-trait SparkContextsSeq extends SparkContextsAbs with SparkContextsDsl with ScalanSeq { self: SparkContextsDslSeq =>
+trait SparkContextsSeq extends SparkContextsAbs with SparkContextsDsl with ScalanSeq
+{ self: SparkDslSeq =>
   lazy val SSparkContext: Rep[SSparkContextCompanionAbs] = new SSparkContextCompanionAbs with UserTypeSeq[SSparkContextCompanionAbs, SSparkContextCompanionAbs] {
     lazy val selfType = element[SSparkContextCompanionAbs]
     
@@ -138,26 +141,26 @@ trait SparkContextsSeq extends SparkContextsAbs with SparkContextsDsl with Scala
     implicit lazy val SparkContextElement: Elem[SparkContext] = new SeqBaseElemEx[SparkContext, SSparkContext](element[SSparkContext])
 
   case class SeqSSparkContextImpl
-      (override val value: Rep[SparkContext])
+      (override val wrappedValueOfBaseType: Rep[SparkContext])
       
-    extends SSparkContextImpl(value)
+    extends SSparkContextImpl(wrappedValueOfBaseType)
         with UserTypeSeq[SSparkContext, SSparkContextImpl] {
     lazy val selfType = element[SSparkContextImpl].asInstanceOf[Elem[SSparkContext]]
     
     override def defaultParallelism: Rep[Int] =
-      value.defaultParallelism
+      wrappedValueOfBaseType.defaultParallelism
 
     
-    override def broadcast[T:Elem](value: Rep[T]): RepBroadcast[T] =
-      value.broadcast[T](value)
+    override def broadcast[T:Elem](value: Rep[T]): Rep[SparkBroadcast[T]] =
+      wrappedValueOfBaseType.broadcast[T](value)
 
     
-    override def makeRDD[T:Elem](seq: Rep[Seq[T]], numSlices: Rep[Int]): RepRDD[T] =
-      value.makeRDD[T](seq, numSlices)
+    override def makeRDD[T:Elem](seq: Rep[Seq[T]], numSlices: Rep[Int]): Rep[RDD[T]] =
+      wrappedValueOfBaseType.makeRDD[T](seq, numSlices)
 
     
-    override def emptyRDD[T:Elem]: RepRDD[T] =
-      value.emptyRDD[T]
+    override def emptyRDD[T:Elem]: Rep[RDD[T]] =
+      wrappedValueOfBaseType.emptyRDD[T]
 
   }
   lazy val SSparkContextImpl = new SSparkContextImplCompanionAbs with UserTypeSeq[SSparkContextImplCompanionAbs, SSparkContextImplCompanionAbs] {
@@ -165,13 +168,14 @@ trait SparkContextsSeq extends SparkContextsAbs with SparkContextsDsl with Scala
   }
 
   def mkSSparkContextImpl
-      (value: Rep[SparkContext]) =
-      new SeqSSparkContextImpl(value)
+      (wrappedValueOfBaseType: Rep[SparkContext]) =
+      new SeqSSparkContextImpl(wrappedValueOfBaseType)
   def unmkSSparkContextImpl(p: Rep[SSparkContextImpl]) =
-    Some((p.value))
+    Some((p.wrappedValueOfBaseType))
 }
 
-trait SparkContextsExp extends SparkContextsAbs with SparkContextsDsl with ScalanExp {
+trait SparkContextsExp extends SparkContextsAbs with SparkContextsDsl with ScalanExp
+{ self: SparkDslExp =>
   lazy val SSparkContext: Rep[SSparkContextCompanionAbs] = new SSparkContextCompanionAbs with UserTypeDef[SSparkContextCompanionAbs, SSparkContextCompanionAbs] {
     lazy val selfType = element[SSparkContextCompanionAbs]
     override def mirror(t: Transformer) = this
@@ -180,11 +184,11 @@ trait SparkContextsExp extends SparkContextsAbs with SparkContextsDsl with Scala
   implicit lazy val SparkContextElement: Elem[SparkContext] = new ExpBaseElemEx[SparkContext, SSparkContext](element[SSparkContext])
 
   case class ExpSSparkContextImpl
-      (override val value: Rep[SparkContext])
+      (override val wrappedValueOfBaseType: Rep[SparkContext])
       
-    extends SSparkContextImpl(value) with UserTypeDef[SSparkContext, SSparkContextImpl] {
+    extends SSparkContextImpl(wrappedValueOfBaseType) with UserTypeDef[SSparkContext, SSparkContextImpl] {
     lazy val selfType = element[SSparkContextImpl].asInstanceOf[Elem[SSparkContext]]
-    override def mirror(t: Transformer) = ExpSSparkContextImpl(t(value))
+    override def mirror(t: Transformer) = ExpSSparkContextImpl(t(wrappedValueOfBaseType))
   }
 
   lazy val SSparkContextImpl: Rep[SSparkContextImplCompanionAbs] = new SSparkContextImplCompanionAbs with UserTypeDef[SSparkContextImplCompanionAbs, SSparkContextImplCompanionAbs] {
@@ -199,10 +203,10 @@ trait SparkContextsExp extends SparkContextsAbs with SparkContextsDsl with Scala
 
 
   def mkSSparkContextImpl
-    (value: Rep[SparkContext]) =
-    new ExpSSparkContextImpl(value)
+    (wrappedValueOfBaseType: Rep[SparkContext]) =
+    new ExpSSparkContextImpl(wrappedValueOfBaseType)
   def unmkSSparkContextImpl(p: Rep[SSparkContextImpl]) =
-    Some((p.value))
+    Some((p.wrappedValueOfBaseType))
 
   object SSparkContextMethods {
     object defaultParallelism {
