@@ -7,7 +7,7 @@ import scala.reflect.runtime.universe._
 import scalan.common.Default
 
 trait RDDsAbs extends Scalan with RDDs
-{ self: RDDsDsl =>
+{ self: SparkDsl =>
   // single proxy for each type family
   implicit def proxySRDD[A](p: Rep[SRDD[A]]): SRDD[A] =
     proxyOps[SRDD[A]](p)
@@ -319,5 +319,7 @@ trait RDDsExp extends RDDsAbs with RDDsDsl with ScalanExp {
     }
   }
 
+  object SRDDCompanionMethods {
 
+  }
 }

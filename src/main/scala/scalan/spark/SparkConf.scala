@@ -1,9 +1,10 @@
 package scalan.spark
 
 import scalan._
+import scalan.common.Default
 import org.apache.spark.SparkConf
 
-trait SparkConfs extends Base with BaseTypes { self: SparkConfsDsl =>
+trait SparkConfs extends Base with BaseTypes { self: SparkDsl =>
   type RepSparkConf = Rep[SparkConf]
 
   /** Configuration for a Spark application.
@@ -18,8 +19,14 @@ trait SparkConfs extends Base with BaseTypes { self: SparkConfsDsl =>
     /** Set a configuration variable. */
     @External def set(key: Rep[String], value: Rep[String]): RepSparkConf
   }
+
+  trait SSparkConfCompanion
+
+  implicit def DefaultOfSparkConf: Default[SparkConf] = {
+    Default.defaultVal(sparkContext.getConf)
+  }
 }
 
-trait SparkConfsDsl extends impl.SparkConfsAbs
-trait SparkConfsDslSeq extends impl.SparkConfsSeq
-trait SparkConfsDslExp extends impl.SparkConfsExp
+trait SparkConfsDsl extends impl.SparkConfsAbs  { self: SparkDsl => }
+trait SparkConfsDslSeq extends impl.SparkConfsSeq { self: SparkDslSeq => }
+trait SparkConfsDslExp extends impl.SparkConfsExp { self: SparkDslExp => }

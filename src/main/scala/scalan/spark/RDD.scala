@@ -3,7 +3,7 @@ package scalan.spark
 import scalan._
 import org.apache.spark.rdd.RDD
 
-trait RDDs extends Base with BaseTypes { self: RDDsDsl =>
+trait RDDs extends Base with BaseTypes { self: SparkDsl =>
   type RepRDD[A] = Rep[RDD[A]]
 
   /** The trait contains the basic operations available on all RDDs */
@@ -29,8 +29,10 @@ trait RDDs extends Base with BaseTypes { self: RDDsDsl =>
     /** Returns an RDD with the elements from `this` that are not in `other`. */
     @External def subtract(other: RepRDD[A]): RepRDD[A]
   }
+
+  trait SRDDCompanion
 }
 
-trait RDDsDsl extends impl.RDDsAbs
-trait RDDsDslSeq extends impl.RDDsSeq
-trait RDDsDslExp extends impl.RDDsExp
+trait RDDsDsl extends impl.RDDsAbs  { self: SparkDsl => }
+trait RDDsDslSeq extends impl.RDDsSeq { self: SparkDslSeq => }
+trait RDDsDslExp extends impl.RDDsExp { self: SparkDslExp => }

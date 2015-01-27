@@ -2,12 +2,13 @@ package scalan.spark
 package impl
 
 import scalan._
+import scalan.common.Default
 import org.apache.spark.SparkConf
 import scala.reflect.runtime.universe._
 import scalan.common.Default
 
 trait SparkConfsAbs extends Scalan with SparkConfs
-{ self: SparkConfsDsl =>
+{ self: SparkDsl =>
   // single proxy for each type family
   implicit def proxySSparkConf(p: Rep[SSparkConf]): SSparkConf =
     proxyOps[SSparkConf](p)
@@ -231,5 +232,7 @@ trait SparkConfsExp extends SparkConfsAbs with SparkConfsDsl with ScalanExp {
     }
   }
 
+  object SSparkConfCompanionMethods {
 
+  }
 }

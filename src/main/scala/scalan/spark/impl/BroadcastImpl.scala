@@ -1,22 +1,24 @@
 package scalan.spark
 package impl
 
+import scala.reflect.ClassTag
 import scalan._
-import org.apache.spark.broadcast.Broadcast
+import scalan.common.Default
+import org.apache.spark.broadcast.{Broadcast=>SparkBroadcast}
 import scala.reflect.runtime.universe._
 import scalan.common.Default
 
 trait BroadcastsAbs extends Scalan with Broadcasts
-{ self: BroadcastsDsl =>
+{ self: SparkDsl =>
   // single proxy for each type family
   implicit def proxySBroadcast[A](p: Rep[SBroadcast[A]]): SBroadcast[A] =
     proxyOps[SBroadcast[A]](p)
   // BaseTypeEx proxy
-  implicit def proxyBroadcast[A:Elem](p: Rep[Broadcast[A]]): SBroadcast[A] =
+  implicit def proxySparkBroadcast[A:Elem](p: Rep[SparkBroadcast[A]]): SBroadcast[A] =
     proxyOps[SBroadcast[A]](p.asRep[SBroadcast[A]])
 
   implicit def defaultSBroadcastElem[A:Elem]: Elem[SBroadcast[A]] = element[SBroadcastImpl[A]].asElem[SBroadcast[A]]
-  implicit def BroadcastElement[A:Elem:WeakTypeTag]: Elem[Broadcast[A]]
+  implicit def SparkBroadcastElement[A:Elem:WeakTypeTag]: Elem[SparkBroadcast[A]]
 
   abstract class SBroadcastElem[A, From, To <: SBroadcast[A]](iso: Iso[From, To]) extends ViewElem[From, To]()(iso)
 
@@ -37,11 +39,11 @@ trait BroadcastsAbs extends Scalan with Broadcasts
   }
 
   //default wrapper implementation
-    abstract class SBroadcastImpl[A](val value: Rep[Broadcast[A]])(implicit val eA: Elem[A]) extends SBroadcast[A] {
+    abstract class SBroadcastImpl[A](val value: Rep[SparkBroadcast[A]])(implicit val eA: Elem[A]) extends SBroadcast[A] {
     
-    def value: Rep[A] =
+    def valueOfVar: Rep[A] =
       methodCallEx[A](self,
-        this.getClass.getMethod("value"),
+        this.getClass.getMethod("valueOfVar"),
         List())
 
   }
@@ -50,7 +52,7 @@ trait BroadcastsAbs extends Scalan with Broadcasts
   class SBroadcastImplElem[A](iso: Iso[SBroadcastImplData[A], SBroadcastImpl[A]]) extends SBroadcastElem[A, SBroadcastImplData[A], SBroadcastImpl[A]](iso)
 
   // state representation type
-  type SBroadcastImplData[A] = Broadcast[A]
+  type SBroadcastImplData[A] = SparkBroadcast[A]
 
   // 3) Iso for concrete class
   class SBroadcastImplIso[A](implicit eA: Elem[A])
@@ -60,21 +62,21 @@ trait BroadcastsAbs extends Scalan with Broadcasts
         case Some((value)) => value
         case None => !!!
       }
-    override def to(p: Rep[Broadcast[A]]) = {
+    override def to(p: Rep[SparkBroadcast[A]]) = {
       val value = p
       SBroadcastImpl(value)
     }
     lazy val tag = {
       weakTypeTag[SBroadcastImpl[A]]
     }
-    lazy val defaultRepTo = Default.defaultVal[Rep[SBroadcastImpl[A]]](SBroadcastImpl(Default.defaultOf[Broadcast[A]]))
+    lazy val defaultRepTo = Default.defaultVal[Rep[SBroadcastImpl[A]]](SBroadcastImpl(Default.defaultOf[SparkBroadcast[A]]))
     lazy val eTo = new SBroadcastImplElem[A](this)
   }
   // 4) constructor and deconstructor
   abstract class SBroadcastImplCompanionAbs extends CompanionBase[SBroadcastImplCompanionAbs] with SBroadcastImplCompanion {
     override def toString = "SBroadcastImpl"
 
-    def apply[A](value: Rep[Broadcast[A]])(implicit eA: Elem[A]): Rep[SBroadcastImpl[A]] =
+    def apply[A](value: Rep[SparkBroadcast[A]])(implicit eA: Elem[A]): Rep[SBroadcastImpl[A]] =
       mkSBroadcastImpl(value)
     def unapply[A:Elem](p: Rep[SBroadcastImpl[A]]) = unmkSBroadcastImpl(p)
   }
@@ -102,31 +104,31 @@ trait BroadcastsAbs extends Scalan with Broadcasts
     new SBroadcastImplIso[A]
 
   // 6) smart constructor and deconstructor
-  def mkSBroadcastImpl[A](value: Rep[Broadcast[A]])(implicit eA: Elem[A]): Rep[SBroadcastImpl[A]]
-  def unmkSBroadcastImpl[A:Elem](p: Rep[SBroadcastImpl[A]]): Option[(Rep[Broadcast[A]])]
+  def mkSBroadcastImpl[A](value: Rep[SparkBroadcast[A]])(implicit eA: Elem[A]): Rep[SBroadcastImpl[A]]
+  def unmkSBroadcastImpl[A:Elem](p: Rep[SBroadcastImpl[A]]): Option[(Rep[SparkBroadcast[A]])]
 }
 
-trait BroadcastsSeq extends BroadcastsAbs with BroadcastsDsl with ScalanSeq { self: BroadcastsDslSeq =>
+trait BroadcastsSeq extends BroadcastsAbs with BroadcastsDsl with ScalanSeq { self: SparkDslSeq =>
   lazy val SBroadcast: Rep[SBroadcastCompanionAbs] = new SBroadcastCompanionAbs with UserTypeSeq[SBroadcastCompanionAbs, SBroadcastCompanionAbs] {
     lazy val selfType = element[SBroadcastCompanionAbs]
     
   }
 
     // override proxy if we deal with BaseTypeEx
-  override def proxyBroadcast[A:Elem](p: Rep[Broadcast[A]]): SBroadcast[A] =
-    proxyOpsEx[Broadcast[A],SBroadcast[A], SeqSBroadcastImpl[A]](p, bt => SeqSBroadcastImpl(bt))
+  override def proxySparkBroadcast[A:Elem](p: Rep[SparkBroadcast[A]]): SBroadcast[A] =
+    proxyOpsEx[SparkBroadcast[A],SBroadcast[A], SeqSBroadcastImpl[A]](p, bt => SeqSBroadcastImpl(bt))
 
-    implicit def BroadcastElement[A:Elem:WeakTypeTag]: Elem[Broadcast[A]] = new SeqBaseElemEx[Broadcast[A], SBroadcast[A]](element[SBroadcast[A]])
+    implicit def SparkBroadcastElement[A:Elem:WeakTypeTag]: Elem[SparkBroadcast[A]] = new SeqBaseElemEx[SparkBroadcast[A], SBroadcast[A]](element[SBroadcast[A]])
 
   case class SeqSBroadcastImpl[A]
-      (override val value: Rep[Broadcast[A]])
+      (override val value: Rep[SparkBroadcast[A]])
       (implicit eA: Elem[A])
     extends SBroadcastImpl[A](value)
         with UserTypeSeq[SBroadcast[A], SBroadcastImpl[A]] {
     lazy val selfType = element[SBroadcastImpl[A]].asInstanceOf[Elem[SBroadcast[A]]]
     
-    override def value: Rep[A] =
-      value.value
+    override def valueOfVar: Rep[A] =
+      ???//value.valueOfVar
 
   }
   lazy val SBroadcastImpl = new SBroadcastImplCompanionAbs with UserTypeSeq[SBroadcastImplCompanionAbs, SBroadcastImplCompanionAbs] {
@@ -134,22 +136,22 @@ trait BroadcastsSeq extends BroadcastsAbs with BroadcastsDsl with ScalanSeq { se
   }
 
   def mkSBroadcastImpl[A]
-      (value: Rep[Broadcast[A]])(implicit eA: Elem[A]) =
+      (value: Rep[SparkBroadcast[A]])(implicit eA: Elem[A]) =
       new SeqSBroadcastImpl[A](value)
   def unmkSBroadcastImpl[A:Elem](p: Rep[SBroadcastImpl[A]]) =
     Some((p.value))
 }
 
-trait BroadcastsExp extends BroadcastsAbs with BroadcastsDsl with ScalanExp {
+trait BroadcastsExp extends BroadcastsAbs with BroadcastsDsl with ScalanExp { self: SparkDslExp =>
   lazy val SBroadcast: Rep[SBroadcastCompanionAbs] = new SBroadcastCompanionAbs with UserTypeDef[SBroadcastCompanionAbs, SBroadcastCompanionAbs] {
     lazy val selfType = element[SBroadcastCompanionAbs]
     override def mirror(t: Transformer) = this
   }
 
-  implicit def BroadcastElement[A:Elem:WeakTypeTag]: Elem[Broadcast[A]] = new ExpBaseElemEx[Broadcast[A], SBroadcast[A]](element[SBroadcast[A]])
+  implicit def SparkBroadcastElement[A:Elem:WeakTypeTag]: Elem[SparkBroadcast[A]] = new ExpBaseElemEx[SparkBroadcast[A], SBroadcast[A]](element[SBroadcast[A]])
 
   case class ExpSBroadcastImpl[A]
-      (override val value: Rep[Broadcast[A]])
+      (override val value: Rep[SparkBroadcast[A]])
       (implicit eA: Elem[A])
     extends SBroadcastImpl[A](value) with UserTypeDef[SBroadcast[A], SBroadcastImpl[A]] {
     lazy val selfType = element[SBroadcastImpl[A]].asInstanceOf[Elem[SBroadcast[A]]]
@@ -168,15 +170,17 @@ trait BroadcastsExp extends BroadcastsAbs with BroadcastsDsl with ScalanExp {
 
 
   def mkSBroadcastImpl[A]
-    (value: Rep[Broadcast[A]])(implicit eA: Elem[A]) =
+    (value: Rep[SparkBroadcast[A]])(implicit eA: Elem[A]) =
     new ExpSBroadcastImpl[A](value)
   def unmkSBroadcastImpl[A:Elem](p: Rep[SBroadcastImpl[A]]) =
     Some((p.value))
 
   object SBroadcastMethods {
-    object value {
+    // WARNING: Cannot generate matcher for method `ctA`: Method's return type ClassTag[A] is not a Rep
+
+    object valueOfVar {
       def unapply(d: Def[_]): Option[Rep[SBroadcast[A]] forSome {type A}] = d match {
-        case MethodCall(receiver, method, _) if receiver.elem.isInstanceOf[SBroadcastElem[A, _, _] forSome {type A}] && method.getName == "value" =>
+        case MethodCall(receiver, method, _) if receiver.elem.isInstanceOf[SBroadcastElem[A, _, _] forSome {type A}] && method.getName == "valueOfVar" =>
           Some(receiver).asInstanceOf[Option[Rep[SBroadcast[A]] forSome {type A}]]
         case _ => None
       }
@@ -187,5 +191,7 @@ trait BroadcastsExp extends BroadcastsAbs with BroadcastsDsl with ScalanExp {
     }
   }
 
+  object SBroadcastCompanionMethods {
 
+  }
 }

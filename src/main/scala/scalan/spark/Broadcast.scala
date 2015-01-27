@@ -1,28 +1,33 @@
 package scalan.spark
 
+import scala.reflect.ClassTag
 import scalan._
 import scalan.common.Default
-import org.apache.spark.broadcast.Broadcast
+import org.apache.spark.broadcast.{Broadcast => SparkBroadcast}
 
-trait Broadcasts extends Base with BaseTypes { self: BroadcastsDsl =>
-  type RepBroadcast[A] = Rep[Broadcast[A]]
+trait Broadcasts extends Base with BaseTypes { self: SparkDsl =>
+  type RepBroadcast[A] = Rep[SparkBroadcast[A]]
 
   /** A broadcast variable. It allows to keep a read-only variable cached on each machine
     * rather than shipping a copy of it with tasks. */
-  trait SBroadcast[A] extends BaseTypeEx[Broadcast[A], SBroadcast[A]] { self =>
+  trait SBroadcast[A] extends BaseTypeEx[SparkBroadcast[A], SBroadcast[A]] { self =>
     implicit def eA: Elem[A]
+    //implicit def ctA: ClassTag[A]
 
     /** Gets the current value of the broadcast variable */
-    @External def value: Rep[A]
+    @External def valueOfVar: Rep[A]
   }
 
-  trait SBroadcastCompanion extends ExCompanion1[Broadcast]  {
-    @External def empty[A:Elem]: Rep[Broadcast[A]]
-  }
+  trait SBroadcastCompanion
 
-  implicit def DefaultOfBroadcast[A:Elem]: Default[Broadcast[A]] = Default.defaultVal(Broadcast.empty[A])
+  implicit def DefaultOfBroadcast[A :Elem]: Default[SparkBroadcast[A]] = {
+    val eA = element[A]
+    implicit val ctA = eA.classTag
+    val defaultA: A = ???
+    Default.defaultVal(sparkContext.broadcast(defaultA))
+  }
 }
 
-trait BroadcastsDsl extends impl.BroadcastsAbs
-trait BroadcastsDslSeq extends impl.BroadcastsSeq
-trait BroadcastsDslExp extends impl.BroadcastsExp
+trait BroadcastsDsl extends impl.BroadcastsAbs  { self: SparkDsl => }
+trait BroadcastsDslSeq extends impl.BroadcastsSeq { self: SparkDslSeq => }
+trait BroadcastsDslExp extends impl.BroadcastsExp { self: SparkDslExp => }

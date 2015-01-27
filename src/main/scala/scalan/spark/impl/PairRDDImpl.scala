@@ -7,7 +7,7 @@ import scala.reflect.runtime.universe._
 import scalan.common.Default
 
 trait PairRDDsAbs extends Scalan with PairRDDs
-{ self: PairRDDsDsl =>
+{ self: SparkDsl =>
   // single proxy for each type family
   implicit def proxySPairRDD[K, V](p: Rep[SPairRDD[K, V]]): SPairRDD[K, V] =
     proxyOps[SPairRDD[K, V]](p)
@@ -39,14 +39,8 @@ trait PairRDDsAbs extends Scalan with PairRDDs
   //default wrapper implementation
     abstract class SPairRDDImpl[K, V](val value: Rep[PairRDDFunctions[K, V]])(implicit val eK: Elem[K], val eV: Elem[V]) extends SPairRDD[K, V] {
     
-    def partitionBy(partitioner: SPartitioner): RepPairRDD[K,V] =
-      methodCallEx[SPairRDD[K,V]](self,
-        this.getClass.getMethod("partitionBy", classOf[AnyRef]),
-        List(partitioner.asInstanceOf[AnyRef]))
-
-    
     def reduceByKey(func: Rep[((V,V)) => V]): RepPairRDD[K,V] =
-      methodCallEx[SPairRDD[K,V]](self,
+      methodCallEx[PairRDDFunctions[K,V]](self,
         this.getClass.getMethod("reduceByKey", classOf[AnyRef]),
         List(func.asInstanceOf[AnyRef]))
 
@@ -131,10 +125,6 @@ trait PairRDDsSeq extends PairRDDsAbs with PairRDDsDsl with ScalanSeq { self: Pa
         with UserTypeSeq[SPairRDD[K,V], SPairRDDImpl[K, V]] {
     lazy val selfType = element[SPairRDDImpl[K, V]].asInstanceOf[Elem[SPairRDD[K,V]]]
     
-    override def partitionBy(partitioner: SPartitioner): RepPairRDD[K,V] =
-      value.partitionBy(partitioner)
-
-    
     override def reduceByKey(func: Rep[((V,V)) => V]): RepPairRDD[K,V] =
       value.reduceByKey(func)
 
@@ -184,18 +174,6 @@ trait PairRDDsExp extends PairRDDsAbs with PairRDDsDsl with ScalanExp {
     Some((p.value))
 
   object SPairRDDMethods {
-    object partitionBy {
-      def unapply(d: Def[_]): Option[(Rep[SPairRDD[K, V]], SPartitioner) forSome {type K; type V}] = d match {
-        case MethodCall(receiver, method, Seq(partitioner, _*)) if receiver.elem.isInstanceOf[SPairRDDElem[K, V, _, _] forSome {type K; type V}] && method.getName == "partitionBy" =>
-          Some((receiver, partitioner)).asInstanceOf[Option[(Rep[SPairRDD[K, V]], SPartitioner) forSome {type K; type V}]]
-        case _ => None
-      }
-      def unapply(exp: Exp[_]): Option[(Rep[SPairRDD[K, V]], SPartitioner) forSome {type K; type V}] = exp match {
-        case Def(d) => unapply(d)
-        case _ => None
-      }
-    }
-
     object reduceByKey {
       def unapply(d: Def[_]): Option[(Rep[SPairRDD[K, V]], Rep[((V,V)) => V]) forSome {type K; type V}] = d match {
         case MethodCall(receiver, method, Seq(func, _*)) if receiver.elem.isInstanceOf[SPairRDDElem[K, V, _, _] forSome {type K; type V}] && method.getName == "reduceByKey" =>
@@ -209,5 +187,7 @@ trait PairRDDsExp extends PairRDDsAbs with PairRDDsDsl with ScalanExp {
     }
   }
 
+  object SPairRDDCompanionMethods {
 
+  }
 }

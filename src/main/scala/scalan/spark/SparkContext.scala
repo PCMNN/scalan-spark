@@ -1,12 +1,14 @@
 package scalan.spark
 
 import scalan._
+import scalan.common.Default
 import org.apache.spark.SparkContext
 
-trait SparkContexts extends Base
-    with BaseTypes with BroadcastsDsl with RDDsDsl { self: SparkContextsDsl =>
+trait SparkContexts extends Base with BaseTypes { self: SparkDsl =>
 
   type RepSparkContext = Rep[SparkContext]
+  /** Current Spark Context */
+  val sparkContext: SparkContext
 
   /** A SparkContext represents the connection to a Spark
     * cluster, and can be used to create RDDs, accumulators and broadcast variables on that cluster.*/
@@ -23,8 +25,15 @@ trait SparkContexts extends Base
     /** Creates an RDD without elements and partitions */
     @External def emptyRDD[T]: RepRDD[T]
   }
+
+  trait SSparkContextCompanion
+
+  implicit def DefaultOfSparkContext: Default[SparkContext] = {
+    Default.defaultVal(sparkContext)
+  }
 }
 
-trait SparkContextsDsl extends impl.SparkContextsAbs
-trait SparkContextsDslSeq extends impl.SparkContextsSeq
-trait SparkContextsDslExp extends impl.SparkContextsExp
+trait SparkContextsDsl extends impl.SparkContextsAbs { self: SparkDsl => }
+trait SparkContextsDslSeq extends impl.SparkContextsSeq { self: SparkDslSeq => }
+trait SparkContextsDslExp extends impl.SparkContextsExp { self: SparkDslExp => }
+
