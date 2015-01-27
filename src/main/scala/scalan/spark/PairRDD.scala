@@ -1,7 +1,9 @@
 package scalan.spark
 
 import scalan._
-import org.apache.spark.rdd.PairRDDFunctions
+import org.apache.spark.rdd.{RDD, PairRDDFunctions}
+import org.apache.spark.SparkContext._
+import scalan.common.Default
 
 trait PairRDDs extends Base with BaseTypes { self: SparkDsl =>
   type RepPairRDD[K, V] = Rep[PairRDDFunctions[K, V]]
@@ -19,6 +21,14 @@ trait PairRDDs extends Base with BaseTypes { self: SparkDsl =>
   }
 
   trait SPairRDDCompanion
+
+  implicit def DefaultOfPairRDD[K :Elem, V: Elem](implicit defaultRDD: Default[RDD[(K, V)]]): Default[PairRDDFunctions[K, V]] = {
+    implicit val ctK = element[K].classTag
+    implicit val ctV = element[V].classTag
+
+    val defaultPairRDD: PairRDDFunctions[K, V] = defaultRDD.value
+    Default.defaultVal(defaultPairRDD)
+  }
 }
 
 trait PairRDDsDsl extends impl.PairRDDsAbs  { self: SparkDsl => }

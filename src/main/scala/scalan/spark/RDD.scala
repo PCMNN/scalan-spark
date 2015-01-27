@@ -2,6 +2,7 @@ package scalan.spark
 
 import scalan._
 import org.apache.spark.rdd.RDD
+import scalan.common.Default
 
 trait RDDs extends Base with BaseTypes { self: SparkDsl =>
   type RepRDD[A] = Rep[RDD[A]]
@@ -31,6 +32,12 @@ trait RDDs extends Base with BaseTypes { self: SparkDsl =>
   }
 
   trait SRDDCompanion
+
+  implicit def DefaultOfRDD[A :Elem]: Default[RDD[A]] = {
+    implicit val ctA = element[A].classTag
+    val defaultA: A = ???
+    Default.defaultVal(sparkContext.makeRDD(Seq(defaultA)))
+  }
 }
 
 trait RDDsDsl extends impl.RDDsAbs  { self: SparkDsl => }
