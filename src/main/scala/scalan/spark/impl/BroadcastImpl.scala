@@ -8,6 +8,7 @@ import org.apache.spark.broadcast.{Broadcast=>SparkBroadcast}
 import scala.reflect.runtime.universe._
 import scalan.common.Default
 
+// Abs -----------------------------------
 trait BroadcastsAbs extends Scalan with Broadcasts
 { self: SparkDsl =>
   // single proxy for each type family
@@ -108,6 +109,7 @@ trait BroadcastsAbs extends Scalan with Broadcasts
   def unmkSBroadcastImpl[A:Elem](p: Rep[SBroadcastImpl[A]]): Option[(Rep[SparkBroadcast[A]])]
 }
 
+// Seq -----------------------------------
 trait BroadcastsSeq extends BroadcastsAbs with BroadcastsDsl with ScalanSeq
 { self: SparkDslSeq =>
   lazy val SBroadcast: Rep[SBroadcastCompanionAbs] = new SBroadcastCompanionAbs with UserTypeSeq[SBroadcastCompanionAbs, SBroadcastCompanionAbs] {
@@ -143,6 +145,7 @@ trait BroadcastsSeq extends BroadcastsAbs with BroadcastsDsl with ScalanSeq
     Some((p.wrappedValueOfBaseType))
 }
 
+// Exp -----------------------------------
 trait BroadcastsExp extends BroadcastsAbs with BroadcastsDsl with ScalanExp
 { self: SparkDslExp =>
   lazy val SBroadcast: Rep[SBroadcastCompanionAbs] = new SBroadcastCompanionAbs with UserTypeDef[SBroadcastCompanionAbs, SBroadcastCompanionAbs] {

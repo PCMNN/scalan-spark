@@ -7,6 +7,7 @@ import org.apache.spark.SparkConf
 import scala.reflect.runtime.universe._
 import scalan.common.Default
 
+// Abs -----------------------------------
 trait SparkConfsAbs extends Scalan with SparkConfs
 { self: SparkDsl =>
   // single proxy for each type family
@@ -119,6 +120,7 @@ trait SparkConfsAbs extends Scalan with SparkConfs
   def unmkSSparkConfImpl(p: Rep[SSparkConfImpl]): Option[(Rep[SparkConf])]
 }
 
+// Seq -----------------------------------
 trait SparkConfsSeq extends SparkConfsAbs with SparkConfsDsl with ScalanSeq
 { self: SparkDslSeq =>
   lazy val SSparkConf: Rep[SSparkConfCompanionAbs] = new SSparkConfCompanionAbs with UserTypeSeq[SSparkConfCompanionAbs, SSparkConfCompanionAbs] {
@@ -162,6 +164,7 @@ trait SparkConfsSeq extends SparkConfsAbs with SparkConfsDsl with ScalanSeq
     Some((p.wrappedValueOfBaseType))
 }
 
+// Exp -----------------------------------
 trait SparkConfsExp extends SparkConfsAbs with SparkConfsDsl with ScalanExp
 { self: SparkDslExp =>
   lazy val SSparkConf: Rep[SSparkConfCompanionAbs] = new SSparkConfCompanionAbs with UserTypeDef[SSparkConfCompanionAbs, SSparkConfCompanionAbs] {

@@ -9,6 +9,7 @@ import org.apache.spark.broadcast.{Broadcast=>SparkBroadcast}
 import scala.reflect.runtime.universe._
 import scalan.common.Default
 
+// Abs -----------------------------------
 trait SparkContextsAbs extends Scalan with SparkContexts
 { self: SparkDsl =>
   // single proxy for each type family
@@ -50,20 +51,20 @@ trait SparkContextsAbs extends Scalan with SparkContexts
     
     def broadcast[T:Elem](value: Rep[T]): Rep[SparkBroadcast[T]] =
       methodCallEx[SparkBroadcast[T]](self,
-        this.getClass.getMethod("broadcast", classOf[AnyRef]),
-        List(value.asInstanceOf[AnyRef]))
+        this.getClass.getMethod("broadcast", classOf[AnyRef], classOf[Elem[T]]),
+        List(value.asInstanceOf[AnyRef], element[T]))
 
     
     def makeRDD[T:Elem](seq: Rep[Seq[T]], numSlices: Rep[Int]): Rep[RDD[T]] =
       methodCallEx[RDD[T]](self,
-        this.getClass.getMethod("makeRDD", classOf[AnyRef], classOf[AnyRef]),
-        List(seq.asInstanceOf[AnyRef], numSlices.asInstanceOf[AnyRef]))
+        this.getClass.getMethod("makeRDD", classOf[AnyRef], classOf[AnyRef], classOf[Elem[T]]),
+        List(seq.asInstanceOf[AnyRef], numSlices.asInstanceOf[AnyRef], element[T]))
 
     
     def emptyRDD[T:Elem]: Rep[RDD[T]] =
       methodCallEx[RDD[T]](self,
-        this.getClass.getMethod("emptyRDD"),
-        List())
+        this.getClass.getMethod("emptyRDD", classOf[Elem[T]]),
+        List(element[T]))
 
   }
   trait SSparkContextImplCompanion
@@ -127,6 +128,7 @@ trait SparkContextsAbs extends Scalan with SparkContexts
   def unmkSSparkContextImpl(p: Rep[SSparkContextImpl]): Option[(Rep[SparkContext])]
 }
 
+// Seq -----------------------------------
 trait SparkContextsSeq extends SparkContextsAbs with SparkContextsDsl with ScalanSeq
 { self: SparkDslSeq =>
   lazy val SSparkContext: Rep[SSparkContextCompanionAbs] = new SSparkContextCompanionAbs with UserTypeSeq[SSparkContextCompanionAbs, SSparkContextCompanionAbs] {
@@ -174,6 +176,7 @@ trait SparkContextsSeq extends SparkContextsAbs with SparkContextsDsl with Scala
     Some((p.wrappedValueOfBaseType))
 }
 
+// Exp -----------------------------------
 trait SparkContextsExp extends SparkContextsAbs with SparkContextsDsl with ScalanExp
 { self: SparkDslExp =>
   lazy val SSparkContext: Rep[SSparkContextCompanionAbs] = new SSparkContextCompanionAbs with UserTypeDef[SSparkContextCompanionAbs, SSparkContextCompanionAbs] {

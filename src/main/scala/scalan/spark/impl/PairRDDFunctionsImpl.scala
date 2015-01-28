@@ -9,6 +9,7 @@ import scalan.common.Default
 import scala.reflect.runtime.universe._
 import scalan.common.Default
 
+// Abs -----------------------------------
 trait PairRDDFunctionssAbs extends Scalan with PairRDDFunctionss
 { self: SparkDsl =>
   // single proxy for each type family
@@ -109,6 +110,7 @@ trait PairRDDFunctionssAbs extends Scalan with PairRDDFunctionss
   def unmkSPairRDDFunctionsImpl[K:Elem, V:Elem](p: Rep[SPairRDDFunctionsImpl[K, V]]): Option[(Rep[PairRDDFunctions[K,V]])]
 }
 
+// Seq -----------------------------------
 trait PairRDDFunctionssSeq extends PairRDDFunctionssAbs with PairRDDFunctionssDsl with ScalanSeq
 { self: SparkDslSeq =>
   lazy val SPairRDDFunctions: Rep[SPairRDDFunctionsCompanionAbs] = new SPairRDDFunctionsCompanionAbs with UserTypeSeq[SPairRDDFunctionsCompanionAbs, SPairRDDFunctionsCompanionAbs] {
@@ -141,6 +143,7 @@ trait PairRDDFunctionssSeq extends PairRDDFunctionssAbs with PairRDDFunctionssDs
     Some((p.wrappedValueOfBaseType))
 }
 
+// Exp -----------------------------------
 trait PairRDDFunctionssExp extends PairRDDFunctionssAbs with PairRDDFunctionssDsl with ScalanExp
 { self: SparkDslExp =>
   lazy val SPairRDDFunctions: Rep[SPairRDDFunctionsCompanionAbs] = new SPairRDDFunctionsCompanionAbs with UserTypeDef[SPairRDDFunctionsCompanionAbs, SPairRDDFunctionsCompanionAbs] {

@@ -5,9 +5,11 @@ import scala.reflect.ClassTag
 import scalan._
 import org.apache.spark.rdd.RDD
 import scalan.common.Default
+import scalan.common.Default
 import scala.reflect.runtime.universe._
 import scalan.common.Default
 
+// Abs -----------------------------------
 trait RDDsAbs extends Scalan with RDDs
 { self: SparkDsl =>
   // single proxy for each type family
@@ -138,6 +140,7 @@ trait RDDsAbs extends Scalan with RDDs
   def unmkSRDDImpl[A:Elem](p: Rep[SRDDImpl[A]]): Option[(Rep[RDD[A]])]
 }
 
+// Seq -----------------------------------
 trait RDDsSeq extends RDDsAbs with RDDsDsl with ScalanSeq
 { self: SparkDslSeq =>
   lazy val SRDD: Rep[SRDDCompanionAbs] = new SRDDCompanionAbs with UserTypeSeq[SRDDCompanionAbs, SRDDCompanionAbs] {
@@ -170,12 +173,8 @@ trait RDDsSeq extends RDDsAbs with RDDsDsl with ScalanSeq
       wrappedValueOfBaseType.union(other)
 
     
-    override def $plus$plus(other: Rep[RDD[A]]): Rep[RDD[A]] =
-      wrappedValueOfBaseType.$plus$plus(other)
-
-    
     override def fold(zeroValue: Rep[A])(op: Rep[((A,A)) => A]): Rep[A] =
-      wrappedValueOfBaseType.fold(zeroValue)((a1, a2) => op(a1, a2))
+      wrappedValueOfBaseType.fold(zeroValue)(scala.Function.untupled(op))
 
     
     override def cartesian[B:Elem](other: Rep[RDD[B]]): Rep[RDD[(A,B)]] =
@@ -197,6 +196,7 @@ trait RDDsSeq extends RDDsAbs with RDDsDsl with ScalanSeq
     Some((p.wrappedValueOfBaseType))
 }
 
+// Exp -----------------------------------
 trait RDDsExp extends RDDsAbs with RDDsDsl with ScalanExp
 { self: SparkDslExp =>
   lazy val SRDD: Rep[SRDDCompanionAbs] = new SRDDCompanionAbs with UserTypeDef[SRDDCompanionAbs, SRDDCompanionAbs] {
