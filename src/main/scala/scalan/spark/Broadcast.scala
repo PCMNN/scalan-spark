@@ -22,7 +22,7 @@ trait Broadcasts extends Base with BaseTypes { self: SparkDsl =>
   implicit def DefaultOfBroadcast[A :Elem]: Default[SparkBroadcast[A]] = {
     val eA = element[A]
     implicit val ctA = eA.classTag
-    val defaultA: A = ???
+    val defaultA: A = ctA.newArray(1)(0)
     Default.defaultVal(sparkContext.broadcast(defaultA))
   }
 }
