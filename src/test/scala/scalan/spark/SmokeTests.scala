@@ -3,11 +3,22 @@ package scalan.spark
 import java.io.File
 import org.apache.spark._
 import org.apache.spark.rdd.RDD
+import org.scalatest.BeforeAndAfterAll
 import scala.language.reflectiveCalls
 import scalan._
 
-class SmokeTests extends BaseTests { suite =>
+class SmokeTests extends BaseTests with BeforeAndAfterAll { suite =>
   val prefix = new File("test-out/scalan/spark/")
+  val globalSparkConf = new SparkConf().setAppName("R/W Broadcast").setMaster("local")
+  var globalSparkContext: SparkContext = null
+
+  override def beforeAll() = {
+    globalSparkContext = new SparkContext(globalSparkConf)
+  }
+
+  override def afterAll() = {
+    globalSparkContext.stop()
+  }
 
   trait SimpleSparkTests extends ScalanDsl with SparkDsl {
     val prefix = suite.prefix
@@ -40,10 +51,7 @@ class SmokeTests extends BaseTests { suite =>
 
   test("simpleSparkStaged") {
     val ctx = new TestContext with SimpleSparkTests with SparkDslExp {
-      def print(s: Rep[String]): Rep[Unit] = print(s)
-      def read: Rep[String] = Console.readLine()
-      val sparkConf = new SparkConf().setAppName("R/W Broadcast").setMaster("local")
-      val sparkContext = new SparkContext(sparkConf)
+      val sparkContext = globalSparkContext
     }
 
     ctx.emit("defaultSparkContextRep", ctx.defaultSparkContextRep)
@@ -57,8 +65,7 @@ class SmokeTests extends BaseTests { suite =>
 
   test("simpleSparkSeq") {
     val ctx = new ScalanCtxSeq with SimpleSparkTests with SparkDslSeq {
-      val sparkConf = new SparkConf().setAppName("R/W Broadcast").setMaster("local")
-      val sparkContext = new SparkContext(sparkConf)
+      val sparkContext = globalSparkContext
     }
 
     {
