@@ -8,7 +8,7 @@ trait ReadBroadcast extends ScalanDsl with SparkDsl {
   val master: Rep[String] = "local"
 
   def startSpark: SSparkContext = {
-    val conf = SSparkConf.setAppName(appName).setMaster(master)
+    val conf = SSparkConf().setAppName(appName).setMaster(master)
 
     SSparkContext(conf)
   }

@@ -4,7 +4,7 @@ package impl
 import org.apache.spark.rdd.RDD
 import scalan._
 import scalan.common.Default
-import org.apache.spark.SparkContext
+import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.broadcast.{Broadcast=>SparkBroadcast}
 import scala.reflect.runtime.universe._
 import scalan.common.Default
@@ -34,6 +34,9 @@ trait SparkContextsAbs extends Scalan with SparkContexts
   abstract class SSparkContextCompanionAbs extends CompanionBase[SSparkContextCompanionAbs] with SSparkContextCompanion {
     override def toString = "SSparkContext"
     
+    def apply(conf: Rep[SparkConf]): Rep[SparkContext] =
+      newObjEx(classOf[SparkContext], List(conf.asRep[Any]))
+
   }
   def SSparkContext: Rep[SSparkContextCompanionAbs]
   implicit def proxySSparkContextCompanion(p: Rep[SSparkContextCompanion]): SSparkContextCompanion = {
@@ -134,6 +137,9 @@ trait SparkContextsSeq extends SparkContextsAbs with SparkContextsDsl with Scala
   lazy val SSparkContext: Rep[SSparkContextCompanionAbs] = new SSparkContextCompanionAbs with UserTypeSeq[SSparkContextCompanionAbs, SSparkContextCompanionAbs] {
     lazy val selfType = element[SSparkContextCompanionAbs]
     
+    override def apply(conf: Rep[SparkConf]): Rep[SparkContext] =
+      new SparkContext(conf)
+
   }
 
     // override proxy if we deal with BaseTypeEx
@@ -262,6 +268,16 @@ trait SparkContextsExp extends SparkContextsAbs with SparkContextsDsl with Scala
   }
 
   object SSparkContextCompanionMethods {
-
+    object apply {
+      def unapply(d: Def[_]): Option[Rep[SparkConf]] = d match {
+        case MethodCall(receiver, method, Seq(conf, _*)) if receiver.elem.isInstanceOf[SSparkContextCompanionElem] && method.getName == "apply" =>
+          Some(conf).asInstanceOf[Option[Rep[SparkConf]]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[Rep[SparkConf]] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
   }
 }

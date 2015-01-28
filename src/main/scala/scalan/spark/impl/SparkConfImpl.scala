@@ -32,6 +32,9 @@ trait SparkConfsAbs extends Scalan with SparkConfs
   abstract class SSparkConfCompanionAbs extends CompanionBase[SSparkConfCompanionAbs] with SSparkConfCompanion {
     override def toString = "SSparkConf"
     
+    def apply: Rep[SparkConf] =
+      newObjEx(classOf[SparkConf], List())
+
   }
   def SSparkConf: Rep[SSparkConfCompanionAbs]
   implicit def proxySSparkConfCompanion(p: Rep[SSparkConfCompanion]): SSparkConfCompanion = {
@@ -126,6 +129,9 @@ trait SparkConfsSeq extends SparkConfsAbs with SparkConfsDsl with ScalanSeq
   lazy val SSparkConf: Rep[SSparkConfCompanionAbs] = new SSparkConfCompanionAbs with UserTypeSeq[SSparkConfCompanionAbs, SSparkConfCompanionAbs] {
     lazy val selfType = element[SSparkConfCompanionAbs]
     
+    override def apply: Rep[SparkConf] =
+      new SparkConf
+
   }
 
     // override proxy if we deal with BaseTypeEx
@@ -238,6 +244,16 @@ trait SparkConfsExp extends SparkConfsAbs with SparkConfsDsl with ScalanExp
   }
 
   object SSparkConfCompanionMethods {
-
+    object apply {
+      def unapply(d: Def[_]): Option[Unit] = d match {
+        case MethodCall(receiver, method, _) if receiver.elem.isInstanceOf[SSparkConfCompanionElem] && method.getName == "apply" =>
+          Some(()).asInstanceOf[Option[Unit]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[Unit] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
   }
 }

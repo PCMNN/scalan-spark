@@ -4,7 +4,7 @@ import org.apache.spark.rdd.RDD
 
 import scalan._
 import scalan.common.Default
-import org.apache.spark.SparkContext
+import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.broadcast.{Broadcast => SparkBroadcast}
 
 trait SparkContexts extends Base with BaseTypes { self: SparkDsl =>
@@ -29,7 +29,9 @@ trait SparkContexts extends Base with BaseTypes { self: SparkDsl =>
     @External def emptyRDD[T:Elem]: Rep[RDD[T]]
   }
 
-  trait SSparkContextCompanion
+  trait SSparkContextCompanion extends ExCompanion0[SparkContext]  {
+    @Constructor def apply(conf: Rep[SparkConf]): Rep[SparkContext]
+  }
 
   implicit def DefaultOfSparkContext: Default[SparkContext] = {
     Default.defaultVal(sparkContext)

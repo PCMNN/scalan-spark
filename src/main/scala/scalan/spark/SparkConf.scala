@@ -20,7 +20,9 @@ trait SparkConfs extends Base with BaseTypes { self: SparkDsl =>
     @External def set(key: Rep[String], value: Rep[String]): Rep[SparkConf]
   }
 
-  trait SSparkConfCompanion
+  trait SSparkConfCompanion extends ExCompanion0[SparkConf]  {
+    @Constructor def apply(): Rep[SparkConf]
+  }
 
   implicit def DefaultOfSparkConf: Default[SparkConf] = {
     Default.defaultVal(sparkContext.getConf)
