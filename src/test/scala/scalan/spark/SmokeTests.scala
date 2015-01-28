@@ -22,6 +22,11 @@ class SmokeTests extends BaseTests { suite =>
       val be = sc.broadcast(toRep(2.71828))
       be.value
     }}
+    lazy val broadcastDouble = fun { (in: Rep[(SparkContext, Double)]) => {
+      val Pair(sc, d) = in
+      val bd = sc.broadcast(d)
+      bd.value
+    }}
 
     lazy val emptyRDD = fun { (sc: Rep[SparkContext]) => {
       val rdd: Rep[RDD[Double]] = sc.emptyRDD
@@ -45,8 +50,22 @@ class SmokeTests extends BaseTests { suite =>
     ctx.emit("defaultSparkConfRep", ctx.defaultSparkConfRep)
     ctx.emit("broadcastPi", ctx.broadcastPi)
     ctx.emit("readE", ctx.readE)
+    //ctx.emit("broadcastDouble", ctx.broadcastDouble)
     ctx.emit("emptyRDD", ctx.emptyRDD)
     ctx.emit("mapRDD", ctx.mapRDD)
+  }
+
+  test("simpleSparkSeq") {
+    val ctx = new ScalanCtxSeq with SimpleSparkTests with SparkDslSeq {
+      val sparkConf = new SparkConf().setAppName("R/W Broadcast").setMaster("local")
+      val sparkContext = new SparkContext(sparkConf)
+    }
+
+    {
+      val gravityAcc = 9.8
+      val res = ctx.broadcastDouble((ctx.sparkContext, gravityAcc))
+      assertResult(gravityAcc)(res)
+    }
   }
 }
 
