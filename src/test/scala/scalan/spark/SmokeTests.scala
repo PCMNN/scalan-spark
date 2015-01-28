@@ -2,6 +2,7 @@ package scalan.spark
 
 import java.io.File
 import org.apache.spark._
+import org.apache.spark.rdd.RDD
 import scala.language.reflectiveCalls
 import scalan._
 
@@ -21,6 +22,15 @@ class SmokeTests extends BaseTests { suite =>
       val be = sc.broadcast(toRep(2.71828))
       be.value
     }}
+
+    lazy val emptyRDD = fun { (sc: Rep[SparkContext]) => {
+      val rdd: Rep[RDD[Double]] = sc.emptyRDD
+      rdd
+    }}
+    lazy val mapRDD = fun { (in: Rep[(RDD[Double], Double)]) => {
+      val Pair(rdd, i) = in
+      rdd.map(fun {v => v + i})
+    }}
   }
 
   test("simpleSparkStaged") {
@@ -35,6 +45,8 @@ class SmokeTests extends BaseTests { suite =>
     ctx.emit("defaultSparkConfRep", ctx.defaultSparkConfRep)
     ctx.emit("broadcastPi", ctx.broadcastPi)
     ctx.emit("readE", ctx.readE)
+    ctx.emit("emptyRDD", ctx.emptyRDD)
+    ctx.emit("mapRDD", ctx.mapRDD)
   }
 }
 
