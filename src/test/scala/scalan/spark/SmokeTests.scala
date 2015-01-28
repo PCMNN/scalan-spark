@@ -15,6 +15,12 @@ class SmokeTests extends BaseTests { suite =>
     lazy val defaultSparkContextRep = sparkContextElem.defaultRepValue
     lazy val sparkConfElem = element[SparkConf]
     lazy val defaultSparkConfRep = sparkConfElem.defaultRepValue
+
+    lazy val broadcastPi = fun { (sc: Rep[SparkContext]) => sc.broadcast(toRep(3.14)) }
+    lazy val readE = fun { (sc: Rep[SparkContext]) => {
+      val be = sc.broadcast(toRep(2.71828))
+      be.value
+    }}
   }
 
   test("simpleSparkStaged") {
@@ -27,6 +33,8 @@ class SmokeTests extends BaseTests { suite =>
 
     ctx.emit("defaultSparkContextRep", ctx.defaultSparkContextRep)
     ctx.emit("defaultSparkConfRep", ctx.defaultSparkConfRep)
+    ctx.emit("broadcastPi", ctx.broadcastPi)
+    ctx.emit("readE", ctx.readE)
   }
 }
 
