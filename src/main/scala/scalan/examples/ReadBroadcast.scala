@@ -3,7 +3,12 @@ package scalan.examples
 import scalan._
 import scalan.spark._
 
-trait ReadBroadcast extends ScalanDsl with SparkDsl {
+trait ConsoleDsl extends ScalanDsl {
+  def print(s: Rep[String]): Rep[Unit]
+  def read: Rep[String]
+}
+
+trait ReadBroadcast extends ScalanDsl with SparkDsl with ConsoleDsl {
   val appName: Rep[String] = "R/W Broadcast"
   val master: Rep[String] = "local"
 
@@ -25,9 +30,9 @@ trait ReadBroadcast extends ScalanDsl with SparkDsl {
     val bPi = rwDouble(sparkContext, pi)
 
     IF (pi === bPi) THEN {
-      println("OK")
+      print("OK")
     } ELSE {
-      println("FAIL")
+      print("FAIL")
     }
   }
 }
