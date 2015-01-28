@@ -50,7 +50,7 @@ class SmokeTests extends BaseTests { suite =>
     ctx.emit("defaultSparkConfRep", ctx.defaultSparkConfRep)
     ctx.emit("broadcastPi", ctx.broadcastPi)
     ctx.emit("readE", ctx.readE)
-    //ctx.emit("broadcastDouble", ctx.broadcastDouble)
+    ctx.emit("broadcastDouble", ctx.broadcastDouble)
     ctx.emit("emptyRDD", ctx.emptyRDD)
     ctx.emit("mapRDD", ctx.mapRDD)
   }
