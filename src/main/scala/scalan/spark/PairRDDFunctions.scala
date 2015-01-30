@@ -23,7 +23,13 @@ trait PairRDDFunctionss extends Base with BaseTypes { self: SparkDsl =>
     @External def values: Rep[RDD[V]]
   }
 
-  trait SPairRDDFunctionsCompanion
+  trait SPairRDDFunctionsCompanion {
+    @Constructor def apply[K: Elem, V: Elem](rdd: Rep[RDD[(K, V)]]): Rep[PairRDDFunctions[K, V]]
+  }
+
+  implicit def rddToPairRddFunctions[K: Elem, V: Elem](rdd: Rep[RDD[(K, V)]]): Rep[PairRDDFunctions[K, V]] = {
+    SPairRDDFunctions(rdd)
+  }
 
   implicit def DefaultOfPairRDDFunctions[K:Elem, V:Elem]: Default[PairRDDFunctions[K,V]] = {
     val pairs = sparkContext.parallelize(Seq.empty[(K,V)])

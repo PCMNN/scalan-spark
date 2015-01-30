@@ -33,6 +33,9 @@ trait PairRDDFunctionssAbs extends Scalan with PairRDDFunctionss
   abstract class SPairRDDFunctionsCompanionAbs extends CompanionBase[SPairRDDFunctionsCompanionAbs] with SPairRDDFunctionsCompanion {
     override def toString = "SPairRDDFunctions"
     
+    def apply[K:Elem, V:Elem](rdd: Rep[RDD[(K,V)]]): Rep[PairRDDFunctions[K,V]] =
+      newObjEx(classOf[PairRDDFunctions[K, V]], List(rdd.asRep[Any]))
+
   }
   def SPairRDDFunctions: Rep[SPairRDDFunctionsCompanionAbs]
   implicit def proxySPairRDDFunctionsCompanion(p: Rep[SPairRDDFunctionsCompanion]): SPairRDDFunctionsCompanion = {
@@ -121,6 +124,9 @@ trait PairRDDFunctionssSeq extends PairRDDFunctionssAbs with PairRDDFunctionssDs
   lazy val SPairRDDFunctions: Rep[SPairRDDFunctionsCompanionAbs] = new SPairRDDFunctionsCompanionAbs with UserTypeSeq[SPairRDDFunctionsCompanionAbs, SPairRDDFunctionsCompanionAbs] {
     lazy val selfType = element[SPairRDDFunctionsCompanionAbs]
     
+    override def apply[K:Elem, V:Elem](rdd: Rep[RDD[(K,V)]]): Rep[PairRDDFunctions[K,V]] =
+      new PairRDDFunctions[K, V](rdd)
+
   }
 
     // override proxy if we deal with BaseTypeEx
@@ -213,6 +219,16 @@ trait PairRDDFunctionssExp extends PairRDDFunctionssAbs with PairRDDFunctionssDs
   }
 
   object SPairRDDFunctionsCompanionMethods {
-
+    object apply {
+      def unapply(d: Def[_]): Option[Rep[RDD[(K,V)]] forSome {type K; type V}] = d match {
+        case MethodCall(receiver, method, Seq(rdd, _*)) if receiver.elem.isInstanceOf[SPairRDDFunctionsCompanionElem] && method.getName == "apply" =>
+          Some(rdd).asInstanceOf[Option[Rep[RDD[(K,V)]] forSome {type K; type V}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[Rep[RDD[(K,V)]] forSome {type K; type V}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
   }
 }
