@@ -38,6 +38,13 @@ trait PairRDDFunctionss extends Base with BaseTypes { self: SparkDsl =>
 }
 
 trait PairRDDFunctionssDsl extends impl.PairRDDFunctionssAbs  { self: SparkDsl => }
+/*
+  implicit class Pair2PairRDD[K: Elem, V: Elem](that: Rep[PairRDDFunctions[K, V]]) {
+    def reduceByKey(func: Rep[((V, V)) => V]): Rep[PairRDDFunctions[K, V]] = that.reduceByKey(func)
+    def values: Rep[RDD[V]] = that.values
+  }
+*/
+
 trait PairRDDFunctionssDslSeq extends impl.PairRDDFunctionssSeq { self: SparkDslSeq =>
 
   trait SeqSPairRDDFunctions[K,V] extends SPairRDDFunctionsImpl[K,V] {
