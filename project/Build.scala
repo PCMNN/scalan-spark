@@ -79,6 +79,46 @@ object ScalanStartRootBuild extends Build {
     base = file(".")).addTestConfigsAndCommonSettings.
     settings(libraryDependencies ++= Seq(core, core % "test" classifier "tests"))
 
+  val virtScala = Option(System.getenv("SCALA_VIRTUALIZED_VERSION")).getOrElse("2.10.2")
+
+  lazy val backend = liteDependency("lms-backend")
+  lazy val starterBackend = Project("backend",file("backend")).
+    addTestConfigsAndCommonSettings.
+    settings(libraryDependencies ++= Seq(backend,
+      "org.scala-lang.virtualized" % "scala-library" % virtScala,
+      "org.scala-lang.virtualized" % "scala-compiler" % virtScala),
+    scalaOrganization := "org.scala-lang.virtualized",
+    scalaVersion := virtScala
+).dependsOn(start.allConfigDependency)
+
+/*
+  val depsTask = TaskKey[Unit]("find-deps", "finds the dependencies")
+
+  val testConf = config("TestTasks") hide
+
+  private lazy val saveDependencies = inConfig(testConf)(Seq(
+    depsTask <<= update map {
+      (updateReport) =>
+        updateReport.select(Set("compile", "runtime")) foreach { srcPath => println("src path = " + srcPath) }
+    }
+  ))
+*/
+
+/*
+ val copyJarsFolder = (crossTarget in (Compile, packageBin)).apply(_ / "jars")
+
+
+    val libraryJarPath = "lib"
+
+    def collectJarsTask = {
+      val jars = starterBackend.allConfigDependency
+      for(jar <- jars)
+      org.apache.commons.io.FileUtils.copyFileToDirectory(jar, libraryJarPath)
+    }
+
+    lazy val collectJars = task { collectJarsTask; None } dependsOn(compile)
+*/
+
   def itFilter(name: String): Boolean =
     name endsWith "ItTests"
 
