@@ -70,14 +70,14 @@ object ScalanStartRootBuild extends Build {
   def liteDependency(name: String) = "com.huawei.scalan" %% name % "0.2.6-SNAPSHOT"
 
   lazy val metaDeps = liteDependency("meta")
-  lazy val startermeta = Project(
-    id = "starter-meta",
+  lazy val sparkmeta = Project(
+    id = "spark-meta",
     base = file("meta")).addTestConfigsAndCommonSettings.
     settings(libraryDependencies ++= Seq(metaDeps))
 
   lazy val core = liteDependency("core")
   lazy val start = Project(
-    id = "scalan-starter",
+    id = "scalan-spark",
     base = file(".")).addTestConfigsAndCommonSettings.
     settings(libraryDependencies ++= Seq(core, core % "test" classifier "tests"))
 

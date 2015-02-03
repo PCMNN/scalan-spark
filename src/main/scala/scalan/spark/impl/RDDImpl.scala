@@ -78,6 +78,12 @@ trait RDDsAbs extends Scalan with RDDs
         this.getClass.getMethod("subtract", classOf[AnyRef]),
         List(other.asInstanceOf[AnyRef]))
 
+    
+    def first: Rep[A] =
+      methodCallEx[A](self,
+        this.getClass.getMethod("first"),
+        List())
+
   }
   trait SRDDImplCompanion
   // elem for concrete class
@@ -183,6 +189,10 @@ trait RDDsSeq extends RDDsAbs with RDDsDsl with ScalanSeq
     
     override def subtract(other: Rep[RDD[A]]): Rep[RDD[A]] =
       wrappedValueOfBaseType.subtract(other)
+
+    
+    override def first: Rep[A] =
+      wrappedValueOfBaseType.first
 
   }
   lazy val SRDDImpl = new SRDDImplCompanionAbs with UserTypeSeq[SRDDImplCompanionAbs, SRDDImplCompanionAbs] {
@@ -311,6 +321,18 @@ trait RDDsExp extends RDDsAbs with RDDsDsl with ScalanExp
         case _ => None
       }
       def unapply(exp: Exp[_]): Option[(Rep[SRDD[A]], Rep[RDD[A]]) forSome {type A}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object first {
+      def unapply(d: Def[_]): Option[Rep[SRDD[A]] forSome {type A}] = d match {
+        case MethodCall(receiver, method, _) if receiver.elem.isInstanceOf[SRDDElem[A, _, _] forSome {type A}] && method.getName == "first" =>
+          Some(receiver).asInstanceOf[Option[Rep[SRDD[A]] forSome {type A}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[Rep[SRDD[A]] forSome {type A}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }

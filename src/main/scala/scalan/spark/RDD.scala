@@ -13,6 +13,7 @@ trait RDDs extends Base with BaseTypes { self: SparkDsl =>
   /** The trait contains the basic operations available on all RDDs */
   trait SRDD[A] extends BaseTypeEx[RDD[A], SRDD[A]] { self =>
     implicit def eA: Elem[A]
+                                /** Transformations **/
 
     /** Applies a function to all elements of this RDD end returns new RDD **/
     @External def map[B: Elem](f: Rep[A => B]): Rep[RDD[B]]
@@ -32,6 +33,11 @@ trait RDDs extends Base with BaseTypes { self: SparkDsl =>
 
     /** Returns an RDD with the elements from `this` that are not in `other`. */
     @External def subtract(other: Rep[RDD[A]]): Rep[RDD[A]]
+
+                                 /** Actions **/
+
+    /** Returns the first element in this RDD. */
+    @External def first(): Rep[A]
   }
 
   trait SRDDCompanion

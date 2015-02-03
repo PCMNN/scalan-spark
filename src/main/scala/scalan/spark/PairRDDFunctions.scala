@@ -1,11 +1,8 @@
 package scalan.spark
 
-import org.apache.spark.broadcast.Broadcast
-
 import scala.reflect.ClassTag
 import scalan._
-import org.apache.spark.rdd.PairRDDFunctions
-
+import org.apache.spark.rdd._
 import scalan.common.Default
 
 trait PairRDDFunctionss extends Base with BaseTypes { self: SparkDsl =>
@@ -21,9 +18,18 @@ trait PairRDDFunctionss extends Base with BaseTypes { self: SparkDsl =>
 
     /** Merges the values for each key using an associative reduce function. */
     @External def reduceByKey(func: Rep[((V, V)) => V]): Rep[PairRDDFunctions[K, V]]
+
+    /** Returns an RDD with the values of each tuple. */
+    @External def values: Rep[RDD[V]]
   }
 
-  trait SPairRDDFunctionsCompanion
+  trait SPairRDDFunctionsCompanion {
+    @Constructor def apply[K: Elem, V: Elem](rdd: Rep[RDD[(K, V)]]): Rep[PairRDDFunctions[K, V]]
+  }
+
+  implicit def rddToPairRddFunctions[K: Elem, V: Elem](rdd: Rep[RDD[(K, V)]]): Rep[PairRDDFunctions[K, V]] = {
+    SPairRDDFunctions(rdd)
+  }
 
   implicit def DefaultOfPairRDDFunctions[K:Elem, V:Elem]: Default[PairRDDFunctions[K,V]] = {
     val pairs = sparkContext.parallelize(Seq.empty[(K,V)])
@@ -32,6 +38,13 @@ trait PairRDDFunctionss extends Base with BaseTypes { self: SparkDsl =>
 }
 
 trait PairRDDFunctionssDsl extends impl.PairRDDFunctionssAbs  { self: SparkDsl => }
+/*
+  implicit class Pair2PairRDD[K: Elem, V: Elem](that: Rep[PairRDDFunctions[K, V]]) {
+    def reduceByKey(func: Rep[((V, V)) => V]): Rep[PairRDDFunctions[K, V]] = that.reduceByKey(func)
+    def values: Rep[RDD[V]] = that.values
+  }
+*/
+
 trait PairRDDFunctionssDslSeq extends impl.PairRDDFunctionssSeq { self: SparkDslSeq =>
 
   trait SeqSPairRDDFunctions[K,V] extends SPairRDDFunctionsImpl[K,V] {
