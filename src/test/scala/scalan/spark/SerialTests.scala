@@ -34,7 +34,7 @@ class SerialTests extends BaseTests with BeforeAndAfterAll { suite =>
     }}
   }
 
-  test("simpleSerialStaged") {
+  ignore("simpleSerialSparkStaged") {
     val ctx = new TestContext with SimpleSerialTests with SparkDslExp {
       val sparkContext = globalSparkContext
     }
@@ -42,7 +42,7 @@ class SerialTests extends BaseTests with BeforeAndAfterAll { suite =>
     ctx.emit("plusOne", ctx.plusOne)
   }
 
-  test("simpleSparkSeq") {
+  ignore("simpleSerialSparkSeq") {
     val ctx = new ScalanCtxSeq with SimpleSerialTests with SparkDslSeq {
       val sparkContext = globalSparkContext
     }
@@ -50,7 +50,33 @@ class SerialTests extends BaseTests with BeforeAndAfterAll { suite =>
     {
       val a = 42
       val res = ctx.plusOne((ctx.sparkContext, a))
-      assertResult(a)(res)
+      assertResult(a + 1)(res)
+    }
+  }
+
+  test("serialSparkSeq") {
+    class PlusOne(@transient val ctx: ScalanDsl with SparkDsl) extends Serializable {
+      import ctx._
+
+      def plusOne(in: Rep[(SparkContext, Int)]): Rep[Int] = {
+        val Pair(sc, i: Rep[Int]) = in
+        val rdd = sc.makeRDD(List.replicate(1, i))
+        val incRdd = rdd.map(fun {v => v + 1})
+        val result: Rep[Int] = incRdd.first
+
+        result
+      }
+      //lazy val main = fun { (in: Rep[(SparkContext, Int)]) => plusOne(in)}
+    }
+    val ctx = new ScalanCtxSeq with SparkDslSeq {
+      val sparkContext = globalSparkContext
+    }
+    {
+      val inc = new PlusOne(ctx)
+      import inc.ctx._
+      val a = 42
+      val res = inc.plusOne((sparkContext, a))
+      assertResult(a + 1)(res)
     }
   }
 }
