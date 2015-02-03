@@ -1,3 +1,5 @@
+import java.io.File
+
 import sbt._
 import sbt.Keys._
 //import sbtassembly.Plugin._
@@ -84,12 +86,23 @@ object ScalanStartRootBuild extends Build {
   lazy val backend = liteDependency("lms-backend")
   lazy val starterBackend = Project("backend",file("backend")).
     addTestConfigsAndCommonSettings.
-    settings(libraryDependencies ++= Seq(backend,
+    settings(copyDepTask, libraryDependencies ++= Seq(backend,
       "org.scala-lang.virtualized" % "scala-library" % virtScala,
       "org.scala-lang.virtualized" % "scala-compiler" % virtScala),
     scalaOrganization := "org.scala-lang.virtualized",
     scalaVersion := virtScala
 ).dependsOn(start.allConfigDependency)
+
+  lazy val copyDependencies = TaskKey[Unit]("pack")
+
+  def copyDepTask = copyDependencies <<= (update, crossTarget, scalaVersion) map {
+    (updateReport, out, scalaVer) =>
+      updateReport.allFiles foreach {
+        srcPath =>
+          val destPath = out / "lib" / srcPath.getName
+          IO.copyFile(srcPath, destPath, preserveLastModified = true)
+      }
+  }
 
 /*
   val depsTask = TaskKey[Unit]("find-deps", "finds the dependencies")
@@ -113,7 +126,7 @@ object ScalanStartRootBuild extends Build {
     def collectJarsTask = {
       val jars = starterBackend.allConfigDependency
       for(jar <- jars)
-      org.apache.commons.io.FileUtils.copyFileToDirectory(jar, libraryJarPath)
+      IO.copyFile(jar, new File(libraryJarPath + File.separator + jar), true)
     }
 
     lazy val collectJars = task { collectJarsTask; None } dependsOn(compile)
