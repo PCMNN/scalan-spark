@@ -25,8 +25,7 @@ trait SparkConfsAbs extends Scalan with SparkConfs
   trait SSparkConfCompanionElem extends CompanionElem[SSparkConfCompanionAbs]
   implicit lazy val SSparkConfCompanionElem: SSparkConfCompanionElem = new SSparkConfCompanionElem {
     lazy val tag = typeTag[SSparkConfCompanionAbs]
-    lazy val getDefaultRep = Default.defaultVal(SSparkConf)
-    //def getDefaultRep = defaultRep
+    protected def getDefaultRep = SSparkConf
   }
 
   abstract class SSparkConfCompanionAbs extends CompanionBase[SSparkConfCompanionAbs] with SSparkConfCompanion {
@@ -102,8 +101,7 @@ trait SparkConfsAbs extends Scalan with SparkConfs
 
   class SSparkConfImplCompanionElem extends CompanionElem[SSparkConfImplCompanionAbs] {
     lazy val tag = typeTag[SSparkConfImplCompanionAbs]
-    lazy val getDefaultRep = Default.defaultVal(SSparkConfImpl)
-    //def getDefaultRep = defaultRep
+    protected def getDefaultRep = SSparkConfImpl
   }
   implicit lazy val SSparkConfImplCompanionElem: SSparkConfImplCompanionElem = new SSparkConfImplCompanionElem
 

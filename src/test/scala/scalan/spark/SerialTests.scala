@@ -2,13 +2,11 @@ package scalan.spark
 
 import java.io.File
 import org.apache.spark._
-import org.apache.spark.rdd.RDD
 import org.scalatest.BeforeAndAfterAll
 import scala.language.reflectiveCalls
 import scalan._
 
 class SerialTests extends BaseTests with BeforeAndAfterAll { suite =>
-  val prefix = new File("test-out/scalan/spark/")
   val globalSparkConf = new SparkConf().setAppName("Serialization Tests").setMaster("local")
   var globalSparkContext: SparkContext = null
 
@@ -35,7 +33,7 @@ class SerialTests extends BaseTests with BeforeAndAfterAll { suite =>
   }
 
   ignore("simpleSerialSparkStaged") {
-    val ctx = new TestContext with SimpleSerialTests with SparkDslExp {
+    val ctx = new TestContext(this, "simpleSerialSparkStaged") with SimpleSerialTests with SparkDslExp {
       val sparkContext = globalSparkContext
     }
 
@@ -56,7 +54,6 @@ class SerialTests extends BaseTests with BeforeAndAfterAll { suite =>
 
   ignore("serialSparkSeq") {
     class PlusOne(@transient val ctx: ScalanDsl with SparkDsl) extends Serializable {
-      def this() = this()
       import ctx._
 
       def plusOne(in: Rep[(SparkContext, Int)]): Rep[Int] = {

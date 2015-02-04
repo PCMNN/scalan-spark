@@ -26,8 +26,7 @@ trait PairRDDFunctionssAbs extends Scalan with PairRDDFunctionss
   trait SPairRDDFunctionsCompanionElem extends CompanionElem[SPairRDDFunctionsCompanionAbs]
   implicit lazy val SPairRDDFunctionsCompanionElem: SPairRDDFunctionsCompanionElem = new SPairRDDFunctionsCompanionElem {
     lazy val tag = typeTag[SPairRDDFunctionsCompanionAbs]
-    lazy val getDefaultRep = Default.defaultVal(SPairRDDFunctions)
-    //def getDefaultRep = defaultRep
+    protected def getDefaultRep = SPairRDDFunctions
   }
 
   abstract class SPairRDDFunctionsCompanionAbs extends CompanionBase[SPairRDDFunctionsCompanionAbs] with SPairRDDFunctionsCompanion {
@@ -97,8 +96,7 @@ trait PairRDDFunctionssAbs extends Scalan with PairRDDFunctionss
 
   class SPairRDDFunctionsImplCompanionElem extends CompanionElem[SPairRDDFunctionsImplCompanionAbs] {
     lazy val tag = typeTag[SPairRDDFunctionsImplCompanionAbs]
-    lazy val getDefaultRep = Default.defaultVal(SPairRDDFunctionsImpl)
-    //def getDefaultRep = defaultRep
+    protected def getDefaultRep = SPairRDDFunctionsImpl
   }
   implicit lazy val SPairRDDFunctionsImplCompanionElem: SPairRDDFunctionsImplCompanionElem = new SPairRDDFunctionsImplCompanionElem
 
@@ -195,7 +193,7 @@ trait PairRDDFunctionssExp extends PairRDDFunctionssAbs with PairRDDFunctionssDs
   object SPairRDDFunctionsMethods {
     object reduceByKey {
       def unapply(d: Def[_]): Option[(Rep[SPairRDDFunctions[K, V]], Rep[((V,V)) => V]) forSome {type K; type V}] = d match {
-        case MethodCall(receiver, method, Seq(func, _*)) if receiver.elem.isInstanceOf[SPairRDDFunctionsElem[K, V, _, _] forSome {type K; type V}] && method.getName == "reduceByKey" =>
+        case MethodCall(receiver, method, Seq(func, _*)) if receiver.elem.isInstanceOf[SPairRDDFunctionsElem[_, _, _, _]] && method.getName == "reduceByKey" =>
           Some((receiver, func)).asInstanceOf[Option[(Rep[SPairRDDFunctions[K, V]], Rep[((V,V)) => V]) forSome {type K; type V}]]
         case _ => None
       }
@@ -207,7 +205,7 @@ trait PairRDDFunctionssExp extends PairRDDFunctionssAbs with PairRDDFunctionssDs
 
     object values {
       def unapply(d: Def[_]): Option[Rep[SPairRDDFunctions[K, V]] forSome {type K; type V}] = d match {
-        case MethodCall(receiver, method, _) if receiver.elem.isInstanceOf[SPairRDDFunctionsElem[K, V, _, _] forSome {type K; type V}] && method.getName == "values" =>
+        case MethodCall(receiver, method, _) if receiver.elem.isInstanceOf[SPairRDDFunctionsElem[_, _, _, _]] && method.getName == "values" =>
           Some(receiver).asInstanceOf[Option[Rep[SPairRDDFunctions[K, V]] forSome {type K; type V}]]
         case _ => None
       }
