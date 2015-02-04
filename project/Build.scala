@@ -74,10 +74,11 @@ object ScalanStartRootBuild extends Build {
     settings(libraryDependencies ++= Seq(metaDeps))
 
   lazy val core = liteDependency("core")
+  lazy val common = liteDependency("common")
   lazy val start = Project(
     id = "scalan-spark",
     base = file(".")).addTestConfigsAndCommonSettings.
-    settings(libraryDependencies ++= Seq(core, core % "test" classifier "tests"))
+    settings(libraryDependencies ++= Seq(core, core % "test" classifier "tests", common, common % "test" classifier "tests"))
 
   def itFilter(name: String): Boolean =
     name endsWith "ItTests"
