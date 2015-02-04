@@ -34,7 +34,7 @@ trait PairRDDFunctionssAbs extends Scalan with PairRDDFunctionss
     override def toString = "SPairRDDFunctions"
     
     def apply[K:Elem, V:Elem](rdd: Rep[RDD[(K,V)]]): Rep[PairRDDFunctions[K,V]] =
-      newObjEx(classOf[PairRDDFunctions[K, V]], List(rdd.asRep[Any]))
+      newObjEx(classOf[PairRDDFunctions[K, V]], scala.collection.immutable.List(rdd.asRep[Any]))
 
   }
   def SPairRDDFunctions: Rep[SPairRDDFunctionsCompanionAbs]
@@ -48,19 +48,19 @@ trait PairRDDFunctionssAbs extends Scalan with PairRDDFunctionss
     def partitionBy(partitioner: Rep[Partitioner]): Rep[RDD[(K,V)]] =
       methodCallEx[RDD[(K,V)]](self,
         this.getClass.getMethod("partitionBy", classOf[AnyRef]),
-        List(partitioner.asInstanceOf[AnyRef]))
+        scala.collection.immutable.List(partitioner.asInstanceOf[AnyRef]))
 
     
     def reduceByKey(func: Rep[((V,V)) => V]): Rep[PairRDDFunctions[K,V]] =
       methodCallEx[PairRDDFunctions[K,V]](self,
         this.getClass.getMethod("reduceByKey", classOf[AnyRef]),
-        List(func.asInstanceOf[AnyRef]))
+        scala.collection.immutable.List(func.asInstanceOf[AnyRef]))
 
     
     def values: Rep[RDD[V]] =
       methodCallEx[RDD[V]](self,
         this.getClass.getMethod("values"),
-        List())
+        scala.collection.immutable.List())
 
   }
   trait SPairRDDFunctionsImplCompanion

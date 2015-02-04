@@ -34,7 +34,7 @@ trait SparkContextsAbs extends Scalan with SparkContexts
     override def toString = "SSparkContext"
     
     def apply(conf: Rep[SparkConf]): Rep[SparkContext] =
-      newObjEx(classOf[SparkContext], List(conf.asRep[Any]))
+      newObjEx(classOf[SparkContext], scala.collection.immutable.List(conf.asRep[Any]))
 
   }
   def SSparkContext: Rep[SSparkContextCompanionAbs]
@@ -48,25 +48,25 @@ trait SparkContextsAbs extends Scalan with SparkContexts
     def defaultParallelism: Rep[Int] =
       methodCallEx[Int](self,
         this.getClass.getMethod("defaultParallelism"),
-        List())
+        scala.collection.immutable.List())
 
     
     def broadcast[T:Elem](value: Rep[T]): Rep[SparkBroadcast[T]] =
       methodCallEx[SparkBroadcast[T]](self,
         this.getClass.getMethod("broadcast", classOf[AnyRef], classOf[Elem[T]]),
-        List(value.asInstanceOf[AnyRef], element[T]))
+        scala.collection.immutable.List(value.asInstanceOf[AnyRef], element[T]))
 
     
     def makeRDD[T:Elem](seq: Rep[Seq[T]], numSlices: Rep[Int]): Rep[RDD[T]] =
       methodCallEx[RDD[T]](self,
         this.getClass.getMethod("makeRDD", classOf[AnyRef], classOf[AnyRef], classOf[Elem[T]]),
-        List(seq.asInstanceOf[AnyRef], numSlices.asInstanceOf[AnyRef], element[T]))
+        scala.collection.immutable.List(seq.asInstanceOf[AnyRef], numSlices.asInstanceOf[AnyRef], element[T]))
 
     
     def emptyRDD[T:Elem]: Rep[RDD[T]] =
       methodCallEx[RDD[T]](self,
         this.getClass.getMethod("emptyRDD", classOf[Elem[T]]),
-        List(element[T]))
+        scala.collection.immutable.List(element[T]))
 
   }
   trait SSparkContextImplCompanion

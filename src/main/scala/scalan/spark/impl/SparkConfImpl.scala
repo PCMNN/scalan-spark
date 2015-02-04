@@ -32,7 +32,7 @@ trait SparkConfsAbs extends Scalan with SparkConfs
     override def toString = "SSparkConf"
     
     def apply: Rep[SparkConf] =
-      newObjEx(classOf[SparkConf], List())
+      newObjEx(classOf[SparkConf], scala.collection.immutable.List())
 
   }
   def SSparkConf: Rep[SSparkConfCompanionAbs]
@@ -46,19 +46,19 @@ trait SparkConfsAbs extends Scalan with SparkConfs
     def setAppName(name: Rep[String]): Rep[SparkConf] =
       methodCallEx[SparkConf](self,
         this.getClass.getMethod("setAppName", classOf[AnyRef]),
-        List(name.asInstanceOf[AnyRef]))
+        scala.collection.immutable.List(name.asInstanceOf[AnyRef]))
 
     
     def setMaster(master: Rep[String]): Rep[SparkConf] =
       methodCallEx[SparkConf](self,
         this.getClass.getMethod("setMaster", classOf[AnyRef]),
-        List(master.asInstanceOf[AnyRef]))
+        scala.collection.immutable.List(master.asInstanceOf[AnyRef]))
 
     
     def set(key: Rep[String], value: Rep[String]): Rep[SparkConf] =
       methodCallEx[SparkConf](self,
         this.getClass.getMethod("set", classOf[AnyRef], classOf[AnyRef]),
-        List(key.asInstanceOf[AnyRef], value.asInstanceOf[AnyRef]))
+        scala.collection.immutable.List(key.asInstanceOf[AnyRef], value.asInstanceOf[AnyRef]))
 
   }
   trait SSparkConfImplCompanion

@@ -45,43 +45,43 @@ trait RDDsAbs extends Scalan with RDDs
     def map[B:Elem](f: Rep[A => B]): Rep[RDD[B]] =
       methodCallEx[RDD[B]](self,
         this.getClass.getMethod("map", classOf[AnyRef], classOf[Elem[B]]),
-        List(f.asInstanceOf[AnyRef], element[B]))
+        scala.collection.immutable.List(f.asInstanceOf[AnyRef], element[B]))
 
     
     def flatMap[B:Elem](f: Rep[A => TraversableOnce[B]]): Rep[RDD[B]] =
       methodCallEx[RDD[B]](self,
         this.getClass.getMethod("flatMap", classOf[AnyRef], classOf[Elem[B]]),
-        List(f.asInstanceOf[AnyRef], element[B]))
+        scala.collection.immutable.List(f.asInstanceOf[AnyRef], element[B]))
 
     
     def union(other: Rep[RDD[A]]): Rep[RDD[A]] =
       methodCallEx[RDD[A]](self,
         this.getClass.getMethod("union", classOf[AnyRef]),
-        List(other.asInstanceOf[AnyRef]))
+        scala.collection.immutable.List(other.asInstanceOf[AnyRef]))
 
     
     def fold(zeroValue: Rep[A])(op: Rep[((A,A)) => A]): Rep[A] =
       methodCallEx[A](self,
         this.getClass.getMethod("fold", classOf[AnyRef], classOf[AnyRef]),
-        List(zeroValue.asInstanceOf[AnyRef], op.asInstanceOf[AnyRef]))
+        scala.collection.immutable.List(zeroValue.asInstanceOf[AnyRef], op.asInstanceOf[AnyRef]))
 
     
     def cartesian[B:Elem](other: Rep[RDD[B]]): Rep[RDD[(A,B)]] =
       methodCallEx[RDD[(A,B)]](self,
         this.getClass.getMethod("cartesian", classOf[AnyRef], classOf[Elem[B]]),
-        List(other.asInstanceOf[AnyRef], element[B]))
+        scala.collection.immutable.List(other.asInstanceOf[AnyRef], element[B]))
 
     
     def subtract(other: Rep[RDD[A]]): Rep[RDD[A]] =
       methodCallEx[RDD[A]](self,
         this.getClass.getMethod("subtract", classOf[AnyRef]),
-        List(other.asInstanceOf[AnyRef]))
+        scala.collection.immutable.List(other.asInstanceOf[AnyRef]))
 
     
     def first: Rep[A] =
       methodCallEx[A](self,
         this.getClass.getMethod("first"),
-        List())
+        scala.collection.immutable.List())
 
   }
   trait SRDDImplCompanion

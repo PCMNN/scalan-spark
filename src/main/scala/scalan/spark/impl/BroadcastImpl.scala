@@ -44,7 +44,7 @@ trait BroadcastsAbs extends Scalan with Broadcasts
     def value: Rep[A] =
       methodCallEx[A](self,
         this.getClass.getMethod("value"),
-        List())
+        scala.collection.immutable.List())
 
   }
   trait SBroadcastImplCompanion

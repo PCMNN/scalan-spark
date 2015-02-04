@@ -8,7 +8,7 @@ with SparkContextsDsl
 with SparkConfsDsl
 with RDDsDsl
 with PairRDDFunctionssDsl
-with Partitioners
+with PartitionersDsl
 with BroadcastsDsl {
   implicit def elementToClassTag[A](implicit e: Elem[A]): ClassTag[A] = e.classTag
 
@@ -19,6 +19,7 @@ with SparkContextsDslSeq
 with SparkConfsDslSeq
 with RDDsDslSeq
 with PairRDDFunctionssDslSeq
+with PartitionersDslSeq
 with BroadcastsDslSeq
 
 trait SparkDslExp extends SparkDsl with ScalanExp
@@ -26,4 +27,5 @@ with SparkContextsDslExp
 with SparkConfsDslExp
 with RDDsDslExp
 with PairRDDFunctionssDslExp
+with PartitionersDslExp
 with BroadcastsDslExp
