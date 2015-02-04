@@ -45,8 +45,8 @@ trait PairRDDFunctionssAbs extends Scalan with PairRDDFunctionss
   //default wrapper implementation
     abstract class SPairRDDFunctionsImpl[K, V](val wrappedValueOfBaseType: Rep[PairRDDFunctions[K, V]])(implicit val eK: Elem[K], val eV: Elem[V]) extends SPairRDDFunctions[K, V] {
     
-    def partitionBy(partitioner: Rep[Partitioner]): Rep[PairRDDFunctions[K,V]] =
-      methodCallEx[PairRDDFunctions[K,V]](self,
+    def partitionBy(partitioner: Rep[Partitioner]): Rep[RDD[(K,V)]] =
+      methodCallEx[RDD[(K,V)]](self,
         this.getClass.getMethod("partitionBy", classOf[AnyRef]),
         List(partitioner.asInstanceOf[AnyRef]))
 
@@ -147,7 +147,7 @@ trait PairRDDFunctionssSeq extends PairRDDFunctionssAbs with PairRDDFunctionssDs
        with SeqSPairRDDFunctions[K, V] with UserTypeSeq[SPairRDDFunctions[K,V], SPairRDDFunctionsImpl[K, V]] {
     lazy val selfType = element[SPairRDDFunctionsImpl[K, V]].asInstanceOf[Elem[SPairRDDFunctions[K,V]]]
     
-    override def partitionBy(partitioner: Rep[Partitioner]): Rep[PairRDDFunctions[K,V]] =
+    override def partitionBy(partitioner: Rep[Partitioner]): Rep[RDD[(K,V)]] =
       wrappedValueOfBaseType.partitionBy(partitioner)
 
     

@@ -8,6 +8,7 @@ with SparkContextsDsl
 with SparkConfsDsl
 with RDDsDsl
 with PairRDDFunctionssDsl
+with Partitioners
 with BroadcastsDsl {
   implicit def elementToClassTag[A](implicit e: Elem[A]): ClassTag[A] = e.classTag
 

@@ -15,7 +15,7 @@ trait PairRDDFunctionss extends Base with BaseTypes { self: SparkDsl =>
     implicit def eV: Elem[V]
 
     /** Returns a copy of the RDD partitioned using the specified partitioner. */
-    @External def partitionBy(partitioner: Rep[Partitioner]): Rep[PairRDDFunctions[K, V]]
+    @External def partitionBy(partitioner: Rep[Partitioner]): Rep[RDD[(K, V)]]
 
     /** Merges the values for each key using an associative reduce function. */
     @External def reduceByKey(func: Rep[((V, V)) => V]): Rep[PairRDDFunctions[K, V]]
