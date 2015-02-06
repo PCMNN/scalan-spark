@@ -7,7 +7,7 @@ import scalan.parrays._
 import scalan.spark._
 import scalan.common.Default
 
-trait SparkArrays extends PArrays { self: SparkDsl with PArraysDsl =>
+trait PSparkArrays extends PArrays { self: SparkDsl with PArraysDsl =>
 
   abstract class RDDArray[A](val rdd: Rep[RDD[A]])(implicit val eA: Elem[A]) extends PArray[A] {
     def elem = eA
@@ -55,7 +55,7 @@ trait SparkArrays extends PArrays { self: SparkDsl with PArraysDsl =>
   }
 }
 
-trait SparkArraysDsl extends impl.SparkArraysAbs
-trait SparkArraysDslSeq extends impl.SparkArraysSeq
-trait SparkArraysDslExp extends impl.SparkArraysExp
+trait PSparkArraysDsl extends impl.PSparkArraysAbs
+trait PSparkArraysDslSeq extends impl.PSparkArraysSeq
+trait PSparkArraysDslExp extends impl.PSparkArraysExp
 

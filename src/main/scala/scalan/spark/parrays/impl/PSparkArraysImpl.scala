@@ -11,7 +11,7 @@ import scala.reflect.runtime.universe._
 import scalan.common.Default
 
 // Abs -----------------------------------
-trait SparkArraysAbs extends Scalan with SparkArrays
+trait PSparkArraysAbs extends Scalan with PSparkArrays
 { self: SparkDsl with PArraysDsl =>
   // single proxy for each type family
   implicit def proxyRDDArrayCompanion(p: Rep[RDDArrayCompanion]): RDDArrayCompanion =
@@ -98,7 +98,7 @@ trait SparkArraysAbs extends Scalan with SparkArrays
 }
 
 // Seq -----------------------------------
-trait SparkArraysSeq extends SparkArraysAbs with SparkArraysDsl with ScalanSeq
+trait PSparkArraysSeq extends PSparkArraysAbs with PSparkArraysDsl with ScalanSeq
 { self: SparkDsl with PArraysDslSeq =>
   lazy val RDDArrayCompanion: Rep[RDDArrayCompanionCompanionAbs] = new RDDArrayCompanionCompanionAbs with UserTypeSeq[RDDArrayCompanionCompanionAbs, RDDArrayCompanionCompanionAbs] {
     lazy val selfType = element[RDDArrayCompanionCompanionAbs]
@@ -129,7 +129,7 @@ trait SparkArraysSeq extends SparkArraysAbs with SparkArraysDsl with ScalanSeq
 }
 
 // Exp -----------------------------------
-trait SparkArraysExp extends SparkArraysAbs with SparkArraysDsl with ScalanExp
+trait PSparkArraysExp extends PSparkArraysAbs with PSparkArraysDsl with ScalanExp
 { self: SparkDsl with PArraysDslExp =>
   lazy val RDDArrayCompanion: Rep[RDDArrayCompanionCompanionAbs] = new RDDArrayCompanionCompanionAbs with UserTypeDef[RDDArrayCompanionCompanionAbs, RDDArrayCompanionCompanionAbs] {
     lazy val selfType = element[RDDArrayCompanionCompanionAbs]
