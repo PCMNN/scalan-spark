@@ -34,10 +34,19 @@ trait RDDs extends Base with BaseTypes { self: SparkDsl =>
     /** Returns an RDD with the elements from `this` that are not in `other`. */
     @External def subtract(other: Rep[RDD[A]]): Rep[RDD[A]]
 
+    /** Zips this RDD with its element indices. */
+    @External def zipWithIndex(): Rep[RDD[(A, Long)]]
+
                                  /** Actions **/
 
     /** Returns the first element in this RDD. */
-    @External def first(): Rep[A]
+    @External def first: Rep[A]
+
+    /** Returns the number of elements in the RDD. */
+    @External def count: Rep[Long]
+
+    /** Returns an array that contains all of the elements in this RDD. */
+    @External def collect: Rep[Array[A]]
   }
 
   trait SRDDCompanion

@@ -20,6 +20,9 @@ trait PairRDDFunctionss extends Base with BaseTypes { self: SparkDsl =>
     /** Merges the values for each key using an associative reduce function. */
     @External def reduceByKey(func: Rep[((V, V)) => V]): Rep[PairRDDFunctions[K, V]]
 
+   /** Return an RDD containing all pairs of elements with matching keys */
+    @External def join[W](other: RDD[(K, W)]): RDD[(K, (V, W))]
+
     /** Returns an RDD with the values of each tuple. */
     @External def values: Rep[RDD[V]]
   }

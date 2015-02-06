@@ -1,6 +1,6 @@
 package scalan.spark.parrays
 
-import scalan.OverloadId
+import scalan._
 import scalan.common.OverloadHack.Overloaded1
 import scalan.parrays._
 import scalan.spark._
@@ -23,12 +23,12 @@ trait SparkArrays extends PArrays { self: SparkDsl with PArraysDsl =>
         (i, Default.defaultOf[A])
       })
       val vrdd = rdd.zipWithIndex
-      val joinedRdd: RepRDD[(Long, (A, Option[A]))] = irdd.leftOuterJoin(vrdd, ???)
-      val result = joinedRdd.map(fun {(in: Rep[(Long, (A, Option[A]))]) =>
-        val Pair(_, Pair(defaultA, a: Option[A])) = in
-        a.get
+      val joinedRdd: RepRDD[(Long, (A, A))] = irdd.join(vrdd)
+
+      joinedRdd.map(fun {(in: Rep[(Long, (A, A))]) =>
+        val Pair(_, Pair(_, a: Rep[A])) = in
+        a
       })
-      result
     }
     def mapBy[B: Elem](f: Rep[A => B]): PA[B] = rdd.map(f)
     def map[B: Elem](f: Rep[A] => Rep[B]): PA[B] = rdd.map(fun(f))
