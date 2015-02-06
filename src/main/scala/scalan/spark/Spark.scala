@@ -11,7 +11,7 @@ with RDDsDsl
 with PairRDDFunctionssDsl
 with PartitionersDsl
 with BroadcastsDsl
-with PSparkArraysDsl
+with SparkArraysDsl
 { implicit def elementToClassTag[A](implicit e: Elem[A]): ClassTag[A] = e.classTag }
 
 trait SparkDslSeq extends SparkDsl with ScalanSeq
@@ -21,7 +21,7 @@ with RDDsDslSeq
 with PairRDDFunctionssDslSeq
 with PartitionersDslSeq
 with BroadcastsDslSeq
-with PSparkArraysDslSeq
+with SparkArraysDslSeq
 
 trait SparkDslExp extends SparkDsl with ScalanExp
 with SparkContextsDslExp
@@ -30,4 +30,4 @@ with RDDsDslExp
 with PairRDDFunctionssDslExp
 with PartitionersDslExp
 with BroadcastsDslExp
-with PSparkArraysDslExp
+with SparkArraysDslExp

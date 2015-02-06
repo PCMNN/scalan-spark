@@ -31,7 +31,7 @@ object SparkBoilerplateTool extends BoilerplateTool {
   lazy val sparkArraysConfig = CodegenConfig(
     srcPath = "src/main/scala/scalan/spark/parrays",
     entityFiles = List(
-      "PSparkArrays.scala"
+      "SparkArrays.scala"
     ),
     seqContextTrait = "ScalanSeq",
     stagedContextTrait = "ScalanExp",
