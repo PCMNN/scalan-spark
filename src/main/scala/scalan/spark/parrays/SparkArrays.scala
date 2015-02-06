@@ -49,8 +49,8 @@ trait SparkArrays extends PArrays { self: SparkDsl =>
 
   trait RDDArrayCompanion extends ConcreteClass1[RDDArray] {
     def apply[A: Elem](arr: Rep[Array[A]]): SA[A] = fromArray(arr)
-    def fromArray[A: Elem](arr: Rep[Array[A]])(implicit sc: Rep[SparkContext]): SA[A] = {
-      sc.makeRDD(arr)
+    def fromArray[A: Elem](arr: Rep[Array[A]]): SA[A] = {
+      repSparkContext.makeRDD(arr)
     }
     def defaultOf[A](implicit ea: Elem[A]) = Default.defaultVal(RDDArray(Array.empty[A]))
     def replicate[A: Elem](len: Rep[Int], v: Rep[A]): SA[A] = {

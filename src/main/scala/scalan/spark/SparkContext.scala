@@ -12,6 +12,7 @@ trait SparkContexts extends Base with BaseTypes { self: SparkDsl =>
   type RepSparkContext = Rep[SparkContext]
   /** Current Spark Context */
   val sparkContext: SparkContext
+  val repSparkContext: Rep[SparkContext]
 
   /** A SparkContext represents the connection to a Spark
     * cluster, and can be used to create RDDs, accumulators and broadcast variables on that cluster.*/
