@@ -1,6 +1,7 @@
 package scalan.spark
 
 import scala.reflect.ClassTag
+import scalan.parrays._
 import scalan.{ScalanExp, ScalanSeq, Scalan}
 import scalan.spark.parrays._
 
@@ -11,7 +12,7 @@ with RDDsDsl
 with PairRDDFunctionssDsl
 with PartitionersDsl
 with BroadcastsDsl
-with SparkArraysDsl
+with PArraysDsl with SparkArraysDsl
 { implicit def elementToClassTag[A](implicit e: Elem[A]): ClassTag[A] = e.classTag }
 
 trait SparkDslSeq extends SparkDsl with ScalanSeq
@@ -21,7 +22,7 @@ with RDDsDslSeq
 with PairRDDFunctionssDslSeq
 with PartitionersDslSeq
 with BroadcastsDslSeq
-with SparkArraysDslSeq
+with PArraysDslSeq with SparkArraysDslSeq
 
 trait SparkDslExp extends SparkDsl with ScalanExp
 with SparkContextsDslExp
@@ -30,4 +31,4 @@ with RDDsDslExp
 with PairRDDFunctionssDslExp
 with PartitionersDslExp
 with BroadcastsDslExp
-with SparkArraysDslExp
+with PArraysDslExp with SparkArraysDslExp
