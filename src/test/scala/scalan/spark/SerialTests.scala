@@ -52,7 +52,7 @@ class SerialTests extends BaseTests with BeforeAndAfterAll { suite =>
     }
   }
 
-  ignore("serialSparkSeq") {
+  test("serialSparkSeq") {
     class PlusOne(@transient val ctx: ScalanDsl with SparkDsl) extends Serializable {
       import ctx._
 

@@ -1,5 +1,6 @@
 package scalan.spark.parrays
 
+import org.apache.spark.rdd.RDD
 import scalan._
 import scalan.common.OverloadHack.Overloaded1
 import scalan.parrays._
@@ -8,7 +9,7 @@ import scalan.common.Default
 
 trait SparkArrays extends PArrays { self: SparkDsl with PArraysDsl =>
 
-  abstract class RDDArray[A](val rdd: RepRDD[A])(implicit val eA: Elem[A]) extends PArray[A] {
+  abstract class RDDArray[A](val rdd: Rep[RDD[A]])(implicit val eA: Elem[A]) extends PArray[A] {
     def elem = eA
     def length = rdd.count
     def arr = rdd.collect

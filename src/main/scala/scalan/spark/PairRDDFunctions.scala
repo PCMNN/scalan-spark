@@ -14,6 +14,12 @@ trait PairRDDFunctionss extends Base with BaseTypes { self: SparkDsl =>
     implicit def eK: Elem[K]
     implicit def eV: Elem[V]
 
+    /** Return an RDD with the keys of each tuple. */
+    @External def keys: Rep[RDD[K]]
+
+    /** Returns an RDD with the values of each tuple. */
+    @External def values: Rep[RDD[V]]
+
     /** Returns a copy of the RDD partitioned using the specified partitioner. */
     @External def partitionBy(partitioner: Rep[Partitioner]): Rep[RDD[(K, V)]]
 
@@ -21,10 +27,7 @@ trait PairRDDFunctionss extends Base with BaseTypes { self: SparkDsl =>
     @External def reduceByKey(func: Rep[((V, V)) => V]): Rep[PairRDDFunctions[K, V]]
 
    /** Return an RDD containing all pairs of elements with matching keys */
-    @External def join[W](other: RDD[(K, W)]): RDD[(K, (V, W))]
-
-    /** Returns an RDD with the values of each tuple. */
-    @External def values: Rep[RDD[V]]
+    @External def join[W: Elem](other: Rep[RDD[(K, W)]]): Rep[RDD[(K, (V, W))]]
   }
 
   trait SPairRDDFunctionsCompanion {

@@ -78,9 +78,27 @@ trait RDDsAbs extends Scalan with RDDs
         scala.collection.immutable.List(other.asInstanceOf[AnyRef]))
 
     
+    def zipWithIndex: Rep[RDD[(A,Long)]] =
+      methodCallEx[RDD[(A,Long)]](self,
+        this.getClass.getMethod("zipWithIndex"),
+        scala.collection.immutable.List())
+
+    
     def first: Rep[A] =
       methodCallEx[A](self,
         this.getClass.getMethod("first"),
+        scala.collection.immutable.List())
+
+    
+    def count: Rep[Long] =
+      methodCallEx[Long](self,
+        this.getClass.getMethod("count"),
+        scala.collection.immutable.List())
+
+    
+    def collect: Rep[Array[A]] =
+      methodCallEx[Array[A]](self,
+        this.getClass.getMethod("collect"),
         scala.collection.immutable.List())
 
   }
@@ -189,8 +207,20 @@ trait RDDsSeq extends RDDsAbs with RDDsDsl with ScalanSeq
       wrappedValueOfBaseType.subtract(other)
 
     
+    override def zipWithIndex: Rep[RDD[(A,Long)]] =
+      wrappedValueOfBaseType.zipWithIndex
+
+    
     override def first: Rep[A] =
       wrappedValueOfBaseType.first
+
+    
+    override def count: Rep[Long] =
+      wrappedValueOfBaseType.count
+
+    
+    override def collect: Rep[Array[A]] =
+      wrappedValueOfBaseType.collect
 
   }
   lazy val SRDDImpl = new SRDDImplCompanionAbs with UserTypeSeq[SRDDImplCompanionAbs, SRDDImplCompanionAbs] {
@@ -324,9 +354,45 @@ trait RDDsExp extends RDDsAbs with RDDsDsl with ScalanExp
       }
     }
 
+    object zipWithIndex {
+      def unapply(d: Def[_]): Option[Rep[SRDD[A]] forSome {type A}] = d match {
+        case MethodCall(receiver, method, _) if receiver.elem.isInstanceOf[SRDDElem[_, _, _]] && method.getName == "zipWithIndex" =>
+          Some(receiver).asInstanceOf[Option[Rep[SRDD[A]] forSome {type A}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[Rep[SRDD[A]] forSome {type A}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
     object first {
       def unapply(d: Def[_]): Option[Rep[SRDD[A]] forSome {type A}] = d match {
         case MethodCall(receiver, method, _) if receiver.elem.isInstanceOf[SRDDElem[_, _, _]] && method.getName == "first" =>
+          Some(receiver).asInstanceOf[Option[Rep[SRDD[A]] forSome {type A}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[Rep[SRDD[A]] forSome {type A}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object count {
+      def unapply(d: Def[_]): Option[Rep[SRDD[A]] forSome {type A}] = d match {
+        case MethodCall(receiver, method, _) if receiver.elem.isInstanceOf[SRDDElem[_, _, _]] && method.getName == "count" =>
+          Some(receiver).asInstanceOf[Option[Rep[SRDD[A]] forSome {type A}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[Rep[SRDD[A]] forSome {type A}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object collect {
+      def unapply(d: Def[_]): Option[Rep[SRDD[A]] forSome {type A}] = d match {
+        case MethodCall(receiver, method, _) if receiver.elem.isInstanceOf[SRDDElem[_, _, _]] && method.getName == "collect" =>
           Some(receiver).asInstanceOf[Option[Rep[SRDD[A]] forSome {type A}]]
         case _ => None
       }
