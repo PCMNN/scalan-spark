@@ -6,9 +6,9 @@ import scalan.parrays._
 import scalan.spark._
 import scalan.common.Default
 
-trait PSparkArrays extends PArrays { self: SparkDsl with PArraysDsl =>
+trait SparkArrays extends PArrays { self: SparkDsl with PArraysDsl =>
 
-  abstract class PRDDArray[A](val rdd: RepRDD[A])(implicit val eA: Elem[A]) extends PArray[A] {
+  abstract class RDDArray[A](val rdd: RepRDD[A])(implicit val eA: Elem[A]) extends PArray[A] {
     def elem = eA
     def length = rdd.count
     def arr = rdd.collect
@@ -19,30 +19,42 @@ trait PSparkArrays extends PArrays { self: SparkDsl with PArraysDsl =>
     }
     @OverloadId("many")
     def apply(indices: Arr[Int])(implicit o: Overloaded1): PA[A] = {
-      val irdd = fromArray(indices).map(fun {(i: Rep[Int]) =>
+      val irdd = RDDArray.fromArray(indices).map(fun {(i: Rep[Int]) =>
         (i, Default.defaultOf[A])
       })
       val vrdd = rdd.zipWithIndex
       val joinedRdd: RepRDD[(Long, (A, Option[A]))] = irdd.leftOuterJoin(vrdd, ???)
       val result = joinedRdd.map(fun {(in: Rep[(Long, (A, Option[A]))]) =>
-        val Pair(_, Pair(defaultA, a)) = in
-        a
+        val Pair(_, Pair(defaultA, a: Option[A])) = in
+        a.get
       })
       result
     }
     def mapBy[B: Elem](f: Rep[A => B]): PA[B] = rdd.map(f)
-    def zip[B: Elem](ys: PA[B]): PA[(A, B)] = rdd.zip(ys)
+    def map[B: Elem](f: Rep[A] => Rep[B]): PA[B] = rdd.map(fun(f))
     def slice(offset: Rep[Int], length: Rep[Int]): Rep[PArray[A]] = {
       val indices = Array.rangeFrom0(length).map(_ + offset)
       apply(indices)
     }
-
     def reduce(implicit m: RepMonoid[A]): Rep[A] = {
       rdd.fold(m.zero)(fun {(in: Rep[(A, A)]) => m.append(in)})
     }
+  }
 
-    def scan(implicit m: RepMonoid[A]): Rep[(PArray[A], A)] = {
-
+  trait RDDArrayCompanion extends ConcreteClass1[RDDArray] {
+    def apply[A: Elem](arr: Rep[Array[A]]): PA[A] = fromArray(arr)
+    def fromArray[A: Elem](arr: Rep[Array[T]])(implicit sc: RepSparkContext): PA[A] = {
+      sc.makeRDD(arr)
     }
+    def defaultOf[A](implicit ea: Elem[A]) = Default.defaultVal(RDDArray(Array.empty[A]))
+    def replicate[A: Elem](len: Rep[Int], v: Rep[A]): PA[A] = {
+      RDDArray(Array.replicate(len, v))
+    }
+    def singleton[A: Elem](v: Rep[A]): PA[A] = RDDArray.replicate(toRep(1), v)
   }
 }
+
+trait SparkArraysDsl extends impl.SparkArraysAbs
+trait SparkArraysDslSeq extends impl.SparkArraysSeq
+trait SparkArraysDslExp extends impl.SparkArraysExp
+
