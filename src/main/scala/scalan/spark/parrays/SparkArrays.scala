@@ -15,7 +15,7 @@ trait SparkArrays extends PArrays { self: SparkDsl =>
 
   abstract class RDDArray[A](val rdd: Rep[RDD[A]])(implicit val eA: Elem[A]) extends SparkArray[A] {
     def elem = eA
-    def length = rdd.count
+    def length = rdd.count.toInt
     def arr = rdd.collect
     def apply(i: Rep[Int]): Rep[A] = {
       rdd.zipWithIndex.filter(fun {(pair: Rep[(A, Long)]) =>
