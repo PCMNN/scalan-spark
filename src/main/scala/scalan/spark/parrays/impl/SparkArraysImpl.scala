@@ -265,12 +265,12 @@ trait SparkArraysExp extends SparkArraysAbs with SparkArraysDsl with ScalanExp
     }
 
     object fromArray {
-      def unapply(d: Def[_]): Option[(Rep[Array[A]], RepSparkContext) forSome {type A}] = d match {
+      def unapply(d: Def[_]): Option[(Rep[Array[A]], Rep[SparkContext]) forSome {type A}] = d match {
         case MethodCall(receiver, method, Seq(arr, sc, _*)) if receiver.elem.isInstanceOf[RDDArrayCompanionElem] && method.getName == "fromArray" =>
-          Some((arr, sc)).asInstanceOf[Option[(Rep[Array[A]], RepSparkContext) forSome {type A}]]
+          Some((arr, sc)).asInstanceOf[Option[(Rep[Array[A]], Rep[SparkContext]) forSome {type A}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[(Rep[Array[A]], RepSparkContext) forSome {type A}] = exp match {
+      def unapply(exp: Exp[_]): Option[(Rep[Array[A]], Rep[SparkContext]) forSome {type A}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }

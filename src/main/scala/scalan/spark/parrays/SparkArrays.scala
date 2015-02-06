@@ -6,6 +6,7 @@ import scalan.common.OverloadHack.Overloaded1
 import scalan.parrays._
 import scalan.spark._
 import scalan.common.Default
+import org.apache.spark.SparkContext
 
 trait SparkArrays extends PArrays { self: SparkDsl =>
 
@@ -48,7 +49,7 @@ trait SparkArrays extends PArrays { self: SparkDsl =>
 
   trait RDDArrayCompanion extends ConcreteClass1[RDDArray] {
     def apply[A: Elem](arr: Rep[Array[A]]): SA[A] = fromArray(arr)
-    def fromArray[A: Elem](arr: Rep[Array[A]])(implicit sc: RepSparkContext): SA[A] = {
+    def fromArray[A: Elem](arr: Rep[Array[A]])(implicit sc: Rep[SparkContext]): SA[A] = {
       sc.makeRDD(arr)
     }
     def defaultOf[A](implicit ea: Elem[A]) = Default.defaultVal(RDDArray(Array.empty[A]))
