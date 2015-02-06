@@ -48,6 +48,12 @@ trait RDDsAbs extends Scalan with RDDs
         scala.collection.immutable.List(f.asInstanceOf[AnyRef], element[B]))
 
     
+    def filter(f: Rep[A => Boolean]): Rep[RDD[A]] =
+      methodCallEx[RDD[A]](self,
+        this.getClass.getMethod("filter", classOf[AnyRef]),
+        scala.collection.immutable.List(f.asInstanceOf[AnyRef]))
+
+    
     def flatMap[B:Elem](f: Rep[A => TraversableOnce[B]]): Rep[RDD[B]] =
       methodCallEx[RDD[B]](self,
         this.getClass.getMethod("flatMap", classOf[AnyRef], classOf[Elem[B]]),
@@ -187,6 +193,10 @@ trait RDDsSeq extends RDDsAbs with RDDsDsl with ScalanSeq
       wrappedValueOfBaseType.map[B](f)
 
     
+    override def filter(f: Rep[A => Boolean]): Rep[RDD[A]] =
+      wrappedValueOfBaseType.filter(f)
+
+    
     override def flatMap[B:Elem](f: Rep[A => TraversableOnce[B]]): Rep[RDD[B]] =
       wrappedValueOfBaseType.flatMap[B](f)
 
@@ -277,6 +287,18 @@ trait RDDsExp extends RDDsAbs with RDDsDsl with ScalanExp
         case _ => None
       }
       def unapply(exp: Exp[_]): Option[(Rep[SRDD[A]], Rep[A => B]) forSome {type A; type B}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object filter {
+      def unapply(d: Def[_]): Option[(Rep[SRDD[A]], Rep[A => Boolean]) forSome {type A}] = d match {
+        case MethodCall(receiver, method, Seq(f, _*)) if receiver.elem.isInstanceOf[SRDDElem[_, _, _]] && method.getName == "filter" =>
+          Some((receiver, f)).asInstanceOf[Option[(Rep[SRDD[A]], Rep[A => Boolean]) forSome {type A}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[SRDD[A]], Rep[A => Boolean]) forSome {type A}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }

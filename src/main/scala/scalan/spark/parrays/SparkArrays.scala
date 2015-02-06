@@ -19,8 +19,8 @@ trait SparkArrays extends PArrays { self: SparkDsl =>
     def arr = rdd.collect
     def apply(i: Rep[Int]): Rep[A] = {
       rdd.zipWithIndex.filter(fun {(pair: Rep[(A, Long)]) =>
-        IF (i === pair._2) THEN true ELSE false
-      }).map(fun {(in: Rep[(A, Long)]) => in._1}).first()
+        IF (i === pair._2.toInt) THEN true ELSE false
+      }).map(fun {(in: Rep[(A, Long)]) => in._1}).first
     }
     @OverloadId("many")
     def apply(indices: Arr[Int])(implicit o: Overloaded1): SA[A] = {

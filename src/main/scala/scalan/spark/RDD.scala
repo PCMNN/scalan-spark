@@ -18,6 +18,9 @@ trait RDDs extends Base with BaseTypes { self: SparkDsl =>
     /** Applies a function to all elements of this RDD end returns new RDD **/
     @External def map[B: Elem](f: Rep[A => B]): Rep[RDD[B]]
 
+    /** Gets a new RDD containing only the elements that satisfy a predicate. */
+    @External def filter(f: Rep[A => Boolean]): Rep[RDD[A]]
+
     /** Applies a function to all elements of the RDD and returns flattening the results */
     @External def flatMap[B: Elem](f: Rep[A => TraversableOnce[B]]): Rep[RDD[B]]
 
