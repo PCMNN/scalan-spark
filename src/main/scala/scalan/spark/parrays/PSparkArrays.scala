@@ -7,9 +7,11 @@ import scalan.parrays._
 import scalan.spark._
 import scalan.common.Default
 
-trait PSparkArrays extends PArrays { self: SparkDsl with PArraysDsl =>
+trait PSparkArrays extends PArrays { self: SparkDsl =>
 
-  abstract class RDDArray[A](val rdd: Rep[RDD[A]])(implicit val eA: Elem[A]) extends PArray[A] {
+  trait SparkArray[A] extends PArray[A]
+
+  abstract class RDDArray[A](val rdd: Rep[RDD[A]])(implicit val eA: Elem[A]) extends SparkArray[A] {
     def elem = eA
     def length = rdd.count
     def arr = rdd.collect

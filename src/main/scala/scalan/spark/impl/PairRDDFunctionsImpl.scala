@@ -68,12 +68,6 @@ trait PairRDDFunctionssAbs extends Scalan with PairRDDFunctionss
         this.getClass.getMethod("reduceByKey", classOf[AnyRef]),
         scala.collection.immutable.List(func.asInstanceOf[AnyRef]))
 
-    
-    def join[W:Elem](other: Rep[RDD[(K,W)]]): Rep[RDD[(K,(V,W))]] =
-      methodCallEx[RDD[(K,(V,W))]](self,
-        this.getClass.getMethod("join", classOf[AnyRef], classOf[Elem[W]]),
-        scala.collection.immutable.List(other.asInstanceOf[AnyRef], element[W]))
-
   }
   trait SPairRDDFunctionsImplCompanion
   // elem for concrete class
@@ -170,10 +164,6 @@ trait PairRDDFunctionssSeq extends PairRDDFunctionssAbs with PairRDDFunctionssDs
     override def partitionBy(partitioner: Rep[Partitioner]): Rep[RDD[(K,V)]] =
       wrappedValueOfBaseType.partitionBy(partitioner)
 
-    
-    override def join[W:Elem](other: Rep[RDD[(K,W)]]): Rep[RDD[(K,(V,W))]] =
-      wrappedValueOfBaseType.join[W](other)
-
   }
   lazy val SPairRDDFunctionsImpl = new SPairRDDFunctionsImplCompanionAbs with UserTypeSeq[SPairRDDFunctionsImplCompanionAbs, SPairRDDFunctionsImplCompanionAbs] {
     lazy val selfType = element[SPairRDDFunctionsImplCompanionAbs]
@@ -265,18 +255,6 @@ trait PairRDDFunctionssExp extends PairRDDFunctionssAbs with PairRDDFunctionssDs
         case _ => None
       }
       def unapply(exp: Exp[_]): Option[(Rep[SPairRDDFunctions[K, V]], Rep[((V,V)) => V]) forSome {type K; type V}] = exp match {
-        case Def(d) => unapply(d)
-        case _ => None
-      }
-    }
-
-    object join {
-      def unapply(d: Def[_]): Option[(Rep[SPairRDDFunctions[K, V]], Rep[RDD[(K,W)]]) forSome {type K; type V; type W}] = d match {
-        case MethodCall(receiver, method, Seq(other, _*)) if receiver.elem.isInstanceOf[SPairRDDFunctionsElem[_, _, _, _]] && method.getName == "join" =>
-          Some((receiver, other)).asInstanceOf[Option[(Rep[SPairRDDFunctions[K, V]], Rep[RDD[(K,W)]]) forSome {type K; type V; type W}]]
-        case _ => None
-      }
-      def unapply(exp: Exp[_]): Option[(Rep[SPairRDDFunctions[K, V]], Rep[RDD[(K,W)]]) forSome {type K; type V; type W}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }

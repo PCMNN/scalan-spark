@@ -27,7 +27,7 @@ trait PairRDDFunctionss extends Base with BaseTypes { self: SparkDsl =>
     @External def reduceByKey(func: Rep[((V, V)) => V]): Rep[PairRDDFunctions[K, V]]
 
    /** Return an RDD containing all pairs of elements with matching keys */
-    @External def join[W: Elem](other: Rep[RDD[(K, W)]]): Rep[RDD[(K, (V, W))]]
+    //@External def join[W: Elem](other: Rep[RDD[(K, W)]]): Rep[RDD[(K, (V, W))]]
   }
 
   trait SPairRDDFunctionsCompanion {

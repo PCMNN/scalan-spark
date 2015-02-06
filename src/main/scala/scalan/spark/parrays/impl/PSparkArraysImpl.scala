@@ -12,7 +12,7 @@ import scalan.common.Default
 
 // Abs -----------------------------------
 trait PSparkArraysAbs extends Scalan with PSparkArrays
-{ self: SparkDsl with PArraysDsl =>
+{ self: SparkDsl =>
   // single proxy for each type family
   implicit def proxyRDDArrayCompanion(p: Rep[RDDArrayCompanion]): RDDArrayCompanion =
     proxyOps[RDDArrayCompanion](p)
@@ -99,7 +99,7 @@ trait PSparkArraysAbs extends Scalan with PSparkArrays
 
 // Seq -----------------------------------
 trait PSparkArraysSeq extends PSparkArraysAbs with PSparkArraysDsl with ScalanSeq
-{ self: SparkDsl with PArraysDslSeq =>
+{ self: SparkDslSeq =>
   lazy val RDDArrayCompanion: Rep[RDDArrayCompanionCompanionAbs] = new RDDArrayCompanionCompanionAbs with UserTypeSeq[RDDArrayCompanionCompanionAbs, RDDArrayCompanionCompanionAbs] {
     lazy val selfType = element[RDDArrayCompanionCompanionAbs]
     
@@ -130,7 +130,7 @@ trait PSparkArraysSeq extends PSparkArraysAbs with PSparkArraysDsl with ScalanSe
 
 // Exp -----------------------------------
 trait PSparkArraysExp extends PSparkArraysAbs with PSparkArraysDsl with ScalanExp
-{ self: SparkDsl with PArraysDslExp =>
+{ self: SparkDslExp =>
   lazy val RDDArrayCompanion: Rep[RDDArrayCompanionCompanionAbs] = new RDDArrayCompanionCompanionAbs with UserTypeDef[RDDArrayCompanionCompanionAbs, RDDArrayCompanionCompanionAbs] {
     lazy val selfType = element[RDDArrayCompanionCompanionAbs]
     override def mirror(t: Transformer) = this
