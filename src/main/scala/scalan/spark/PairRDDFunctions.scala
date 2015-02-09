@@ -1,9 +1,10 @@
 package scalan.spark
 
 import scala.reflect.ClassTag
-import scalan._
 import org.apache.spark.rdd._
+import scalan._
 import scalan.common.Default
+import org.apache.spark.Partitioner
 
 trait PairRDDFunctionss extends Base with BaseTypes { self: SparkDsl =>
   type RepPairRDDFunctions[K, V] = Rep[PairRDDFunctions[K, V]]
@@ -14,7 +15,7 @@ trait PairRDDFunctionss extends Base with BaseTypes { self: SparkDsl =>
     implicit def eV: Elem[V]
 
     /** Returns a copy of the RDD partitioned using the specified partitioner. */
-    //@External def partitionBy(partitioner: SPartitioner): RepPairRDD[K, V]
+    @External def partitionBy(partitioner: Rep[Partitioner]): Rep[RDD[(K, V)]]
 
     /** Merges the values for each key using an associative reduce function. */
     @External def reduceByKey(func: Rep[((V, V)) => V]): Rep[PairRDDFunctions[K, V]]
@@ -38,13 +39,6 @@ trait PairRDDFunctionss extends Base with BaseTypes { self: SparkDsl =>
 }
 
 trait PairRDDFunctionssDsl extends impl.PairRDDFunctionssAbs  { self: SparkDsl => }
-/*
-  implicit class Pair2PairRDD[K: Elem, V: Elem](that: Rep[PairRDDFunctions[K, V]]) {
-    def reduceByKey(func: Rep[((V, V)) => V]): Rep[PairRDDFunctions[K, V]] = that.reduceByKey(func)
-    def values: Rep[RDD[V]] = that.values
-  }
-*/
-
 trait PairRDDFunctionssDslSeq extends impl.PairRDDFunctionssSeq { self: SparkDslSeq =>
 
   trait SeqSPairRDDFunctions[K,V] extends SPairRDDFunctionsImpl[K,V] {

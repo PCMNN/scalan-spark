@@ -8,7 +8,6 @@ import scala.language.reflectiveCalls
 import scalan._
 
 class SmokeTests extends BaseTests with BeforeAndAfterAll { suite =>
-  val prefix = new File("test-out/scalan/spark/")
   val globalSparkConf = new SparkConf().setAppName("R/W Broadcast").setMaster("local")
   var globalSparkContext: SparkContext = null
 
@@ -50,7 +49,7 @@ class SmokeTests extends BaseTests with BeforeAndAfterAll { suite =>
   }
 
   test("simpleSparkStaged") {
-    val ctx = new TestContext with SimpleSparkTests with SparkDslExp {
+    val ctx = new TestContext(this, "simpleSparkStaged") with SimpleSparkTests with SparkDslExp {
       val sparkContext = globalSparkContext
     }
 

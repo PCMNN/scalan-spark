@@ -27,8 +27,7 @@ trait RDDsAbs extends Scalan with RDDs
   trait SRDDCompanionElem extends CompanionElem[SRDDCompanionAbs]
   implicit lazy val SRDDCompanionElem: SRDDCompanionElem = new SRDDCompanionElem {
     lazy val tag = typeTag[SRDDCompanionAbs]
-    lazy val getDefaultRep = Default.defaultVal(SRDD)
-    //def getDefaultRep = defaultRep
+    protected def getDefaultRep = SRDD
   }
 
   abstract class SRDDCompanionAbs extends CompanionBase[SRDDCompanionAbs] with SRDDCompanion {
@@ -46,43 +45,43 @@ trait RDDsAbs extends Scalan with RDDs
     def map[B:Elem](f: Rep[A => B]): Rep[RDD[B]] =
       methodCallEx[RDD[B]](self,
         this.getClass.getMethod("map", classOf[AnyRef], classOf[Elem[B]]),
-        List(f.asInstanceOf[AnyRef], element[B]))
+        scala.collection.immutable.List(f.asInstanceOf[AnyRef], element[B]))
 
     
     def flatMap[B:Elem](f: Rep[A => TraversableOnce[B]]): Rep[RDD[B]] =
       methodCallEx[RDD[B]](self,
         this.getClass.getMethod("flatMap", classOf[AnyRef], classOf[Elem[B]]),
-        List(f.asInstanceOf[AnyRef], element[B]))
+        scala.collection.immutable.List(f.asInstanceOf[AnyRef], element[B]))
 
     
     def union(other: Rep[RDD[A]]): Rep[RDD[A]] =
       methodCallEx[RDD[A]](self,
         this.getClass.getMethod("union", classOf[AnyRef]),
-        List(other.asInstanceOf[AnyRef]))
+        scala.collection.immutable.List(other.asInstanceOf[AnyRef]))
 
     
     def fold(zeroValue: Rep[A])(op: Rep[((A,A)) => A]): Rep[A] =
       methodCallEx[A](self,
         this.getClass.getMethod("fold", classOf[AnyRef], classOf[AnyRef]),
-        List(zeroValue.asInstanceOf[AnyRef], op.asInstanceOf[AnyRef]))
+        scala.collection.immutable.List(zeroValue.asInstanceOf[AnyRef], op.asInstanceOf[AnyRef]))
 
     
     def cartesian[B:Elem](other: Rep[RDD[B]]): Rep[RDD[(A,B)]] =
       methodCallEx[RDD[(A,B)]](self,
         this.getClass.getMethod("cartesian", classOf[AnyRef], classOf[Elem[B]]),
-        List(other.asInstanceOf[AnyRef], element[B]))
+        scala.collection.immutable.List(other.asInstanceOf[AnyRef], element[B]))
 
     
     def subtract(other: Rep[RDD[A]]): Rep[RDD[A]] =
       methodCallEx[RDD[A]](self,
         this.getClass.getMethod("subtract", classOf[AnyRef]),
-        List(other.asInstanceOf[AnyRef]))
+        scala.collection.immutable.List(other.asInstanceOf[AnyRef]))
 
     
     def first: Rep[A] =
       methodCallEx[A](self,
         this.getClass.getMethod("first"),
-        List())
+        scala.collection.immutable.List())
 
   }
   trait SRDDImplCompanion
@@ -125,8 +124,7 @@ trait RDDsAbs extends Scalan with RDDs
 
   class SRDDImplCompanionElem extends CompanionElem[SRDDImplCompanionAbs] {
     lazy val tag = typeTag[SRDDImplCompanionAbs]
-    lazy val getDefaultRep = Default.defaultVal(SRDDImpl)
-    //def getDefaultRep = defaultRep
+    protected def getDefaultRep = SRDDImpl
   }
   implicit lazy val SRDDImplCompanionElem: SRDDImplCompanionElem = new SRDDImplCompanionElem
 
@@ -244,7 +242,7 @@ trait RDDsExp extends RDDsAbs with RDDsDsl with ScalanExp
   object SRDDMethods {
     object map {
       def unapply(d: Def[_]): Option[(Rep[SRDD[A]], Rep[A => B]) forSome {type A; type B}] = d match {
-        case MethodCall(receiver, method, Seq(f, _*)) if receiver.elem.isInstanceOf[SRDDElem[A, _, _] forSome {type A}] && method.getName == "map" =>
+        case MethodCall(receiver, method, Seq(f, _*)) if receiver.elem.isInstanceOf[SRDDElem[_, _, _]] && method.getName == "map" =>
           Some((receiver, f)).asInstanceOf[Option[(Rep[SRDD[A]], Rep[A => B]) forSome {type A; type B}]]
         case _ => None
       }
@@ -256,7 +254,7 @@ trait RDDsExp extends RDDsAbs with RDDsDsl with ScalanExp
 
     object flatMap {
       def unapply(d: Def[_]): Option[(Rep[SRDD[A]], Rep[A => TraversableOnce[B]]) forSome {type A; type B}] = d match {
-        case MethodCall(receiver, method, Seq(f, _*)) if receiver.elem.isInstanceOf[SRDDElem[A, _, _] forSome {type A}] && method.getName == "flatMap" =>
+        case MethodCall(receiver, method, Seq(f, _*)) if receiver.elem.isInstanceOf[SRDDElem[_, _, _]] && method.getName == "flatMap" =>
           Some((receiver, f)).asInstanceOf[Option[(Rep[SRDD[A]], Rep[A => TraversableOnce[B]]) forSome {type A; type B}]]
         case _ => None
       }
@@ -268,7 +266,7 @@ trait RDDsExp extends RDDsAbs with RDDsDsl with ScalanExp
 
     object union {
       def unapply(d: Def[_]): Option[(Rep[SRDD[A]], Rep[RDD[A]]) forSome {type A}] = d match {
-        case MethodCall(receiver, method, Seq(other, _*)) if receiver.elem.isInstanceOf[SRDDElem[A, _, _] forSome {type A}] && method.getName == "union" =>
+        case MethodCall(receiver, method, Seq(other, _*)) if receiver.elem.isInstanceOf[SRDDElem[_, _, _]] && method.getName == "union" =>
           Some((receiver, other)).asInstanceOf[Option[(Rep[SRDD[A]], Rep[RDD[A]]) forSome {type A}]]
         case _ => None
       }
@@ -280,7 +278,7 @@ trait RDDsExp extends RDDsAbs with RDDsDsl with ScalanExp
 
     object ++ {
       def unapply(d: Def[_]): Option[(Rep[SRDD[A]], Rep[RDD[A]]) forSome {type A}] = d match {
-        case MethodCall(receiver, method, Seq(other, _*)) if receiver.elem.isInstanceOf[SRDDElem[A, _, _] forSome {type A}] && method.getName == "$plus$plus" =>
+        case MethodCall(receiver, method, Seq(other, _*)) if receiver.elem.isInstanceOf[SRDDElem[_, _, _]] && method.getName == "$plus$plus" =>
           Some((receiver, other)).asInstanceOf[Option[(Rep[SRDD[A]], Rep[RDD[A]]) forSome {type A}]]
         case _ => None
       }
@@ -292,7 +290,7 @@ trait RDDsExp extends RDDsAbs with RDDsDsl with ScalanExp
 
     object fold {
       def unapply(d: Def[_]): Option[(Rep[SRDD[A]], Rep[A], Rep[((A,A)) => A]) forSome {type A}] = d match {
-        case MethodCall(receiver, method, Seq(zeroValue, op, _*)) if receiver.elem.isInstanceOf[SRDDElem[A, _, _] forSome {type A}] && method.getName == "fold" =>
+        case MethodCall(receiver, method, Seq(zeroValue, op, _*)) if receiver.elem.isInstanceOf[SRDDElem[_, _, _]] && method.getName == "fold" =>
           Some((receiver, zeroValue, op)).asInstanceOf[Option[(Rep[SRDD[A]], Rep[A], Rep[((A,A)) => A]) forSome {type A}]]
         case _ => None
       }
@@ -304,7 +302,7 @@ trait RDDsExp extends RDDsAbs with RDDsDsl with ScalanExp
 
     object cartesian {
       def unapply(d: Def[_]): Option[(Rep[SRDD[A]], Rep[RDD[B]]) forSome {type A; type B}] = d match {
-        case MethodCall(receiver, method, Seq(other, _*)) if receiver.elem.isInstanceOf[SRDDElem[A, _, _] forSome {type A}] && method.getName == "cartesian" =>
+        case MethodCall(receiver, method, Seq(other, _*)) if receiver.elem.isInstanceOf[SRDDElem[_, _, _]] && method.getName == "cartesian" =>
           Some((receiver, other)).asInstanceOf[Option[(Rep[SRDD[A]], Rep[RDD[B]]) forSome {type A; type B}]]
         case _ => None
       }
@@ -316,7 +314,7 @@ trait RDDsExp extends RDDsAbs with RDDsDsl with ScalanExp
 
     object subtract {
       def unapply(d: Def[_]): Option[(Rep[SRDD[A]], Rep[RDD[A]]) forSome {type A}] = d match {
-        case MethodCall(receiver, method, Seq(other, _*)) if receiver.elem.isInstanceOf[SRDDElem[A, _, _] forSome {type A}] && method.getName == "subtract" =>
+        case MethodCall(receiver, method, Seq(other, _*)) if receiver.elem.isInstanceOf[SRDDElem[_, _, _]] && method.getName == "subtract" =>
           Some((receiver, other)).asInstanceOf[Option[(Rep[SRDD[A]], Rep[RDD[A]]) forSome {type A}]]
         case _ => None
       }
@@ -328,7 +326,7 @@ trait RDDsExp extends RDDsAbs with RDDsDsl with ScalanExp
 
     object first {
       def unapply(d: Def[_]): Option[Rep[SRDD[A]] forSome {type A}] = d match {
-        case MethodCall(receiver, method, _) if receiver.elem.isInstanceOf[SRDDElem[A, _, _] forSome {type A}] && method.getName == "first" =>
+        case MethodCall(receiver, method, _) if receiver.elem.isInstanceOf[SRDDElem[_, _, _]] && method.getName == "first" =>
           Some(receiver).asInstanceOf[Option[Rep[SRDD[A]] forSome {type A}]]
         case _ => None
       }

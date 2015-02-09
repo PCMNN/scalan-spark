@@ -26,8 +26,7 @@ trait BroadcastsAbs extends Scalan with Broadcasts
   trait SBroadcastCompanionElem extends CompanionElem[SBroadcastCompanionAbs]
   implicit lazy val SBroadcastCompanionElem: SBroadcastCompanionElem = new SBroadcastCompanionElem {
     lazy val tag = typeTag[SBroadcastCompanionAbs]
-    lazy val getDefaultRep = Default.defaultVal(SBroadcast)
-    //def getDefaultRep = defaultRep
+    protected def getDefaultRep = SBroadcast
   }
 
   abstract class SBroadcastCompanionAbs extends CompanionBase[SBroadcastCompanionAbs] with SBroadcastCompanion {
@@ -45,7 +44,7 @@ trait BroadcastsAbs extends Scalan with Broadcasts
     def value: Rep[A] =
       methodCallEx[A](self,
         this.getClass.getMethod("value"),
-        List())
+        scala.collection.immutable.List())
 
   }
   trait SBroadcastImplCompanion
@@ -88,8 +87,7 @@ trait BroadcastsAbs extends Scalan with Broadcasts
 
   class SBroadcastImplCompanionElem extends CompanionElem[SBroadcastImplCompanionAbs] {
     lazy val tag = typeTag[SBroadcastImplCompanionAbs]
-    lazy val getDefaultRep = Default.defaultVal(SBroadcastImpl)
-    //def getDefaultRep = defaultRep
+    protected def getDefaultRep = SBroadcastImpl
   }
   implicit lazy val SBroadcastImplCompanionElem: SBroadcastImplCompanionElem = new SBroadcastImplCompanionElem
 
@@ -183,7 +181,7 @@ trait BroadcastsExp extends BroadcastsAbs with BroadcastsDsl with ScalanExp
   object SBroadcastMethods {
     object value {
       def unapply(d: Def[_]): Option[Rep[SBroadcast[A]] forSome {type A}] = d match {
-        case MethodCall(receiver, method, _) if receiver.elem.isInstanceOf[SBroadcastElem[A, _, _] forSome {type A}] && method.getName == "value" =>
+        case MethodCall(receiver, method, _) if receiver.elem.isInstanceOf[SBroadcastElem[_, _, _]] && method.getName == "value" =>
           Some(receiver).asInstanceOf[Option[Rep[SBroadcast[A]] forSome {type A}]]
         case _ => None
       }
