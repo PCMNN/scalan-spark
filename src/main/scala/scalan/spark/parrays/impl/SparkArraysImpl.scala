@@ -1,7 +1,7 @@
 package scalan.spark.parrays
 package impl
 
-import org.apache.spark.rdd.RDD
+import org.apache.spark.rdd.{PairRDDFunctions, RDD}
 import scalan._
 import scalan.common.OverloadHack.Overloaded1
 import scalan.parrays._

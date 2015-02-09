@@ -65,6 +65,6 @@ trait RDDs extends Base with BaseTypes { self: SparkDsl =>
   }
 }
 
-trait RDDsDsl extends impl.RDDsAbs  { self: SparkDsl => }
+trait RDDsDsl extends impl.RDDsAbs { self: SparkDsl => }
 trait RDDsDslSeq extends impl.RDDsSeq { self: SparkDslSeq => }
 trait RDDsDslExp extends impl.RDDsExp { self: SparkDslExp => }
