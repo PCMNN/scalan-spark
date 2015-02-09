@@ -52,9 +52,14 @@ trait RDDs extends Base with BaseTypes { self: SparkDsl =>
     @External def collect: Rep[Array[A]]
   }
 
-  trait SRDDCompanion
+  trait SRDDCompanion extends ExCompanion1[RDD] {
+    def apply[A: Elem](arr: Rep[Array[A]]): Rep[RDD[A]] = fromArray(arr)
+    def fromArray[A: Elem](arr: Rep[Array[A]]): Rep[RDD[A]] = {
+      repSparkContext.makeRDD(SSeq(arr))
+    }
+  }
 
-  implicit def DefaultOfRDD[A:Elem]: Default[RDD[A]] = {
+  def DefaultOfRDD[A:Elem]: Default[RDD[A]] = {
     val rdd = sparkContext.parallelize(Seq.empty[A])
     Default.defaultVal(rdd)
   }

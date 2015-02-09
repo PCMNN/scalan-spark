@@ -91,7 +91,7 @@ trait SparkContextsAbs extends Scalan with SparkContexts
     lazy val tag = {
       weakTypeTag[SSparkContextImpl]
     }
-    lazy val defaultRepTo = Default.defaultVal[Rep[SSparkContextImpl]](SSparkContextImpl(Default.defaultOf[SparkContext]))
+    lazy val defaultRepTo = Default.defaultVal[Rep[SSparkContextImpl]](SSparkContextImpl(DefaultOfSparkContext.value))
     lazy val eTo = new SSparkContextImplElem(this)
   }
   // 4) constructor and deconstructor
@@ -144,7 +144,7 @@ trait SparkContextsSeq extends SparkContextsAbs with SparkContextsDsl with Scala
   override def proxySparkContext(p: Rep[SparkContext]): SSparkContext =
     proxyOpsEx[SparkContext,SSparkContext, SeqSSparkContextImpl](p, bt => SeqSSparkContextImpl(bt))
 
-    implicit lazy val SparkContextElement: Elem[SparkContext] = new SeqBaseElemEx[SparkContext, SSparkContext](element[SSparkContext])
+    implicit lazy val SparkContextElement: Elem[SparkContext] = new SeqBaseElemEx[SparkContext, SSparkContext](element[SSparkContext])(weakTypeTag[SparkContext], DefaultOfSparkContext)
 
   case class SeqSSparkContextImpl
       (override val wrappedValueOfBaseType: Rep[SparkContext])
@@ -188,7 +188,7 @@ trait SparkContextsExp extends SparkContextsAbs with SparkContextsDsl with Scala
     override def mirror(t: Transformer) = this
   }
 
-  implicit lazy val SparkContextElement: Elem[SparkContext] = new ExpBaseElemEx[SparkContext, SSparkContext](element[SSparkContext])
+  implicit lazy val SparkContextElement: Elem[SparkContext] = new ExpBaseElemEx[SparkContext, SSparkContext](element[SSparkContext])(weakTypeTag[SparkContext], DefaultOfSparkContext)
 
   case class ExpSSparkContextImpl
       (override val wrappedValueOfBaseType: Rep[SparkContext])

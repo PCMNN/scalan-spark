@@ -12,7 +12,7 @@ trait Partitioners extends Base with BaseTypes { self: SparkDsl =>
 
   trait SPartitionerCompanion
 
-  implicit def defaultPartitioner: Default[Partitioner] = {
+  def DefaultOfPartitioner: Default[Partitioner] = {
     Default.defaultVal(new HashPartitioner(0))
   }
 }

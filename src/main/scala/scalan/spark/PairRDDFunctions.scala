@@ -38,7 +38,7 @@ trait PairRDDFunctionss extends Base with BaseTypes { self: SparkDsl =>
     SPairRDDFunctions(rdd)
   }
 
-  implicit def DefaultOfPairRDDFunctions[K:Elem, V:Elem]: Default[PairRDDFunctions[K,V]] = {
+  def DefaultOfPairRDDFunctions[K:Elem, V:Elem]: Default[PairRDDFunctions[K,V]] = {
     val pairs = sparkContext.parallelize(Seq.empty[(K,V)])
     Default.defaultVal(new PairRDDFunctions(pairs)(element[K].classTag, element[V].classTag))
   }

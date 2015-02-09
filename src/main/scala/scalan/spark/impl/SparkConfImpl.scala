@@ -83,7 +83,7 @@ trait SparkConfsAbs extends Scalan with SparkConfs
     lazy val tag = {
       weakTypeTag[SSparkConfImpl]
     }
-    lazy val defaultRepTo = Default.defaultVal[Rep[SSparkConfImpl]](SSparkConfImpl(Default.defaultOf[SparkConf]))
+    lazy val defaultRepTo = Default.defaultVal[Rep[SSparkConfImpl]](SSparkConfImpl(DefaultOfSparkConf.value))
     lazy val eTo = new SSparkConfImplElem(this)
   }
   // 4) constructor and deconstructor
@@ -136,7 +136,7 @@ trait SparkConfsSeq extends SparkConfsAbs with SparkConfsDsl with ScalanSeq
   override def proxySparkConf(p: Rep[SparkConf]): SSparkConf =
     proxyOpsEx[SparkConf,SSparkConf, SeqSSparkConfImpl](p, bt => SeqSSparkConfImpl(bt))
 
-    implicit lazy val SparkConfElement: Elem[SparkConf] = new SeqBaseElemEx[SparkConf, SSparkConf](element[SSparkConf])
+    implicit lazy val SparkConfElement: Elem[SparkConf] = new SeqBaseElemEx[SparkConf, SSparkConf](element[SSparkConf])(weakTypeTag[SparkConf], DefaultOfSparkConf)
 
   case class SeqSSparkConfImpl
       (override val wrappedValueOfBaseType: Rep[SparkConf])
@@ -176,7 +176,7 @@ trait SparkConfsExp extends SparkConfsAbs with SparkConfsDsl with ScalanExp
     override def mirror(t: Transformer) = this
   }
 
-  implicit lazy val SparkConfElement: Elem[SparkConf] = new ExpBaseElemEx[SparkConf, SSparkConf](element[SSparkConf])
+  implicit lazy val SparkConfElement: Elem[SparkConf] = new ExpBaseElemEx[SparkConf, SSparkConf](element[SSparkConf])(weakTypeTag[SparkConf], DefaultOfSparkConf)
 
   case class ExpSSparkConfImpl
       (override val wrappedValueOfBaseType: Rep[SparkConf])

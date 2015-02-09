@@ -30,11 +30,11 @@ trait SparkContexts extends Base with BaseTypes { self: SparkDsl =>
     @External def emptyRDD[T:Elem]: Rep[RDD[T]]
   }
 
-  trait SSparkContextCompanion extends ExCompanion0[SparkContext]  {
+  trait SSparkContextCompanion extends ExCompanion0[SparkContext] {
     @Constructor def apply(conf: Rep[SparkConf]): Rep[SparkContext]
   }
 
-  implicit def DefaultOfSparkContext: Default[SparkContext] = {
+  def DefaultOfSparkContext: Default[SparkContext] = {
     Default.defaultVal(sparkContext)
   }
 }

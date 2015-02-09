@@ -7,6 +7,7 @@ import scalan.common.OverloadHack.Overloaded1
 import scalan.parrays._
 import scalan.spark._
 import scalan.common.Default
+import org.apache.spark.SparkContext
 import scala.reflect.runtime.universe._
 import scalan.common.Default
 
@@ -252,65 +253,7 @@ trait SparkArraysExp extends SparkArraysAbs with SparkArraysDsl with ScalanExp
   }
 
   object RDDArrayCompanionMethods {
-    object apply {
-      def unapply(d: Def[_]): Option[Rep[Array[A]] forSome {type A}] = d match {
-        case MethodCall(receiver, method, Seq(arr, _*)) if receiver.elem.isInstanceOf[RDDArrayCompanionElem] && method.getName == "apply" =>
-          Some(arr).asInstanceOf[Option[Rep[Array[A]] forSome {type A}]]
-        case _ => None
-      }
-      def unapply(exp: Exp[_]): Option[Rep[Array[A]] forSome {type A}] = exp match {
-        case Def(d) => unapply(d)
-        case _ => None
-      }
-    }
 
-    object fromArray {
-      def unapply(d: Def[_]): Option[(Rep[Array[A]], Rep[SparkContext]) forSome {type A}] = d match {
-        case MethodCall(receiver, method, Seq(arr, sc, _*)) if receiver.elem.isInstanceOf[RDDArrayCompanionElem] && method.getName == "fromArray" =>
-          Some((arr, sc)).asInstanceOf[Option[(Rep[Array[A]], Rep[SparkContext]) forSome {type A}]]
-        case _ => None
-      }
-      def unapply(exp: Exp[_]): Option[(Rep[Array[A]], Rep[SparkContext]) forSome {type A}] = exp match {
-        case Def(d) => unapply(d)
-        case _ => None
-      }
-    }
-
-    object defaultOf {
-      def unapply(d: Def[_]): Option[Elem[A] forSome {type A}] = d match {
-        case MethodCall(receiver, method, Seq(ea, _*)) if receiver.elem.isInstanceOf[RDDArrayCompanionElem] && method.getName == "defaultOf" =>
-          Some(ea).asInstanceOf[Option[Elem[A] forSome {type A}]]
-        case _ => None
-      }
-      def unapply(exp: Exp[_]): Option[Elem[A] forSome {type A}] = exp match {
-        case Def(d) => unapply(d)
-        case _ => None
-      }
-    }
-
-    object replicate {
-      def unapply(d: Def[_]): Option[(Rep[Int], Rep[A]) forSome {type A}] = d match {
-        case MethodCall(receiver, method, Seq(len, v, _*)) if receiver.elem.isInstanceOf[RDDArrayCompanionElem] && method.getName == "replicate" =>
-          Some((len, v)).asInstanceOf[Option[(Rep[Int], Rep[A]) forSome {type A}]]
-        case _ => None
-      }
-      def unapply(exp: Exp[_]): Option[(Rep[Int], Rep[A]) forSome {type A}] = exp match {
-        case Def(d) => unapply(d)
-        case _ => None
-      }
-    }
-
-    object singleton {
-      def unapply(d: Def[_]): Option[Rep[A] forSome {type A}] = d match {
-        case MethodCall(receiver, method, Seq(v, _*)) if receiver.elem.isInstanceOf[RDDArrayCompanionElem] && method.getName == "singleton" =>
-          Some(v).asInstanceOf[Option[Rep[A] forSome {type A}]]
-        case _ => None
-      }
-      def unapply(exp: Exp[_]): Option[Rep[A] forSome {type A}] = exp match {
-        case Def(d) => unapply(d)
-        case _ => None
-      }
-    }
   }
 
   def mkRDDArray[A]

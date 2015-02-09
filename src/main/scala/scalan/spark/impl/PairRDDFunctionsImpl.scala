@@ -91,7 +91,7 @@ trait PairRDDFunctionssAbs extends Scalan with PairRDDFunctionss
     lazy val tag = {
       weakTypeTag[SPairRDDFunctionsImpl[K, V]]
     }
-    lazy val defaultRepTo = Default.defaultVal[Rep[SPairRDDFunctionsImpl[K, V]]](SPairRDDFunctionsImpl(Default.defaultOf[PairRDDFunctions[K,V]]))
+    lazy val defaultRepTo = Default.defaultVal[Rep[SPairRDDFunctionsImpl[K, V]]](SPairRDDFunctionsImpl(DefaultOfPairRDDFunctions[K, V].value))
     lazy val eTo = new SPairRDDFunctionsImplElem[K, V](this)
   }
   // 4) constructor and deconstructor
@@ -144,7 +144,7 @@ trait PairRDDFunctionssSeq extends PairRDDFunctionssAbs with PairRDDFunctionssDs
   override def proxyPairRDDFunctions[K:Elem, V:Elem](p: Rep[PairRDDFunctions[K, V]]): SPairRDDFunctions[K, V] =
     proxyOpsEx[PairRDDFunctions[K, V],SPairRDDFunctions[K, V], SeqSPairRDDFunctionsImpl[K, V]](p, bt => SeqSPairRDDFunctionsImpl(bt))
 
-    implicit def PairRDDFunctionsElement[K:Elem:WeakTypeTag, V:Elem:WeakTypeTag]: Elem[PairRDDFunctions[K, V]] = new SeqBaseElemEx[PairRDDFunctions[K, V], SPairRDDFunctions[K, V]](element[SPairRDDFunctions[K, V]])
+    implicit def PairRDDFunctionsElement[K:Elem:WeakTypeTag, V:Elem:WeakTypeTag]: Elem[PairRDDFunctions[K, V]] = new SeqBaseElemEx[PairRDDFunctions[K, V], SPairRDDFunctions[K, V]](element[SPairRDDFunctions[K, V]])(weakTypeTag[PairRDDFunctions[K, V]], DefaultOfPairRDDFunctions[K, V])
 
   case class SeqSPairRDDFunctionsImpl[K, V]
       (override val wrappedValueOfBaseType: Rep[PairRDDFunctions[K,V]])
@@ -184,7 +184,7 @@ trait PairRDDFunctionssExp extends PairRDDFunctionssAbs with PairRDDFunctionssDs
     override def mirror(t: Transformer) = this
   }
 
-  implicit def PairRDDFunctionsElement[K:Elem:WeakTypeTag, V:Elem:WeakTypeTag]: Elem[PairRDDFunctions[K, V]] = new ExpBaseElemEx[PairRDDFunctions[K, V], SPairRDDFunctions[K, V]](element[SPairRDDFunctions[K, V]])
+  implicit def PairRDDFunctionsElement[K:Elem:WeakTypeTag, V:Elem:WeakTypeTag]: Elem[PairRDDFunctions[K, V]] = new ExpBaseElemEx[PairRDDFunctions[K, V], SPairRDDFunctions[K, V]](element[SPairRDDFunctions[K, V]])(weakTypeTag[PairRDDFunctions[K, V]], DefaultOfPairRDDFunctions[K, V])
 
   case class ExpSPairRDDFunctionsImpl[K, V]
       (override val wrappedValueOfBaseType: Rep[PairRDDFunctions[K,V]])

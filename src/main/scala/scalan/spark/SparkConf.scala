@@ -24,7 +24,7 @@ trait SparkConfs extends Base with BaseTypes { self: SparkDsl =>
     @Constructor def apply(): Rep[SparkConf]
   }
 
-  implicit def DefaultOfSparkConf: Default[SparkConf] = {
+  def DefaultOfSparkConf: Default[SparkConf] = {
     Default.defaultVal(sparkContext.getConf)
   }
 }

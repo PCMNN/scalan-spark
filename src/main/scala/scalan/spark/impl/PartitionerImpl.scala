@@ -63,7 +63,7 @@ trait PartitionersAbs extends Scalan with Partitioners
     lazy val tag = {
       weakTypeTag[SPartitionerImpl]
     }
-    lazy val defaultRepTo = Default.defaultVal[Rep[SPartitionerImpl]](SPartitionerImpl(Default.defaultOf[Partitioner]))
+    lazy val defaultRepTo = Default.defaultVal[Rep[SPartitionerImpl]](SPartitionerImpl(DefaultOfPartitioner.value))
     lazy val eTo = new SPartitionerImplElem(this)
   }
   // 4) constructor and deconstructor
@@ -113,7 +113,7 @@ trait PartitionersSeq extends PartitionersAbs with PartitionersDsl with ScalanSe
   override def proxyPartitioner(p: Rep[Partitioner]): SPartitioner =
     proxyOpsEx[Partitioner,SPartitioner, SeqSPartitionerImpl](p, bt => SeqSPartitionerImpl(bt))
 
-    implicit lazy val PartitionerElement: Elem[Partitioner] = new SeqBaseElemEx[Partitioner, SPartitioner](element[SPartitioner])
+    implicit lazy val PartitionerElement: Elem[Partitioner] = new SeqBaseElemEx[Partitioner, SPartitioner](element[SPartitioner])(weakTypeTag[Partitioner], DefaultOfPartitioner)
 
   case class SeqSPartitionerImpl
       (override val wrappedValueOfBaseType: Rep[Partitioner])
@@ -142,7 +142,7 @@ trait PartitionersExp extends PartitionersAbs with PartitionersDsl with ScalanEx
     override def mirror(t: Transformer) = this
   }
 
-  implicit lazy val PartitionerElement: Elem[Partitioner] = new ExpBaseElemEx[Partitioner, SPartitioner](element[SPartitioner])
+  implicit lazy val PartitionerElement: Elem[Partitioner] = new ExpBaseElemEx[Partitioner, SPartitioner](element[SPartitioner])(weakTypeTag[Partitioner], DefaultOfPartitioner)
 
   case class ExpSPartitionerImpl
       (override val wrappedValueOfBaseType: Rep[Partitioner])

@@ -130,7 +130,7 @@ trait RDDsAbs extends Scalan with RDDs
     lazy val tag = {
       weakTypeTag[SRDDImpl[A]]
     }
-    lazy val defaultRepTo = Default.defaultVal[Rep[SRDDImpl[A]]](SRDDImpl(Default.defaultOf[RDD[A]]))
+    lazy val defaultRepTo = Default.defaultVal[Rep[SRDDImpl[A]]](SRDDImpl(DefaultOfRDD[A].value))
     lazy val eTo = new SRDDImplElem[A](this)
   }
   // 4) constructor and deconstructor
@@ -180,7 +180,7 @@ trait RDDsSeq extends RDDsAbs with RDDsDsl with ScalanSeq
   override def proxyRDD[A:Elem](p: Rep[RDD[A]]): SRDD[A] =
     proxyOpsEx[RDD[A],SRDD[A], SeqSRDDImpl[A]](p, bt => SeqSRDDImpl(bt))
 
-    implicit def RDDElement[A:Elem:WeakTypeTag]: Elem[RDD[A]] = new SeqBaseElemEx[RDD[A], SRDD[A]](element[SRDD[A]])
+    implicit def RDDElement[A:Elem:WeakTypeTag]: Elem[RDD[A]] = new SeqBaseElemEx[RDD[A], SRDD[A]](element[SRDD[A]])(weakTypeTag[RDD[A]], DefaultOfRDD[A])
 
   case class SeqSRDDImpl[A]
       (override val wrappedValueOfBaseType: Rep[RDD[A]])
@@ -252,7 +252,7 @@ trait RDDsExp extends RDDsAbs with RDDsDsl with ScalanExp
     override def mirror(t: Transformer) = this
   }
 
-  implicit def RDDElement[A:Elem:WeakTypeTag]: Elem[RDD[A]] = new ExpBaseElemEx[RDD[A], SRDD[A]](element[SRDD[A]])
+  implicit def RDDElement[A:Elem:WeakTypeTag]: Elem[RDD[A]] = new ExpBaseElemEx[RDD[A], SRDD[A]](element[SRDD[A]])(weakTypeTag[RDD[A]], DefaultOfRDD[A])
 
   case class ExpSRDDImpl[A]
       (override val wrappedValueOfBaseType: Rep[RDD[A]])
@@ -426,6 +426,28 @@ trait RDDsExp extends RDDsAbs with RDDsDsl with ScalanExp
   }
 
   object SRDDCompanionMethods {
+    object apply {
+      def unapply(d: Def[_]): Option[Rep[Array[A]] forSome {type A}] = d match {
+        case MethodCall(receiver, method, Seq(arr, _*)) if receiver.elem.isInstanceOf[SRDDCompanionElem] && method.getName == "apply" =>
+          Some(arr).asInstanceOf[Option[Rep[Array[A]] forSome {type A}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[Rep[Array[A]] forSome {type A}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
 
+    object fromArray {
+      def unapply(d: Def[_]): Option[Rep[Array[A]] forSome {type A}] = d match {
+        case MethodCall(receiver, method, Seq(arr, _*)) if receiver.elem.isInstanceOf[SRDDCompanionElem] && method.getName == "fromArray" =>
+          Some(arr).asInstanceOf[Option[Rep[Array[A]] forSome {type A}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[Rep[Array[A]] forSome {type A}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
   }
 }

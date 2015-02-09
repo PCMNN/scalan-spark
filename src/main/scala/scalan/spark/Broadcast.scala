@@ -19,7 +19,7 @@ trait Broadcasts extends Base with BaseTypes { self: SparkDsl =>
 
   trait SBroadcastCompanion
 
-  implicit def DefaultOfBroadcast[A :Elem]: Default[SparkBroadcast[A]] = {
+  def DefaultOfSparkBroadcast[A :Elem]: Default[SparkBroadcast[A]] = {
     val eA = element[A]
     implicit val ctA = eA.classTag
     val defaultA: A = ctA.newArray(1)(0)

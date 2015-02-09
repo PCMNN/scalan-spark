@@ -69,7 +69,7 @@ trait BroadcastsAbs extends Scalan with Broadcasts
     lazy val tag = {
       weakTypeTag[SBroadcastImpl[A]]
     }
-    lazy val defaultRepTo = Default.defaultVal[Rep[SBroadcastImpl[A]]](SBroadcastImpl(Default.defaultOf[SparkBroadcast[A]]))
+    lazy val defaultRepTo = Default.defaultVal[Rep[SBroadcastImpl[A]]](SBroadcastImpl(DefaultOfSparkBroadcast[A].value))
     lazy val eTo = new SBroadcastImplElem[A](this)
   }
   // 4) constructor and deconstructor
@@ -119,7 +119,7 @@ trait BroadcastsSeq extends BroadcastsAbs with BroadcastsDsl with ScalanSeq
   override def proxySparkBroadcast[A:Elem](p: Rep[SparkBroadcast[A]]): SBroadcast[A] =
     proxyOpsEx[SparkBroadcast[A],SBroadcast[A], SeqSBroadcastImpl[A]](p, bt => SeqSBroadcastImpl(bt))
 
-    implicit def SparkBroadcastElement[A:Elem:WeakTypeTag]: Elem[SparkBroadcast[A]] = new SeqBaseElemEx[SparkBroadcast[A], SBroadcast[A]](element[SBroadcast[A]])
+    implicit def SparkBroadcastElement[A:Elem:WeakTypeTag]: Elem[SparkBroadcast[A]] = new SeqBaseElemEx[SparkBroadcast[A], SBroadcast[A]](element[SBroadcast[A]])(weakTypeTag[SparkBroadcast[A]], DefaultOfSparkBroadcast[A])
 
   case class SeqSBroadcastImpl[A]
       (override val wrappedValueOfBaseType: Rep[SparkBroadcast[A]])
@@ -151,7 +151,7 @@ trait BroadcastsExp extends BroadcastsAbs with BroadcastsDsl with ScalanExp
     override def mirror(t: Transformer) = this
   }
 
-  implicit def SparkBroadcastElement[A:Elem:WeakTypeTag]: Elem[SparkBroadcast[A]] = new ExpBaseElemEx[SparkBroadcast[A], SBroadcast[A]](element[SBroadcast[A]])
+  implicit def SparkBroadcastElement[A:Elem:WeakTypeTag]: Elem[SparkBroadcast[A]] = new ExpBaseElemEx[SparkBroadcast[A], SBroadcast[A]](element[SBroadcast[A]])(weakTypeTag[SparkBroadcast[A]], DefaultOfSparkBroadcast[A])
 
   case class ExpSBroadcastImpl[A]
       (override val wrappedValueOfBaseType: Rep[SparkBroadcast[A]])

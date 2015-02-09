@@ -25,13 +25,11 @@ trait SparkArrays extends PArrays { self: SparkDsl =>
     }
     @OverloadId("many")
     def apply(indices: Arr[Int])(implicit o: Overloaded1): SA[A] = {
-      val irdd = RDDArray.fromArray(indices).map(fun {(i: Rep[Int]) =>
-        (i, Default.defaultOf[A])
-      })
+      val irdd = SRDD.fromArray(indices).map(fun {(i: Rep[Int]) => Pair(i.toLong, 0)})
       val vrdd = rdd.zipWithIndex
-      val joinedRdd: RepRDD[(Long, (A, A))] = irdd.join(vrdd)
+      val joinedRdd: RepRDD[(Long, (Int, A))] = irdd.join(vrdd)
 
-      joinedRdd.map(fun {(in: Rep[(Long, (A, A))]) =>
+      joinedRdd.map(fun {(in: Rep[(Long, (Int, A))]) =>
         val Pair(_, Pair(_, a: Rep[A])) = in
         a
       })
@@ -47,17 +45,7 @@ trait SparkArrays extends PArrays { self: SparkDsl =>
     }
   }
 
-  trait RDDArrayCompanion extends ConcreteClass1[RDDArray] {
-    def apply[A: Elem](arr: Rep[Array[A]]): SA[A] = fromArray(arr)
-    def fromArray[A: Elem](arr: Rep[Array[A]]): SA[A] = {
-      repSparkContext.makeRDD(arr)
-    }
-    def defaultOf[A](implicit ea: Elem[A]) = Default.defaultVal(RDDArray(Array.empty[A]))
-    def replicate[A: Elem](len: Rep[Int], v: Rep[A]): SA[A] = {
-      RDDArray(Array.replicate(len, v))
-    }
-    def singleton[A: Elem](v: Rep[A]): SA[A] = RDDArray.replicate(toRep(1), v)
-  }
+  trait RDDArrayCompanion extends ConcreteClass1[RDDArray]
 }
 
 trait SparkArraysDsl extends impl.SparkArraysAbs
