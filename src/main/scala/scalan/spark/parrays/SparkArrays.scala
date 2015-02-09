@@ -53,7 +53,9 @@ trait SparkArrays extends Base with BaseTypes { self: SparkDsl =>
     }
   }
 
-  trait RDDArrayCompanion extends ConcreteClass1[RDDArray]
+  trait RDDArrayCompanion extends ConcreteClass1[RDDArray] {
+    def defaultOf[A](implicit ea: Elem[A]) = Default.defaultVal(RDDArray(DefaultOfRDD[A].value))
+  }
 }
 
 trait SparkArraysDsl extends impl.SparkArraysAbs { self: SparkDsl => }

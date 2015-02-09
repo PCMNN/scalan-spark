@@ -51,6 +51,7 @@ class SmokeTests extends BaseTests with BeforeAndAfterAll { suite =>
   test("simpleSparkStaged") {
     val ctx = new TestContext(this, "simpleSparkStaged") with SimpleSparkTests with SparkDslExp {
       val sparkContext = globalSparkContext
+      val repSparkContext = toRep(globalSparkContext)
     }
 
     ctx.emit("defaultSparkContextRep", ctx.defaultSparkContextRep)
@@ -65,6 +66,7 @@ class SmokeTests extends BaseTests with BeforeAndAfterAll { suite =>
   test("simpleSparkSeq") {
     val ctx = new ScalanCtxSeq with SimpleSparkTests with SparkDslSeq {
       val sparkContext = globalSparkContext
+      val repSparkContext = toRep(globalSparkContext)
     }
 
     {

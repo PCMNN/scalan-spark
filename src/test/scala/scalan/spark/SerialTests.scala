@@ -35,6 +35,7 @@ class SerialTests extends BaseTests with BeforeAndAfterAll { suite =>
   ignore("simpleSerialSparkStaged") {
     val ctx = new TestContext(this, "simpleSerialSparkStaged") with SimpleSerialTests with SparkDslExp {
       val sparkContext = globalSparkContext
+      val repSparkContext = toRep(globalSparkContext)
     }
 
     ctx.emit("plusOne", ctx.plusOne)
@@ -43,6 +44,7 @@ class SerialTests extends BaseTests with BeforeAndAfterAll { suite =>
   ignore("simpleSerialSparkSeq") {
     val ctx = new ScalanCtxSeq with SimpleSerialTests with SparkDslSeq {
       val sparkContext = globalSparkContext
+      val repSparkContext = toRep(globalSparkContext)
     }
 
     {
@@ -68,6 +70,7 @@ class SerialTests extends BaseTests with BeforeAndAfterAll { suite =>
     }
     val ctx = new ScalanCtxSeq with SparkDslSeq {
       val sparkContext = globalSparkContext
+      val repSparkContext = toRep(globalSparkContext)
     }
     {
       val inc = new PlusOne(ctx)
