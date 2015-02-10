@@ -1,4 +1,4 @@
-package scalan.spark.parrays
+package scalan.spark.arrays
 package impl
 
 import org.apache.spark.rdd.{PairRDDFunctions, RDD}

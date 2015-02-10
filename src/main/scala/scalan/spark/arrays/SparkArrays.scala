@@ -1,4 +1,4 @@
-package scalan.spark.parrays
+package scalan.spark.arrays
 
 import org.apache.spark.rdd.RDD
 import scalan._

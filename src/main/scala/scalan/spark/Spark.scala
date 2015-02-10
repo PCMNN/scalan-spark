@@ -4,7 +4,7 @@ import scala.reflect.ClassTag
 import scalan.collections._
 import scalan.parrays._
 import scalan.{ScalanExp, ScalanSeq, Scalan}
-import scalan.spark.parrays._
+import scalan.spark.arrays._
 
 trait SparkDsl extends Scalan with SeqsDsl with PArraysDsl
 with SparkContextsDsl

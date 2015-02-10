@@ -30,7 +30,7 @@ object SparkBoilerplateTool extends BoilerplateTool {
 
   val sparkArraysTypeSynonims = Map[String, String]()
   lazy val sparkArraysConfig = CodegenConfig(
-    srcPath = "src/main/scala/scalan/spark/parrays",
+    srcPath = "src/main/scala/scalan/spark/arrays",
     entityFiles = List(
       "SparkArrays.scala"
     ),
