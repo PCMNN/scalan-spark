@@ -12,33 +12,28 @@ import scala.reflect.runtime.universe._
 import scalan.common.Default
 
 // Abs -----------------------------------
-trait SparkArraysAbs extends Scalan with SparkArrays
-{ self: SparkDsl =>
+trait SparkArraysAbs extends Scalan with SparkArrays {
+  self: SparkDsl =>
   // single proxy for each type family
   implicit def proxySparkArray[A](p: Rep[SparkArray[A]]): SparkArray[A] =
     proxyOps[SparkArray[A]](p)
-
-
 
   abstract class SparkArrayElem[A, From, To <: SparkArray[A]](iso: Iso[From, To]) extends ViewElem[From, To]()(iso)
 
   trait SparkArrayCompanionElem extends CompanionElem[SparkArrayCompanionAbs]
   implicit lazy val SparkArrayCompanionElem: SparkArrayCompanionElem = new SparkArrayCompanionElem {
-    lazy val tag = typeTag[SparkArrayCompanionAbs]
+    lazy val tag = weakTypeTag[SparkArrayCompanionAbs]
     protected def getDefaultRep = SparkArray
   }
 
   abstract class SparkArrayCompanionAbs extends CompanionBase[SparkArrayCompanionAbs] with SparkArrayCompanion {
     override def toString = "SparkArray"
-    
   }
   def SparkArray: Rep[SparkArrayCompanionAbs]
   implicit def proxySparkArrayCompanion(p: Rep[SparkArrayCompanion]): SparkArrayCompanion = {
     proxyOps[SparkArrayCompanion](p)
   }
 
-  //default wrapper implementation
-  
   // elem for concrete class
   class RDDArrayElem[A](iso: Iso[RDDArrayData[A], RDDArray[A]]) extends SparkArrayElem[A, RDDArrayData[A], RDDArray[A]](iso)
 
@@ -77,7 +72,7 @@ trait SparkArraysAbs extends Scalan with SparkArrays
   }
 
   class RDDArrayCompanionElem extends CompanionElem[RDDArrayCompanionAbs] {
-    lazy val tag = typeTag[RDDArrayCompanionAbs]
+    lazy val tag = weakTypeTag[RDDArrayCompanionAbs]
     protected def getDefaultRep = RDDArray
   }
   implicit lazy val RDDArrayCompanionElem: RDDArrayCompanionElem = new RDDArrayCompanionElem
@@ -99,16 +94,11 @@ trait SparkArraysAbs extends Scalan with SparkArrays
 }
 
 // Seq -----------------------------------
-trait SparkArraysSeq extends SparkArraysAbs with SparkArraysDsl with ScalanSeq
-{ self: SparkDslSeq =>
+trait SparkArraysSeq extends SparkArraysDsl with ScalanSeq {
+  self: SparkDslSeq =>
   lazy val SparkArray: Rep[SparkArrayCompanionAbs] = new SparkArrayCompanionAbs with UserTypeSeq[SparkArrayCompanionAbs, SparkArrayCompanionAbs] {
     lazy val selfType = element[SparkArrayCompanionAbs]
-    
   }
-
-  
-
-  
 
   case class SeqRDDArray[A]
       (override val rdd: Rep[RDD[A]])
@@ -116,7 +106,6 @@ trait SparkArraysSeq extends SparkArraysAbs with SparkArraysDsl with ScalanSeq
     extends RDDArray[A](rdd)
         with UserTypeSeq[SparkArray[A], RDDArray[A]] {
     lazy val selfType = element[RDDArray[A]].asInstanceOf[Elem[SparkArray[A]]]
-    
   }
   lazy val RDDArray = new RDDArrayCompanionAbs with UserTypeSeq[RDDArrayCompanionAbs, RDDArrayCompanionAbs] {
     lazy val selfType = element[RDDArrayCompanionAbs]
@@ -130,14 +119,12 @@ trait SparkArraysSeq extends SparkArraysAbs with SparkArraysDsl with ScalanSeq
 }
 
 // Exp -----------------------------------
-trait SparkArraysExp extends SparkArraysAbs with SparkArraysDsl with ScalanExp
-{ self: SparkDslExp =>
+trait SparkArraysExp extends SparkArraysDsl with ScalanExp {
+  self: SparkDslExp =>
   lazy val SparkArray: Rep[SparkArrayCompanionAbs] = new SparkArrayCompanionAbs with UserTypeDef[SparkArrayCompanionAbs, SparkArrayCompanionAbs] {
     lazy val selfType = element[SparkArrayCompanionAbs]
     override def mirror(t: Transformer) = this
   }
-
-
 
   case class ExpRDDArray[A]
       (override val rdd: Rep[RDD[A]])
@@ -155,7 +142,7 @@ trait SparkArraysExp extends SparkArraysAbs with SparkArraysDsl with ScalanExp
   object RDDArrayMethods {
     object elem {
       def unapply(d: Def[_]): Option[Rep[RDDArray[A]] forSome {type A}] = d match {
-        case MethodCall(receiver, method, _) if receiver.elem.isInstanceOf[RDDArrayElem[_]] && method.getName == "elem" =>
+        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[RDDArrayElem[_]] && method.getName == "elem" =>
           Some(receiver).asInstanceOf[Option[Rep[RDDArray[A]] forSome {type A}]]
         case _ => None
       }
@@ -167,7 +154,7 @@ trait SparkArraysExp extends SparkArraysAbs with SparkArraysDsl with ScalanExp
 
     object length {
       def unapply(d: Def[_]): Option[Rep[RDDArray[A]] forSome {type A}] = d match {
-        case MethodCall(receiver, method, _) if receiver.elem.isInstanceOf[RDDArrayElem[_]] && method.getName == "length" =>
+        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[RDDArrayElem[_]] && method.getName == "length" =>
           Some(receiver).asInstanceOf[Option[Rep[RDDArray[A]] forSome {type A}]]
         case _ => None
       }
@@ -179,7 +166,7 @@ trait SparkArraysExp extends SparkArraysAbs with SparkArraysDsl with ScalanExp
 
     object arr {
       def unapply(d: Def[_]): Option[Rep[RDDArray[A]] forSome {type A}] = d match {
-        case MethodCall(receiver, method, _) if receiver.elem.isInstanceOf[RDDArrayElem[_]] && method.getName == "arr" =>
+        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[RDDArrayElem[_]] && method.getName == "arr" =>
           Some(receiver).asInstanceOf[Option[Rep[RDDArray[A]] forSome {type A}]]
         case _ => None
       }
@@ -191,7 +178,7 @@ trait SparkArraysExp extends SparkArraysAbs with SparkArraysDsl with ScalanExp
 
     object apply {
       def unapply(d: Def[_]): Option[(Rep[RDDArray[A]], Rep[Int]) forSome {type A}] = d match {
-        case MethodCall(receiver, method, Seq(i, _*)) if receiver.elem.isInstanceOf[RDDArrayElem[_]] && method.getName == "apply"&& method.getAnnotation(classOf[scalan.OverloadId]) == null =>
+        case MethodCall(receiver, method, Seq(i, _*), _) if receiver.elem.isInstanceOf[RDDArrayElem[_]] && method.getName == "apply"&& method.getAnnotation(classOf[scalan.OverloadId]) == null =>
           Some((receiver, i)).asInstanceOf[Option[(Rep[RDDArray[A]], Rep[Int]) forSome {type A}]]
         case _ => None
       }
@@ -203,7 +190,7 @@ trait SparkArraysExp extends SparkArraysAbs with SparkArraysDsl with ScalanExp
 
     object apply_many {
       def unapply(d: Def[_]): Option[(Rep[RDDArray[A]], Arr[Int]) forSome {type A}] = d match {
-        case MethodCall(receiver, method, Seq(indices, _*)) if receiver.elem.isInstanceOf[RDDArrayElem[_]] && method.getName == "apply" && { val ann = method.getAnnotation(classOf[scalan.OverloadId]); ann != null && ann.value == "many" } =>
+        case MethodCall(receiver, method, Seq(indices, _*), _) if receiver.elem.isInstanceOf[RDDArrayElem[_]] && method.getName == "apply" && { val ann = method.getAnnotation(classOf[scalan.OverloadId]); ann != null && ann.value == "many" } =>
           Some((receiver, indices)).asInstanceOf[Option[(Rep[RDDArray[A]], Arr[Int]) forSome {type A}]]
         case _ => None
       }
@@ -213,23 +200,13 @@ trait SparkArraysExp extends SparkArraysAbs with SparkArraysDsl with ScalanExp
       }
     }
 
-    object mapBy {
-      def unapply(d: Def[_]): Option[(Rep[RDDArray[A]], Rep[A => B]) forSome {type A; type B}] = d match {
-        case MethodCall(receiver, method, Seq(f, _*)) if receiver.elem.isInstanceOf[RDDArrayElem[_]] && method.getName == "mapBy" =>
-          Some((receiver, f)).asInstanceOf[Option[(Rep[RDDArray[A]], Rep[A => B]) forSome {type A; type B}]]
-        case _ => None
-      }
-      def unapply(exp: Exp[_]): Option[(Rep[RDDArray[A]], Rep[A => B]) forSome {type A; type B}] = exp match {
-        case Def(d) => unapply(d)
-        case _ => None
-      }
-    }
+    // WARNING: Cannot generate matcher for method `mapBy`: Method's return type PA[B] is not a Rep
 
     // WARNING: Cannot generate matcher for method `map`: Method has function arguments f
 
     object slice {
       def unapply(d: Def[_]): Option[(Rep[RDDArray[A]], Rep[Int], Rep[Int]) forSome {type A}] = d match {
-        case MethodCall(receiver, method, Seq(offset, length, _*)) if receiver.elem.isInstanceOf[RDDArrayElem[_]] && method.getName == "slice" =>
+        case MethodCall(receiver, method, Seq(offset, length, _*), _) if receiver.elem.isInstanceOf[RDDArrayElem[_]] && method.getName == "slice" =>
           Some((receiver, offset, length)).asInstanceOf[Option[(Rep[RDDArray[A]], Rep[Int], Rep[Int]) forSome {type A}]]
         case _ => None
       }
@@ -241,7 +218,7 @@ trait SparkArraysExp extends SparkArraysAbs with SparkArraysDsl with ScalanExp
 
     object reduce {
       def unapply(d: Def[_]): Option[(Rep[RDDArray[A]], RepMonoid[A]) forSome {type A}] = d match {
-        case MethodCall(receiver, method, Seq(m, _*)) if receiver.elem.isInstanceOf[RDDArrayElem[_]] && method.getName == "reduce" =>
+        case MethodCall(receiver, method, Seq(m, _*), _) if receiver.elem.isInstanceOf[RDDArrayElem[_]] && method.getName == "reduce" =>
           Some((receiver, m)).asInstanceOf[Option[(Rep[RDDArray[A]], RepMonoid[A]) forSome {type A}]]
         case _ => None
       }
@@ -253,7 +230,17 @@ trait SparkArraysExp extends SparkArraysAbs with SparkArraysDsl with ScalanExp
   }
 
   object RDDArrayCompanionMethods {
-
+    object defaultOf {
+      def unapply(d: Def[_]): Option[Elem[A] forSome {type A}] = d match {
+        case MethodCall(receiver, method, Seq(ea, _*), _) if receiver.elem.isInstanceOf[RDDArrayCompanionElem] && method.getName == "defaultOf" =>
+          Some(ea).asInstanceOf[Option[Elem[A] forSome {type A}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[Elem[A] forSome {type A}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
   }
 
   def mkRDDArray[A]
@@ -263,10 +250,8 @@ trait SparkArraysExp extends SparkArraysAbs with SparkArraysDsl with ScalanExp
     Some((p.rdd))
 
   object SparkArrayMethods {
-
   }
 
   object SparkArrayCompanionMethods {
-
   }
 }

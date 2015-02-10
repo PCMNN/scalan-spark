@@ -1,12 +1,10 @@
 package scalan.spark.parrays
 
-import org.apache.spark.rdd.{PairRDDFunctions, RDD}
+import org.apache.spark.rdd.RDD
 import scalan._
 import scalan.common.OverloadHack.Overloaded1
-import scalan.parrays._
 import scalan.spark._
 import scalan.common.Default
-import org.apache.spark.SparkContext
 
 trait SparkArrays extends Base with BaseTypes { self: SparkDsl =>
 
@@ -45,7 +43,7 @@ trait SparkArrays extends Base with BaseTypes { self: SparkDsl =>
     override def mapBy[B: Elem](f: Rep[A => B]): PA[B] = RDDArray(rdd.map(f))
     override def map[B: Elem](f: Rep[A] => Rep[B]): SA[B] = RDDArray(rdd.map(fun(f)))
     def slice(offset: Rep[Int], length: Rep[Int]): Rep[PArray[A]] = {
-      val indices = Array.rangeFrom0(length).map(_ + offset)
+      val indices = SArray.rangeFrom0(length).map(_ + offset)
       apply(indices)
     }
     override def reduce(implicit m: RepMonoid[A]): Rep[A] = {

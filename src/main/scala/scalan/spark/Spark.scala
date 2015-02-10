@@ -1,7 +1,7 @@
 package scalan.spark
 
 import scala.reflect.ClassTag
-import scalan.collection._
+import scalan.collections._
 import scalan.parrays._
 import scalan.{ScalanExp, ScalanSeq, Scalan}
 import scalan.spark.parrays._

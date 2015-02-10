@@ -8,8 +8,8 @@ import scala.reflect.runtime.universe._
 import scalan.common.Default
 
 // Abs -----------------------------------
-trait PartitionersAbs extends Scalan with Partitioners
-{ self: SparkDsl =>
+trait PartitionersAbs extends Scalan with Partitioners {
+  self: SparkDsl =>
   // single proxy for each type family
   implicit def proxySPartitioner(p: Rep[SPartitioner]): SPartitioner =
     proxyOps[SPartitioner](p)
@@ -24,22 +24,20 @@ trait PartitionersAbs extends Scalan with Partitioners
 
   trait SPartitionerCompanionElem extends CompanionElem[SPartitionerCompanionAbs]
   implicit lazy val SPartitionerCompanionElem: SPartitionerCompanionElem = new SPartitionerCompanionElem {
-    lazy val tag = typeTag[SPartitionerCompanionAbs]
+    lazy val tag = weakTypeTag[SPartitionerCompanionAbs]
     protected def getDefaultRep = SPartitioner
   }
 
   abstract class SPartitionerCompanionAbs extends CompanionBase[SPartitionerCompanionAbs] with SPartitionerCompanion {
     override def toString = "SPartitioner"
-    
   }
   def SPartitioner: Rep[SPartitionerCompanionAbs]
   implicit def proxySPartitionerCompanion(p: Rep[SPartitionerCompanion]): SPartitionerCompanion = {
     proxyOps[SPartitionerCompanion](p)
   }
 
-  //default wrapper implementation
-    abstract class SPartitionerImpl(val wrappedValueOfBaseType: Rep[Partitioner]) extends SPartitioner {
-    
+  // default wrapper implementation
+  abstract class SPartitionerImpl(val wrappedValueOfBaseType: Rep[Partitioner]) extends SPartitioner {
   }
   trait SPartitionerImplCompanion
   // elem for concrete class
@@ -80,7 +78,7 @@ trait PartitionersAbs extends Scalan with Partitioners
   }
 
   class SPartitionerImplCompanionElem extends CompanionElem[SPartitionerImplCompanionAbs] {
-    lazy val tag = typeTag[SPartitionerImplCompanionAbs]
+    lazy val tag = weakTypeTag[SPartitionerImplCompanionAbs]
     protected def getDefaultRep = SPartitionerImpl
   }
   implicit lazy val SPartitionerImplCompanionElem: SPartitionerImplCompanionElem = new SPartitionerImplCompanionElem
@@ -102,11 +100,10 @@ trait PartitionersAbs extends Scalan with Partitioners
 }
 
 // Seq -----------------------------------
-trait PartitionersSeq extends PartitionersAbs with PartitionersDsl with ScalanSeq
-{ self: SparkDslSeq =>
+trait PartitionersSeq extends PartitionersDsl with ScalanSeq {
+  self: SparkDslSeq =>
   lazy val SPartitioner: Rep[SPartitionerCompanionAbs] = new SPartitionerCompanionAbs with UserTypeSeq[SPartitionerCompanionAbs, SPartitionerCompanionAbs] {
     lazy val selfType = element[SPartitionerCompanionAbs]
-    
   }
 
     // override proxy if we deal with BaseTypeEx
@@ -117,11 +114,10 @@ trait PartitionersSeq extends PartitionersAbs with PartitionersDsl with ScalanSe
 
   case class SeqSPartitionerImpl
       (override val wrappedValueOfBaseType: Rep[Partitioner])
-      
+
     extends SPartitionerImpl(wrappedValueOfBaseType)
         with UserTypeSeq[SPartitioner, SPartitionerImpl] {
     lazy val selfType = element[SPartitionerImpl].asInstanceOf[Elem[SPartitioner]]
-    
   }
   lazy val SPartitionerImpl = new SPartitionerImplCompanionAbs with UserTypeSeq[SPartitionerImplCompanionAbs, SPartitionerImplCompanionAbs] {
     lazy val selfType = element[SPartitionerImplCompanionAbs]
@@ -135,8 +131,8 @@ trait PartitionersSeq extends PartitionersAbs with PartitionersDsl with ScalanSe
 }
 
 // Exp -----------------------------------
-trait PartitionersExp extends PartitionersAbs with PartitionersDsl with ScalanExp
-{ self: SparkDslExp =>
+trait PartitionersExp extends PartitionersDsl with ScalanExp {
+  self: SparkDslExp =>
   lazy val SPartitioner: Rep[SPartitionerCompanionAbs] = new SPartitionerCompanionAbs with UserTypeDef[SPartitionerCompanionAbs, SPartitionerCompanionAbs] {
     lazy val selfType = element[SPartitionerCompanionAbs]
     override def mirror(t: Transformer) = this
@@ -146,7 +142,7 @@ trait PartitionersExp extends PartitionersAbs with PartitionersDsl with ScalanEx
 
   case class ExpSPartitionerImpl
       (override val wrappedValueOfBaseType: Rep[Partitioner])
-      
+
     extends SPartitionerImpl(wrappedValueOfBaseType) with UserTypeDef[SPartitioner, SPartitionerImpl] {
     lazy val selfType = element[SPartitionerImpl].asInstanceOf[Elem[SPartitioner]]
     override def mirror(t: Transformer) = ExpSPartitionerImpl(t(wrappedValueOfBaseType))
@@ -158,10 +154,7 @@ trait PartitionersExp extends PartitionersAbs with PartitionersDsl with ScalanEx
   }
 
   object SPartitionerImplMethods {
-
   }
-
-
 
   def mkSPartitionerImpl
     (wrappedValueOfBaseType: Rep[Partitioner]) =
@@ -170,10 +163,8 @@ trait PartitionersExp extends PartitionersAbs with PartitionersDsl with ScalanEx
     Some((p.wrappedValueOfBaseType))
 
   object SPartitionerMethods {
-
   }
 
   object SPartitionerCompanionMethods {
-
   }
 }
