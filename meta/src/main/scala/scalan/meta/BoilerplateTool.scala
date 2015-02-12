@@ -10,6 +10,7 @@ object SparkBoilerplateTool extends BoilerplateTool {
     "RepBroadcast" -> "Broadcast"
   )
   lazy val sparkConfig = CodegenConfig(
+    name = "ScalanSpark",
     srcPath = "src/main/scala/scalan/spark",
     entityFiles = List(
       "SparkConf.scala",
@@ -30,6 +31,7 @@ object SparkBoilerplateTool extends BoilerplateTool {
 
   val sparkArraysTypeSynonims = Map[String, String]()
   lazy val sparkArraysConfig = CodegenConfig(
+    name = "SparkArrays",
     srcPath = "src/main/scala/scalan/spark/arrays",
     entityFiles = List(
       "SparkArrays.scala"
