@@ -8,7 +8,6 @@ import scalan.compilation.lms.{CommunityBridge, CommunityLmsBackend, LmsCompiler
 import scalan.spark.SparkDslExp
 
 trait SparkScalanCompiler extends ScalanCommunityExp with SparkDslExp with ScalanCommunityDslExp with LmsCompilerScala with ScalanSparkMethodMapping with CommunityBridge {
-
   val lms = new CommunityLmsBackend
 }
 
