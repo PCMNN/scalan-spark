@@ -1,5 +1,3 @@
-import java.io.File
-
 import sbt._
 import sbt.Keys._
 //import sbtassembly.Plugin._
@@ -17,8 +15,8 @@ object ScalanStartRootBuild extends Build {
   )
 
   val testSettings = inConfig(ItTest)(Defaults.testTasks /*++ baseAssemblySettings*/) ++ Seq(
-    testOptions in Test := Seq(Tests.Argument(TestFrameworks.JUnit, "-a", "-s"), Tests.Filter(unitFilter)),
-    testOptions in ItTest := Seq(Tests.Argument(TestFrameworks.JUnit, "-v", "-a", "-s", "-q"), Tests.Filter(itFilter)),
+//    testOptions in Test := Seq(Tests.Argument(TestFrameworks.JUnit, "-a", "-s"), Tests.Filter(unitFilter)),
+//    testOptions in ItTest := Seq(Tests.Argument(TestFrameworks.JUnit, "-v", "-a", "-s", "-q"), Tests.Filter(itFilter)),
     // needed thanks to http://stackoverflow.com/questions/7898273/how-to-get-logging-working-in-scala-unit-tests-with-testng-slf4s-and-logback
     parallelExecution in Test := false,
     parallelExecution in ItTest := false,
@@ -67,7 +65,7 @@ object ScalanStartRootBuild extends Build {
 
   def liteProject(name: String) = ProjectRef(file("../scalan-lite"), name)
 
-  def liteDependency(name: String) = "com.huawei.scalan" %% name % "0.2.6-SNAPSHOT"
+  def liteDependency(name: String) = "com.huawei.scalan" %% name % "0.2.7-SNAPSHOT"
 
   lazy val metaDeps = liteDependency("meta")
   lazy val sparkmeta = Project(
@@ -85,14 +83,13 @@ object ScalanStartRootBuild extends Build {
   val virtScala = Option(System.getenv("SCALA_VIRTUALIZED_VERSION")).getOrElse("2.10.2")
 
   lazy val backend = liteDependency("lms-backend")
-  lazy val starterBackend = Project("backend",file("backend")).
-    addTestConfigsAndCommonSettings.
+  lazy val starterBackend = Project("backend",file("backend")).dependsOn(start.allConfigDependency).
     settings(copyDepTask, libraryDependencies ++= Seq(backend,
       "org.scala-lang.virtualized" % "scala-library" % virtScala,
       "org.scala-lang.virtualized" % "scala-compiler" % virtScala),
     scalaOrganization := "org.scala-lang.virtualized",
     scalaVersion := virtScala
-).dependsOn(start.allConfigDependency)
+)
 
   lazy val copyDependencies = TaskKey[Unit]("pack")
 

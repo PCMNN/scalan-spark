@@ -19,6 +19,7 @@ object SparkBoilerplateTool extends BoilerplateTool {
       "Partitioner.scala",
       "Broadcast.scala"
     ),
+    baseContextTrait = "Scalan",
     seqContextTrait = "ScalanSeq",
     stagedContextTrait = "ScalanExp",
     extraImports = List(

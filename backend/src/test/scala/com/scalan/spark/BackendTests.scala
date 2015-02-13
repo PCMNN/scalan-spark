@@ -2,7 +2,7 @@ package com.scalan.spark
 
 import java.io.File
 
-import com.scalan.spark.backend.{SparkScalanBridge, SparkScalanCompiler}
+import com.scalan.spark.backend.SparkScalanCompiler
 import org.apache.spark._
 import org.apache.spark.rdd.RDD
 import org.scalatest.BeforeAndAfterAll
@@ -61,14 +61,9 @@ class BackendTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil { s
     val testCompiler = new SparkScalanCompiler with BackendSparkTests {
       self =>
       val sparkContext = globalSparkContext
-
-      def makeBridge[A, B] = new SparkScalanBridge[A, B] {
-        override val scalan = self
-      }
     }
 
-    val res = getStagedOutputConfig(testCompiler)(testCompiler.broadcastPi, "broadcastPiCodeGen", globalSparkContext, testCompiler.defaultConfig)
-    val x = 0
+    val res = getStagedOutputConfig(testCompiler)(testCompiler.broadcastPi, "broadcastPiCodeGen", globalSparkContext, testCompiler.defaultCompilerConfig)
   }
 
 }

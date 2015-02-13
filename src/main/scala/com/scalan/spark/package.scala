@@ -9,7 +9,7 @@ trait ScalanSparkMethodMapping extends MethodMapping {
 
     import scala.reflect.runtime.universe.typeOf
 
-    val sparkLib = new Library("spark-core_2.10-1.2.0.jar")() {
+    val sparkLib = new Library("spark-core_2.10-1.2.0.jar") {
     }
   }
 

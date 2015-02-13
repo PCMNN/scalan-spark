@@ -24,7 +24,7 @@ class SerialTests extends BaseTests with BeforeAndAfterAll { suite =>
 
     lazy val plusOne = fun { (in: Rep[(SparkContext, Int)]) => {
       val Pair(sc, i: Rep[Int]) = in
-      val rdd = sc.makeRDD(List.replicate(1, i))
+      val rdd = sc.makeRDD(list_replicate(1, i))
       val incRdd = rdd.map(fun {v => v + 1})
       val result: Rep[Int] = incRdd.first
 
@@ -58,7 +58,7 @@ class SerialTests extends BaseTests with BeforeAndAfterAll { suite =>
 
       def plusOne(in: Rep[(SparkContext, Int)]): Rep[Int] = {
         val Pair(sc, i: Rep[Int]) = in
-        val rdd = sc.makeRDD(List.replicate(1, i))
+        val rdd = sc.makeRDD(list_replicate(1, i))
         val incRdd = rdd.map(fun {v => v + 1} )
         val result: Rep[Int] = incRdd.first
 
