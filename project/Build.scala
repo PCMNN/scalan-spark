@@ -11,7 +11,7 @@ object ScalanStartRootBuild extends Build {
     //("com.novocode" % "junit-interface" % "0.11" % "test").exclude("junit", "junit-dep").exclude("org.scala-tools.testing", "test-interface"),
     "org.scalatest" %% "scalatest" % "2.2.1" % "test",
     "org.scalacheck" %% "scalacheck" % "1.11.5" % "test",
-    "org.apache.spark" %% "spark-core" % "1.2.0"
+    "org.apache.spark" %% "spark-core" % "1.2.1"
   )
 
   val testSettings = inConfig(ItTest)(Defaults.testTasks /*++ baseAssemblySettings*/) ++ Seq(
