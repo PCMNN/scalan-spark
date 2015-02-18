@@ -27,7 +27,7 @@ trait SparkArrays extends Base with BaseTypes { self: SparkDsl =>
         Pair(i.toLong, 0)
       })
       val vrdd: Rep[RDD[(Long, A)]] = rdd.zipWithIndex.map(fun {(in: Rep[(A, Long)]) => {
-        val Pair(a: Rep[A], i: Rep[Long]) = in
+        val Pair(a, i) = in
         Pair(i, a)
       }})
 /*
