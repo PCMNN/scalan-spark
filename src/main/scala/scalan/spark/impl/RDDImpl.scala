@@ -1,10 +1,8 @@
 package scalan.spark
 package impl
 
-import scala.reflect.ClassTag
 import scalan._
 import org.apache.spark.rdd.RDD
-import scalan.common.Default
 import scalan.common.Default
 import scala.reflect.runtime.universe._
 import scalan.common.Default
