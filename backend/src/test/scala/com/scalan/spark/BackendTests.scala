@@ -63,7 +63,7 @@ class BackendTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil { s
       val sparkContext = globalSparkContext
     }
 
-    val res = getStagedOutputConfig(testCompiler)(testCompiler.broadcastPi, "broadcastPiCodeGen", globalSparkContext, testCompiler.defaultCompilerConfig)
+    val res = getStagedOutputConfig(testCompiler)(testCompiler.broadcastPi, "broadcastPiCodeGen", globalSparkContext, testCompiler.defaultCompilerConfig.copy(scalaVersion = Some("2.11.4")))
   }
 
 }

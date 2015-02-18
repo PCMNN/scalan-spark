@@ -10,6 +10,7 @@ object SparkBoilerplateTool extends BoilerplateTool {
     "RepBroadcast" -> "Broadcast"
   )
   lazy val sparkConfig = CodegenConfig(
+    name = "scalanSpark",
     srcPath = "src/main/scala/scalan/spark",
     entityFiles = List(
       "SparkConf.scala",
