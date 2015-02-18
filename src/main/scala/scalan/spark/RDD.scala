@@ -1,10 +1,7 @@
 package scalan.spark
 
-import scala.reflect.ClassTag
 import scalan._
 import org.apache.spark.rdd.RDD
-import scalan.common.Default
-
 import scalan.common.Default
 
 trait RDDs extends Base with BaseTypes { self: SparkDsl =>

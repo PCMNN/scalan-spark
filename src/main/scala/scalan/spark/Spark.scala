@@ -2,8 +2,6 @@ package scalan.spark
 
 import scala.reflect.ClassTag
 import scalan._
-import scalan.collections._
-import scalan.parrays._
 import scalan.spark.arrays._
 
 trait SparkDsl extends ScalanCommunityDsl

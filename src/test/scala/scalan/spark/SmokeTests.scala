@@ -1,6 +1,5 @@
 package scalan.spark
 
-import java.io.File
 import org.apache.spark._
 import org.apache.spark.rdd.RDD
 import org.scalatest.BeforeAndAfterAll

@@ -1,6 +1,5 @@
 package scalan.spark
 
-import scala.reflect.ClassTag
 import scalan._
 import scalan.common.Default
 import org.apache.spark.broadcast.{Broadcast => SparkBroadcast}

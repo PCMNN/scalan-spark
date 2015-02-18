@@ -1,6 +1,5 @@
 package scalan.spark
 
-import scala.reflect.ClassTag
 import org.apache.spark.rdd._
 import scalan._
 import scalan.common.Default
