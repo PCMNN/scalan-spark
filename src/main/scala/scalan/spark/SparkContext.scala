@@ -1,7 +1,7 @@
 package scalan.spark
 
+import scala.collection.Seq
 import org.apache.spark.rdd.RDD
-
 import scalan._
 import scalan.common.Default
 import org.apache.spark.{SparkConf, SparkContext}

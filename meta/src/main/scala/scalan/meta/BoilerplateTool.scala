@@ -20,9 +20,9 @@ object SparkBoilerplateTool extends BoilerplateTool {
       "Partitioner.scala",
       "Broadcast.scala"
     ),
-    baseContextTrait = "Scalan",
-    seqContextTrait = "ScalanSeq",
-    stagedContextTrait = "ScalanExp",
+    baseContextTrait = "ScalanCommunityDsl",
+    seqContextTrait = "ScalanCommunityDslSeq",
+    stagedContextTrait = "ScalanCommunityDslExp",
     extraImports = List(
       "scala.reflect.runtime.universe._",
       "scalan.common.Default"),
@@ -36,9 +36,9 @@ object SparkBoilerplateTool extends BoilerplateTool {
     entityFiles = List(
       "SparkArrays.scala"
     ),
-    baseContextTrait = "Scalan",
-    seqContextTrait = "ScalanSeq",
-    stagedContextTrait = "ScalanExp",
+    baseContextTrait = "ScalanCommunityDsl",
+    seqContextTrait = "ScalanCommunityDslSeq",
+    stagedContextTrait = "ScalanCommunityDslExp",
     extraImports = List(
       "scala.reflect.runtime.universe._",
       "scalan.common.Default"),
