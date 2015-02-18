@@ -2,14 +2,14 @@ package scalan.spark
 
 import scalan._
 import scalan.common.Default
-import org.apache.spark.broadcast.{Broadcast => SparkBroadcast}
+import org.apache.spark.broadcast.Broadcast
 
 trait Broadcasts extends Base with BaseTypes { self: SparkDsl =>
-  type RepBroadcast[A] = Rep[SparkBroadcast[A]]
+  type RepBroadcast[A] = Rep[Broadcast[A]]
 
   /** A broadcast variable. It allows to keep a read-only variable cached on each machine
     * rather than shipping a copy of it with tasks. */
-  trait SBroadcast[A] extends BaseTypeEx[SparkBroadcast[A], SBroadcast[A]] { self =>
+  trait SBroadcast[A] extends BaseTypeEx[Broadcast[A], SBroadcast[A]] { self =>
     implicit def eA: Elem[A]
 
     /** Gets the current value of the broadcast variable */
@@ -18,7 +18,7 @@ trait Broadcasts extends Base with BaseTypes { self: SparkDsl =>
 
   trait SBroadcastCompanion
 
-  def DefaultOfSparkBroadcast[A :Elem]: Default[SparkBroadcast[A]] = {
+  def DefaultOfBroadcast[A :Elem]: Default[Broadcast[A]] = {
     val eA = element[A]
     implicit val ctA = eA.classTag
     val defaultA: A = ctA.newArray(1)(0)
