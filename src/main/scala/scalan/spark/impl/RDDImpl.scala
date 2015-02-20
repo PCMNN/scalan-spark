@@ -81,6 +81,11 @@ trait RDDsAbs extends ScalanCommunityDsl with RDDs {
         this.getClass.getMethod("zipWithIndex"),
         scala.collection.immutable.List())
 
+    def cache: Rep[RDD[A]] =
+      methodCallEx[RDD[A]](self,
+        this.getClass.getMethod("cache"),
+        scala.collection.immutable.List())
+
     def first: Rep[A] =
       methodCallEx[A](self,
         this.getClass.getMethod("first"),
@@ -202,6 +207,9 @@ trait RDDsSeq extends RDDsDsl with ScalanCommunityDslSeq {
 
     override def zipWithIndex: Rep[RDD[(A,Long)]] =
       wrappedValueOfBaseType.zipWithIndex
+
+    override def cache: Rep[RDD[A]] =
+      wrappedValueOfBaseType.cache
 
     override def first: Rep[A] =
       wrappedValueOfBaseType.first
@@ -355,6 +363,18 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
     object zipWithIndex {
       def unapply(d: Def[_]): Option[Rep[SRDD[A]] forSome {type A}] = d match {
         case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SRDDElem[_, _, _]] && method.getName == "zipWithIndex" =>
+          Some(receiver).asInstanceOf[Option[Rep[SRDD[A]] forSome {type A}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[Rep[SRDD[A]] forSome {type A}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object cache {
+      def unapply(d: Def[_]): Option[Rep[SRDD[A]] forSome {type A}] = d match {
+        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SRDDElem[_, _, _]] && method.getName == "cache" =>
           Some(receiver).asInstanceOf[Option[Rep[SRDD[A]] forSome {type A}]]
         case _ => None
       }

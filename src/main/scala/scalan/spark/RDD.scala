@@ -37,6 +37,9 @@ trait RDDs extends Base with BaseTypes { self: SparkDsl =>
     /** Zips this RDD with its element indices. */
     @External def zipWithIndex(): Rep[RDD[(A, Long)]]
 
+    /** Persists RDD's values across operations after the first time it is computed.  */
+    @External def cache: Rep[RDD[A]]
+
                                  /** Actions **/
 
     /** Returns the first element in this RDD. */
