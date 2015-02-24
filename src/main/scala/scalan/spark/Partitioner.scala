@@ -5,10 +5,12 @@ import scalan.common.Default
 import org.apache.spark.{HashPartitioner, Partitioner}
 
 trait Partitioners extends Base with BaseTypes { self: SparkDsl =>
-  type RepPartitioner = Rep[Partitioner]
+  type RepPartitioner = Rep[SPartitioner]
 
   /** Partitioner defines how the elements in a key-value pair RDD are partitioned by key. */
-  trait SPartitioner extends BaseTypeEx[Partitioner, SPartitioner]
+  trait SPartitioner extends BaseTypeEx[Partitioner, SPartitioner] { self =>
+    def wrappedValueOfBaseType: Rep[Partitioner]
+  }
 
   trait SPartitionerCompanion
 

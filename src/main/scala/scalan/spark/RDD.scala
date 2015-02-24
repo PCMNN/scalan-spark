@@ -5,37 +5,39 @@ import org.apache.spark.rdd.RDD
 import scalan.common.Default
 
 trait RDDs extends Base with BaseTypes { self: SparkDsl =>
-  type RepRDD[A] = Rep[RDD[A]]
+  type RepRDD[A] = Rep[SRDD[A]]
 
   /** The trait contains the basic operations available on all RDDs */
   trait SRDD[A] extends BaseTypeEx[RDD[A], SRDD[A]] { self =>
     implicit def eA: Elem[A]
+    def wrappedValueOfBaseType: Rep[RDD[A]]
+
                                 /** Transformations **/
 
     /** Applies a function to all elements of this RDD end returns new RDD **/
-    @External def map[B: Elem](f: Rep[A => B]): Rep[RDD[B]]
+    @External def map[B: Elem](f: Rep[A => B]): Rep[SRDD[B]]
 
     /** Gets a new RDD containing only the elements that satisfy a predicate. */
-    @External def filter(f: Rep[A => Boolean]): Rep[RDD[A]]
+    @External def filter(f: Rep[A => Boolean]): Rep[SRDD[A]]
 
     /** Applies a function to all elements of the RDD and returns flattening the results */
-    @External def flatMap[B: Elem](f: Rep[A => TraversableOnce[B]]): Rep[RDD[B]]
+    @External def flatMap[B: Elem](f: Rep[A => TraversableOnce[B]]): Rep[SRDD[B]]
 
     /** Returns the union of this RDD and another one. */
-    @External def union(other: Rep[RDD[A]]): Rep[RDD[A]]
-    def ++(other: Rep[RDD[A]]): Rep[RDD[A]] = this.union(other)
+    @External def union(other: Rep[SRDD[A]]): Rep[SRDD[A]]
+    def ++(other: Rep[SRDD[A]]): Rep[SRDD[A]] = this.union(other)
 
     /** Aggregates the elements of each partition, and then the results for all the partitions */
     @External def fold(zeroValue: Rep[A])(op: Rep[((A, A)) => A]): Rep[A]
 
     /** Returns the RDD of all pairs of elements (a, b) where a is in `this` and b is in `other` */
-    @External def cartesian[B: Elem](other: Rep[RDD[B]]): Rep[RDD[(A, B)]]
+    @External def cartesian[B: Elem](other: Rep[SRDD[B]]): Rep[SRDD[(A, B)]]
 
     /** Returns an RDD with the elements from `this` that are not in `other`. */
-    @External def subtract(other: Rep[RDD[A]]): Rep[RDD[A]]
+    @External def subtract(other: Rep[SRDD[A]]): Rep[SRDD[A]]
 
     /** Zips this RDD with its element indices. */
-    @External def zipWithIndex(): Rep[RDD[(A, Long)]]
+    @External def zipWithIndex(): Rep[SRDD[(A, Long)]]
 
                                  /** Actions **/
 
@@ -49,11 +51,12 @@ trait RDDs extends Base with BaseTypes { self: SparkDsl =>
     @External def collect: Rep[Array[A]]
   }
 
-  trait SRDDCompanion extends ExCompanion1[RDD] {
-    def apply[A: Elem](arr: Rep[Array[A]]): Rep[RDD[A]] = fromArray(arr)
-    def fromArray[A: Elem](arr: Rep[Array[A]]): Rep[RDD[A]] = {
+  trait SRDDCompanion extends ExCompanion1[SRDD] {
+    def apply[A: Elem](arr: Rep[Array[A]]): Rep[SRDD[A]] = fromArray(arr)
+    def fromArray[A: Elem](arr: Rep[Array[A]]): Rep[SRDD[A]] = {
       repSparkContext.makeRDD(SSeq(arr))
     }
+    def empty[A: Elem]: Rep[SRDD[A]] = repSparkContext.makeRDD(SSeq.empty[A])
   }
 
   def DefaultOfRDD[A:Elem]: Default[RDD[A]] = {
@@ -63,5 +66,7 @@ trait RDDs extends Base with BaseTypes { self: SparkDsl =>
 }
 
 trait RDDsDsl extends impl.RDDsAbs { self: SparkDsl => }
-trait RDDsDslSeq extends impl.RDDsSeq { self: SparkDslSeq => }
+trait RDDsDslSeq extends impl.RDDsSeq { self: SparkDslSeq =>
+  implicit def rddToSRdd[A:Elem](rdd: RDD[A]): SRDD[A] = SRDDImpl(rdd)
+}
 trait RDDsDslExp extends impl.RDDsExp { self: SparkDslExp => }

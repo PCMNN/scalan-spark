@@ -21,27 +21,27 @@ class SmokeTests extends BaseTests with BeforeAndAfterAll { suite =>
   trait SimpleSparkTests extends ScalanDsl with SparkDsl {
     val prefix = suite.prefix
     val subfolder = "simple"
-    lazy val sparkContextElem = element[SparkContext]
+    lazy val sparkContextElem = element[SSparkContext]
     lazy val defaultSparkContextRep = sparkContextElem.defaultRepValue
     lazy val sparkConfElem = element[SparkConf]
     lazy val defaultSparkConfRep = sparkConfElem.defaultRepValue
 
-    lazy val broadcastPi = fun { (sc: Rep[SparkContext]) => sc.broadcast(toRep(3.14)) }
-    lazy val readE = fun { (sc: Rep[SparkContext]) => {
+    lazy val broadcastPi = fun { (sc: Rep[SSparkContext]) => sc.broadcast(toRep(3.14)) }
+    lazy val readE = fun { (sc: Rep[SSparkContext]) => {
       val be = sc.broadcast(toRep(2.71828))
       be.value
     }}
-    lazy val broadcastDouble = fun { (in: Rep[(SparkContext, Double)]) => {
+    lazy val broadcastDouble = fun { (in: Rep[(SSparkContext, Double)]) => {
       val Pair(sc, d) = in
       val bd = sc.broadcast(d)
       bd.value
     }}
 
-    lazy val emptyRDD = fun { (sc: Rep[SparkContext]) => {
-      val rdd: Rep[RDD[Double]] = sc.emptyRDD
+    lazy val emptyRDD = fun { (sc: Rep[SSparkContext]) => {
+      val rdd: Rep[SRDD[Double]] = sc.emptyRDD
       rdd
     }}
-    lazy val mapRDD = fun { (in: Rep[(RDD[Double], Double)]) => {
+    lazy val mapRDD = fun { (in: Rep[(SRDD[Double], Double)]) => {
       val Pair(rdd, i) = in
       rdd.map(fun {v => v + i})
     }}
@@ -50,7 +50,8 @@ class SmokeTests extends BaseTests with BeforeAndAfterAll { suite =>
   test("simpleSparkStaged") {
     val ctx = new TestContext(this, "simpleSparkStaged") with SimpleSparkTests with SparkDslExp {
       val sparkContext = globalSparkContext
-      val repSparkContext = toRep(globalSparkContext)
+      val sSparkContext = ExpSSparkContextImpl(globalSparkContext)
+      val repSparkContext = SSparkContext(SSparkConf())
     }
 
     ctx.emit("defaultSparkContextRep", ctx.defaultSparkContextRep)
@@ -65,12 +66,13 @@ class SmokeTests extends BaseTests with BeforeAndAfterAll { suite =>
   test("simpleSparkSeq") {
     val ctx = new ScalanCtxSeq with SimpleSparkTests with SparkDslSeq {
       val sparkContext = globalSparkContext
-      val repSparkContext = toRep(globalSparkContext)
+      val sSparkContext = SeqSSparkContextImpl(globalSparkContext)
+      val repSparkContext = SSparkContext(SSparkConf())
     }
 
     {
       val gravityAcc = 9.8
-      val res = ctx.broadcastDouble((ctx.sparkContext, gravityAcc))
+      val res = ctx.broadcastDouble((ctx.sSparkContext, gravityAcc))
       assertResult(gravityAcc)(res)
     }
   }

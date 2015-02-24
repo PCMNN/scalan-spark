@@ -5,33 +5,35 @@ import org.apache.spark.rdd.RDD
 import scalan._
 import scalan.common.Default
 import org.apache.spark.{SparkConf, SparkContext}
-import org.apache.spark.broadcast.{Broadcast => SparkBroadcast}
 
 trait SparkContexts extends Base with BaseTypes { self: SparkDsl =>
 
-  type RepSparkContext = Rep[SparkContext]
+  type RepSparkContext = Rep[SSparkContext]
   /** Current Spark Context */
   val sparkContext: SparkContext
-  val repSparkContext: Rep[SparkContext]
+  val sSparkContext: SSparkContext
+  val repSparkContext: Rep[SSparkContext]
 
   /** A SparkContext represents the connection to a Spark
     * cluster, and can be used to create RDDs, accumulators and broadcast variables on that cluster.*/
   trait SSparkContext extends BaseTypeEx[SparkContext, SSparkContext] {self =>
+    def wrappedValueOfBaseType: Rep[SparkContext]
+
     /** Default level of parallelism */
     @External def defaultParallelism: Rep[Int]
 
     /** Creates a read-only variable in the cluster */
-    @External def broadcast[T:Elem](value: Rep[T]): Rep[SparkBroadcast[T]]
+    @External def broadcast[T:Elem](value: Rep[T]): Rep[SBroadcast[T]]
 
     /** Creates a RDD based on a Scala collection */
-    @External def makeRDD[T:Elem](seq: Rep[Seq[T]], numSlices: Rep[Int] = defaultParallelism): Rep[RDD[T]]
+    @External def makeRDD[T:Elem](seq: Rep[SSeq[T]], numSlices: Rep[Int] = defaultParallelism): Rep[SRDD[T]]
 
     /** Creates an RDD without elements and partitions */
-    @External def emptyRDD[T:Elem]: Rep[RDD[T]]
+    @External def emptyRDD[T:Elem]: Rep[SRDD[T]]
   }
 
-  trait SSparkContextCompanion extends ExCompanion0[SparkContext] {
-    @Constructor def apply(conf: Rep[SparkConf]): Rep[SparkContext]
+  trait SSparkContextCompanion extends ExCompanion0[SSparkContext] {
+    @Constructor def apply(conf: Rep[SSparkConf]): Rep[SSparkContext]
   }
 
   def DefaultOfSparkContext: Default[SparkContext] = {

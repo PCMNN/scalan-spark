@@ -2,12 +2,12 @@ package scalan.meta
 
 object SparkBoilerplateTool extends BoilerplateTool {
   val sparkTypeSynonims = Map(
-    "RepSparkConf" -> "SparkConf",
-    "RepSparkContext" -> "SparkContext",
-    "RepRDD" -> "RDD",
-    "RepPairRDDFunctions" -> "PairRDDFunctions",
-    "RepPartitioner" -> "Partitioner",
-    "RepBroadcast" -> "Broadcast"
+    "RepSparkConf" -> "SSparkConf",
+    "RepSparkContext" -> "SSparkContext",
+    "RepRDD" -> "SRDD",
+    "RepPairRDDFunctions" -> "SPairRDDFunctions",
+    "RepPartitioner" -> "SPartitioner",
+    "RepBroadcast" -> "SBroadcast"
   )
   lazy val sparkConfig = CodegenConfig(
     name = "ScalanSpark",
@@ -29,23 +29,7 @@ object SparkBoilerplateTool extends BoilerplateTool {
     sparkTypeSynonims
   )
 
-  val sparkArraysTypeSynonims = Map[String, String]()
-  lazy val sparkArraysConfig = CodegenConfig(
-    name = "SparkArrays",
-    srcPath = "src/main/scala/scalan/spark/arrays",
-    entityFiles = List(
-      "SparkArrays.scala"
-    ),
-    baseContextTrait = "ScalanCommunityDsl",
-    seqContextTrait = "ScalanCommunityDslSeq",
-    stagedContextTrait = "ScalanCommunityDslExp",
-    extraImports = List(
-      "scala.reflect.runtime.universe._",
-      "scalan.common.Default"),
-    sparkArraysTypeSynonims
-  )
-
-  override def getConfigs(args: Array[String]) = Seq(sparkConfig, sparkArraysConfig)
+  override def getConfigs(args: Array[String]) = Seq(sparkConfig)
 
   override def main(args: Array[String]) = super.main(args)
 }

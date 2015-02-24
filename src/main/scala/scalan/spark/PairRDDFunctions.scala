@@ -6,34 +6,35 @@ import scalan.common.Default
 import org.apache.spark.Partitioner
 
 trait PairRDDFunctionss extends Base with BaseTypes { self: SparkDsl =>
-  type RepPairRDDFunctions[K, V] = Rep[PairRDDFunctions[K, V]]
+  type RepPairRDDFunctions[K, V] = Rep[SPairRDDFunctions[K, V]]
 
   /** Extra functions available on RDDs of (key, value) pairs */
   trait SPairRDDFunctions[K, V] extends BaseTypeEx[PairRDDFunctions[K, V], SPairRDDFunctions[K, V]] { self =>
     implicit def eK: Elem[K]
     implicit def eV: Elem[V]
+    def wrappedValueOfBaseType: Rep[PairRDDFunctions[K, V]]
 
     /** Return an RDD with the keys of each tuple. */
-    @External def keys: Rep[RDD[K]]
+    @External def keys: Rep[SRDD[K]]
 
     /** Returns an RDD with the values of each tuple. */
-    @External def values: Rep[RDD[V]]
+    @External def values: Rep[SRDD[V]]
 
     /** Returns a copy of the RDD partitioned using the specified partitioner. */
-    @External def partitionBy(partitioner: Rep[Partitioner]): Rep[RDD[(K, V)]]
+    @External def partitionBy(partitioner: Rep[SPartitioner]): Rep[SRDD[(K, V)]]
 
     /** Merges the values for each key using an associative reduce function. */
-    @External def reduceByKey(func: Rep[((V, V)) => V]): Rep[PairRDDFunctions[K, V]]
+    @External def reduceByKey(func: Rep[((V, V)) => V]): Rep[SRDD[(K, V)]]
 
     /** Return an RDD containing all pairs of elements with matching keys */
     //@External def join[W: Elem](other: Rep[RDD[(K, W)]]): Rep[RDD[(K, (V, W))]]
   }
 
   trait SPairRDDFunctionsCompanion {
-    @Constructor def apply[K: Elem, V: Elem](rdd: Rep[RDD[(K, V)]]): Rep[PairRDDFunctions[K, V]]
+    @Constructor def apply[K: Elem, V: Elem](rdd: Rep[SRDD[(K, V)]]): Rep[SPairRDDFunctions[K, V]]
   }
 
-  implicit def rddToPairRddFunctions[K: Elem, V: Elem](rdd: Rep[RDD[(K, V)]]): Rep[PairRDDFunctions[K, V]] = {
+  implicit def rddToPairRddFunctions[K: Elem, V: Elem](rdd: Rep[SRDD[(K, V)]]): Rep[SPairRDDFunctions[K, V]] = {
     SPairRDDFunctions(rdd)
   }
 
@@ -44,12 +45,5 @@ trait PairRDDFunctionss extends Base with BaseTypes { self: SparkDsl =>
 }
 
 trait PairRDDFunctionssDsl extends impl.PairRDDFunctionssAbs  { self: SparkDsl => }
-trait PairRDDFunctionssDslSeq extends impl.PairRDDFunctionssSeq { self: SparkDslSeq =>
-
-  trait SeqSPairRDDFunctions[K,V] extends SPairRDDFunctionsImpl[K,V] {
-
-    override def reduceByKey(func: Rep[((V, V)) => V]): Rep[PairRDDFunctions[K, V]] =
-      new PairRDDFunctions(wrappedValueOfBaseType.reduceByKey((a1, a2) => func(a1, a2)))(eK.classTag, eV.classTag)
-  }
-}
+trait PairRDDFunctionssDslSeq extends impl.PairRDDFunctionssSeq { self: SparkDslSeq => }
 trait PairRDDFunctionssDslExp extends impl.PairRDDFunctionssExp { self: SparkDslExp => }

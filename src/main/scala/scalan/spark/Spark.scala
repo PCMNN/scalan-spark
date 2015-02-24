@@ -2,7 +2,6 @@ package scalan.spark
 
 import scala.reflect.ClassTag
 import scalan._
-import scalan.spark.arrays._
 
 trait SparkDsl extends ScalanCommunityDsl
 with SparkContextsDsl
@@ -11,7 +10,6 @@ with RDDsDsl
 with PairRDDFunctionssDsl
 with PartitionersDsl
 with BroadcastsDsl
-with SparkArraysDsl
 { implicit def elementToClassTag[A](implicit e: Elem[A]): ClassTag[A] = e.classTag }
 
 trait SparkDslSeq extends SparkDsl with ScalanCommunityDslSeq
@@ -21,7 +19,6 @@ with RDDsDslSeq
 with PairRDDFunctionssDslSeq
 with PartitionersDslSeq
 with BroadcastsDslSeq
-with SparkArraysDslSeq
 
 trait SparkDslExp extends SparkDsl with ScalanCommunityDslExp
 with SparkContextsDslExp
@@ -30,4 +27,3 @@ with RDDsDslExp
 with PairRDDFunctionssDslExp
 with PartitionersDslExp
 with BroadcastsDslExp
-with SparkArraysDslExp
