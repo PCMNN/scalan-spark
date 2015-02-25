@@ -98,7 +98,7 @@ trait RDDsAbs extends ScalanCommunityDsl with RDDs {
     def cache: Rep[RDD[A]] =
       methodCallEx[RDD[A]](self,
         this.getClass.getMethod("cache"),
-        scala.collection.immutable.List())
+        List())
 
     def first: Rep[A] =
       methodCallEx[A](self,

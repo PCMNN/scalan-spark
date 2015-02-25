@@ -40,7 +40,7 @@ trait RDDs extends Base with BaseTypes { self: SparkDsl =>
     @External def zipWithIndex(): Rep[SRDD[(A, Long)]]
 
     /** Persists RDD's values across operations after the first time it is computed.  */
-    @External def cache: Rep[RDD[A]]
+    @External def cache: Rep[SRDD[A]]
 
                                  /** Actions **/
 
