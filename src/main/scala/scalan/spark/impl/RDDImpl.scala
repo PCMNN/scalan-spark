@@ -95,8 +95,8 @@ trait RDDsAbs extends ScalanCommunityDsl with RDDs {
         this.getClass.getMethod("zipWithIndex"),
         List())
 
-    def cache: Rep[RDD[A]] =
-      methodCallEx[RDD[A]](self,
+    def cache: Rep[SRDD[A]] =
+      methodCallEx[SRDD[A]](self,
         this.getClass.getMethod("cache"),
         List())
 
@@ -221,8 +221,8 @@ trait RDDsSeq extends RDDsDsl with ScalanCommunityDslSeq {
     override def zipWithIndex: Rep[SRDD[(A,Long)]] =
       SRDDImpl(wrappedValueOfBaseType.zipWithIndex)
 
-    override def cache: Rep[RDD[A]] =
-      wrappedValueOfBaseType.cache
+    override def cache: Rep[SRDD[A]] =
+      SRDDImpl(wrappedValueOfBaseType.cache)
 
     override def first: Rep[A] =
       wrappedValueOfBaseType.first
