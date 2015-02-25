@@ -6,7 +6,7 @@ object SparkBoilerplateTool extends BoilerplateTool {
     "RepSparkContext" -> "SSparkContext",
     "RepRDD" -> "SRDD",
     "RepPairRDDFunctions" -> "SPairRDDFunctions",
-    "RepPartitioner" -> "SPartitioner",
+    "RepBasePartitioner" -> "SBasePartitioner",
     "RepBroadcast" -> "SBroadcast"
   )
   lazy val sparkConfig = CodegenConfig(
