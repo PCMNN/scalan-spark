@@ -11,8 +11,10 @@ import scalan.common.Default
 trait PartitionersAbs extends ScalanCommunityDsl with Partitioners {
   self: SparkDsl =>
   // single proxy for each type family
-  implicit def proxySPartitioner(p: Rep[SPartitioner]): SPartitioner =
-    proxyOps[SPartitioner](p)
+  implicit def proxySPartitioner(p: Rep[SPartitioner]): SPartitioner = {
+    implicit val tag = weakTypeTag[SPartitioner]
+    proxyOps[SPartitioner](p)(TagImplicits.typeTagToClassTag[SPartitioner])
+  }
 
   abstract class SPartitionerElem[From, To <: SPartitioner](iso: Iso[From, To])
     extends ViewElem[From, To](iso) {
@@ -34,8 +36,10 @@ trait PartitionersAbs extends ScalanCommunityDsl with Partitioners {
   }
 
   // single proxy for each type family
-  implicit def proxySBasePartitioner(p: Rep[SBasePartitioner]): SBasePartitioner =
-    proxyOps[SBasePartitioner](p)
+  implicit def proxySBasePartitioner(p: Rep[SBasePartitioner]): SBasePartitioner = {
+    implicit val tag = weakTypeTag[SBasePartitioner]
+    proxyOps[SBasePartitioner](p)(TagImplicits.typeTagToClassTag[SBasePartitioner])
+  }
   abstract class SBasePartitionerElem[From, To <: SBasePartitioner](iso: Iso[From, To])
     extends ViewElem[From, To](iso) {
     override def convert(x: Rep[Reifiable[_]]) = convertSBasePartitioner(x.asRep[SBasePartitioner])
@@ -60,6 +64,17 @@ trait PartitionersExp extends PartitionersDsl with ScalanCommunityDslExp {
   }
 
   object SPartitionerMethods {
+    object wrappedValueOfBaseType {
+      def unapply(d: Def[_]): Option[Rep[SPartitioner]] = d match {
+        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SPartitionerElem[_, _]] && method.getName == "wrappedValueOfBaseType" =>
+          Some(receiver).asInstanceOf[Option[Rep[SPartitioner]]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[Rep[SPartitioner]] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
   }
 
   object SPartitionerCompanionMethods {

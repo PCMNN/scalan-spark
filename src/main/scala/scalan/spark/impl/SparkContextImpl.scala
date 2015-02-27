@@ -13,8 +13,10 @@ import scalan.common.Default
 trait SparkContextsAbs extends ScalanCommunityDsl with SparkContexts {
   self: SparkDsl =>
   // single proxy for each type family
-  implicit def proxySSparkContext(p: Rep[SSparkContext]): SSparkContext =
-    proxyOps[SSparkContext](p)
+  implicit def proxySSparkContext(p: Rep[SSparkContext]): SSparkContext = {
+    implicit val tag = weakTypeTag[SSparkContext]
+    proxyOps[SSparkContext](p)(TagImplicits.typeTagToClassTag[SSparkContext])
+  }
   // BaseTypeEx proxy
   //implicit def proxySparkContext(p: Rep[SparkContext]): SSparkContext =
   //  proxyOps[SSparkContext](p.asRep[SSparkContext])
@@ -174,6 +176,8 @@ trait SparkContextsSeq extends SparkContextsDsl with ScalanCommunityDslSeq {
       new SeqSSparkContextImpl(wrappedValueOfBaseType)
   def unmkSSparkContextImpl(p: Rep[SSparkContextImpl]) =
     Some((p.wrappedValueOfBaseType))
+
+  implicit def wrapSparkContextToSSparkContext(v: SparkContext): SSparkContext = SSparkContextImpl(v)
 }
 
 // Exp -----------------------------------

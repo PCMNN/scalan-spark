@@ -12,8 +12,10 @@ import scalan.common.Default
 trait PairRDDFunctionssAbs extends ScalanCommunityDsl with PairRDDFunctionss {
   self: SparkDsl =>
   // single proxy for each type family
-  implicit def proxySPairRDDFunctions[K, V](p: Rep[SPairRDDFunctions[K, V]]): SPairRDDFunctions[K, V] =
-    proxyOps[SPairRDDFunctions[K, V]](p)
+  implicit def proxySPairRDDFunctions[K, V](p: Rep[SPairRDDFunctions[K, V]]): SPairRDDFunctions[K, V] = {
+    implicit val tag = weakTypeTag[SPairRDDFunctions[K, V]]
+    proxyOps[SPairRDDFunctions[K, V]](p)(TagImplicits.typeTagToClassTag[SPairRDDFunctions[K, V]])
+  }
   // BaseTypeEx proxy
   //implicit def proxyPairRDDFunctions[K:Elem, V:Elem](p: Rep[PairRDDFunctions[K, V]]): SPairRDDFunctions[K, V] =
   //  proxyOps[SPairRDDFunctions[K, V]](p.asRep[SPairRDDFunctions[K, V]])
@@ -173,6 +175,8 @@ trait PairRDDFunctionssSeq extends PairRDDFunctionssDsl with ScalanCommunityDslS
       new SeqSPairRDDFunctionsImpl[K, V](wrappedValueOfBaseType)
   def unmkSPairRDDFunctionsImpl[K:Elem, V:Elem](p: Rep[SPairRDDFunctionsImpl[K, V]]) =
     Some((p.wrappedValueOfBaseType))
+
+  implicit def wrapPairRDDFunctionsToSPairRDDFunctions[K:Elem, V:Elem](v: PairRDDFunctions[K, V]): SPairRDDFunctions[K, V] = SPairRDDFunctionsImpl(v)
 }
 
 // Exp -----------------------------------

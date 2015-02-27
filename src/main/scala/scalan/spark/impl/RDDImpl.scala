@@ -11,8 +11,10 @@ import scalan.common.Default
 trait RDDsAbs extends ScalanCommunityDsl with RDDs {
   self: SparkDsl =>
   // single proxy for each type family
-  implicit def proxySRDD[A](p: Rep[SRDD[A]]): SRDD[A] =
-    proxyOps[SRDD[A]](p)
+  implicit def proxySRDD[A](p: Rep[SRDD[A]]): SRDD[A] = {
+    implicit val tag = weakTypeTag[SRDD[A]]
+    proxyOps[SRDD[A]](p)(TagImplicits.typeTagToClassTag[SRDD[A]])
+  }
   // BaseTypeEx proxy
   //implicit def proxyRDD[A:Elem](p: Rep[RDD[A]]): SRDD[A] =
   //  proxyOps[SRDD[A]](p.asRep[SRDD[A]])
@@ -22,20 +24,8 @@ trait RDDsAbs extends ScalanCommunityDsl with RDDs {
   implicit def defaultSRDDElem[A:Elem]: Elem[SRDD[A]] = element[SRDDImpl[A]].asElem[SRDD[A]]
   implicit def RDDElement[A:Elem:WeakTypeTag]: Elem[RDD[A]]
 
-  implicit def castSRDDElement[A](elem: Elem[SRDD[A]]): SRDDElem[A, _,SRDD[A]] = elem.asInstanceOf[SRDDElem[A, _,SRDD[A]]]
-  implicit val containerSRDD: Cont[SRDD] = new Container[SRDD] {
-    def tag[A](implicit evA: WeakTypeTag[A]) = weakTypeTag[SRDD[A]]
-    def lift[A](implicit evA: Elem[A]) = element[SRDD[A]]
-  }
-  case class SRDDIso[A,B](iso: Iso[A,B]) extends Iso1[A, B, SRDD](iso) {
-    implicit val eA = iso.eFrom
-    implicit val eB = iso.eTo
-    def from(x: Rep[SRDD[B]]) = x.map(iso.from _)
-    def to(x: Rep[SRDD[A]]) = x.map(iso.to _)
-    lazy val defaultRepTo = Default.defaultVal(SRDD.empty[B])
-  }
   abstract class SRDDElem[A, From, To <: SRDD[A]](iso: Iso[From, To])(implicit eA: Elem[A])
-    extends ViewElem1[A, From, To, SRDD](iso) {
+    extends ViewElem[From, To](iso) {
     override def convert(x: Rep[Reifiable[_]]) = convertSRDD(x.asRep[SRDD[A]])
     def convertSRDD(x : Rep[SRDD[A]]): Rep[To]
   }
@@ -242,6 +232,8 @@ trait RDDsSeq extends RDDsDsl with ScalanCommunityDslSeq {
       new SeqSRDDImpl[A](wrappedValueOfBaseType)
   def unmkSRDDImpl[A:Elem](p: Rep[SRDDImpl[A]]) =
     Some((p.wrappedValueOfBaseType))
+
+  implicit def wrapRDDToSRDD[A:Elem](v: RDD[A]): SRDD[A] = SRDDImpl(v)
 }
 
 // Exp -----------------------------------
@@ -252,15 +244,6 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
     override def mirror(t: Transformer) = this
   }
 
-  case class ViewSRDD[A, B](source: Rep[SRDD[A]])(iso: Iso1[A, B, SRDD])
-    extends View1[A, B, SRDD](iso) {
-    def copy(source: Rep[SRDD[A]]) = ViewSRDD(source)(iso)
-    override def toString = s"ViewSRDD[${innerIso.eTo.name}]($source)"
-    override def equals(other: Any) = other match {
-      case v: ViewSRDD[_, _] => source == v.source && innerIso.eTo == v.innerIso.eTo
-      case _ => false
-    }
-  }
   implicit def RDDElement[A:Elem:WeakTypeTag]: Elem[RDD[A]] = new ExpBaseElemEx[RDD[A], SRDD[A]](element[SRDD[A]])(weakTypeTag[RDD[A]], DefaultOfRDD[A])
   case class ExpSRDDImpl[A]
       (override val wrappedValueOfBaseType: Rep[RDD[A]])
