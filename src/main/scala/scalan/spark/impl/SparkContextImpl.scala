@@ -22,7 +22,7 @@ trait SparkContextsAbs extends Scalan with SparkContexts {
   implicit def defaultSSparkContextElem: Elem[SSparkContext] = element[SSparkContextImpl].asElem[SSparkContext]
   implicit def SparkContextElement: Elem[SparkContext]
 
-  abstract class SSparkContextElem[From, To <: SSparkContext](iso: Iso[From, To]) extends ViewElem[From, To]()(iso)
+  abstract class SSparkContextElem[From, To <: SSparkContext](iso: Iso[From, To]) extends ViewElem[From, To](iso)
 
   trait SSparkContextCompanionElem extends CompanionElem[SSparkContextCompanionAbs]
   implicit lazy val SSparkContextCompanionElem: SSparkContextCompanionElem = new SSparkContextCompanionElem {
@@ -137,7 +137,7 @@ trait SparkContextsSeq extends SparkContextsDsl with ScalanSeq {
   override def proxySparkContext(p: Rep[SparkContext]): SSparkContext =
     proxyOpsEx[SparkContext,SSparkContext, SeqSSparkContextImpl](p, bt => SeqSSparkContextImpl(bt))
 
-    implicit lazy val SparkContextElement: Elem[SparkContext] = new SeqBaseElemEx[SparkContext, SSparkContext](element[SSparkContext])
+    implicit lazy val SparkContextElement: Elem[SparkContext] = new SeqBaseElemEx[SparkContext, SSparkContext](element[SSparkContext])(weakTypeTag[SparkContext], DefaultOfSparkContext)
 
   case class SeqSSparkContextImpl
       (override val wrappedValueOfBaseType: Rep[SparkContext])
@@ -145,7 +145,6 @@ trait SparkContextsSeq extends SparkContextsDsl with ScalanSeq {
     extends SSparkContextImpl(wrappedValueOfBaseType)
         with UserTypeSeq[SSparkContext, SSparkContextImpl] {
     lazy val selfType = element[SSparkContextImpl].asInstanceOf[Elem[SSparkContext]]
-
     override def defaultParallelism: Rep[Int] =
       wrappedValueOfBaseType.defaultParallelism
 
@@ -177,8 +176,7 @@ trait SparkContextsExp extends SparkContextsDsl with ScalanExp {
     override def mirror(t: Transformer) = this
   }
 
-  implicit lazy val SparkContextElement: Elem[SparkContext] = new ExpBaseElemEx[SparkContext, SSparkContext](element[SSparkContext])
-
+  implicit lazy val SparkContextElement: Elem[SparkContext] = new ExpBaseElemEx[SparkContext, SSparkContext](element[SSparkContext])(weakTypeTag[SparkContext], DefaultOfSparkContext)
   case class ExpSSparkContextImpl
       (override val wrappedValueOfBaseType: Rep[SparkContext])
 
@@ -196,12 +194,24 @@ trait SparkContextsExp extends SparkContextsDsl with ScalanExp {
   }
 
   def mkSSparkContextImpl
-    (wrappedValueOfBaseType: Rep[SparkContext]) =
+    (wrappedValueOfBaseType: Rep[SparkContext]): Rep[SSparkContextImpl] =
     new ExpSSparkContextImpl(wrappedValueOfBaseType)
   def unmkSSparkContextImpl(p: Rep[SSparkContextImpl]) =
     Some((p.wrappedValueOfBaseType))
 
   object SSparkContextMethods {
+    object wrappedValueOfBaseType {
+      def unapply(d: Def[_]): Option[Rep[SSparkContext]] = d match {
+        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SSparkContextElem[_, _]] && method.getName == "wrappedValueOfBaseType" =>
+          Some(receiver).asInstanceOf[Option[Rep[SSparkContext]]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[Rep[SSparkContext]] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
     object defaultParallelism {
       def unapply(d: Def[_]): Option[Rep[SSparkContext]] = d match {
         case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SSparkContextElem[_, _]] && method.getName == "defaultParallelism" =>

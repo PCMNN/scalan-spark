@@ -22,7 +22,7 @@ trait PairRDDFunctionssAbs extends Scalan with PairRDDFunctionss {
   implicit def defaultSPairRDDFunctionsElem[K:Elem, V:Elem]: Elem[SPairRDDFunctions[K, V]] = element[SPairRDDFunctionsImpl[K, V]].asElem[SPairRDDFunctions[K, V]]
   implicit def PairRDDFunctionsElement[K:Elem:WeakTypeTag, V:Elem:WeakTypeTag]: Elem[PairRDDFunctions[K, V]]
 
-  abstract class SPairRDDFunctionsElem[K, V, From, To <: SPairRDDFunctions[K, V]](iso: Iso[From, To]) extends ViewElem[From, To]()(iso)
+  abstract class SPairRDDFunctionsElem[K, V, From, To <: SPairRDDFunctions[K, V]](iso: Iso[From, To]) extends ViewElem[From, To](iso)
 
   trait SPairRDDFunctionsCompanionElem extends CompanionElem[SPairRDDFunctionsCompanionAbs]
   implicit lazy val SPairRDDFunctionsCompanionElem: SPairRDDFunctionsCompanionElem = new SPairRDDFunctionsCompanionElem {

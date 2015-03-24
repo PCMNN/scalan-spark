@@ -10,6 +10,8 @@ trait SparkConfs extends Base with BaseTypes { self: SparkDsl =>
   /** Configuration for a Spark application.
     * SparkConf allows to set various Spark parameters as key-value pairs.*/
   trait SSparkConf extends BaseTypeEx[SparkConf, SSparkConf] {self =>
+    def wrappedValueOfBaseType: Rep[SparkConf]
+
     /** Sets a name for the application. */
     @External def setAppName(name: Rep[String]): Rep[SparkConf]
 

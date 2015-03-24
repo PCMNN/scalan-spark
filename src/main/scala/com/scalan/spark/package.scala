@@ -21,11 +21,11 @@ trait ScalanSparkMethodMapping extends MethodMapping {
       import sparkLib._
       import scala.language.reflectiveCalls
 
-      Map()
+      scala.collection.mutable.Map()
     }
 
     val backend = new ScalaBackend {
-      val functionMap = mapSparkLib2Scala.asInstanceOf[Map[Method, Func]]
+      val functionMap = mapSparkLib2Scala.asInstanceOf[scala.collection.mutable.Map[Method, Func]]
     }
   }
 }

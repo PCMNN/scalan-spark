@@ -13,6 +13,7 @@ trait PairRDDFunctionss extends Base with BaseTypes { self: SparkDsl =>
   trait SPairRDDFunctions[K, V] extends BaseTypeEx[PairRDDFunctions[K, V], SPairRDDFunctions[K, V]] { self =>
     implicit def eK: Elem[K]
     implicit def eV: Elem[V]
+    def wrappedValueOfBaseType: Rep[PairRDDFunctions[K, V]]
 
     /** Returns a copy of the RDD partitioned using the specified partitioner. */
     @External def partitionBy(partitioner: Rep[Partitioner]): Rep[RDD[(K, V)]]

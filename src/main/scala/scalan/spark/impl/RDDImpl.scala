@@ -22,7 +22,7 @@ trait RDDsAbs extends Scalan with RDDs {
   implicit def defaultSRDDElem[A:Elem]: Elem[SRDD[A]] = element[SRDDImpl[A]].asElem[SRDD[A]]
   implicit def RDDElement[A:Elem:WeakTypeTag]: Elem[RDD[A]]
 
-  abstract class SRDDElem[A, From, To <: SRDD[A]](iso: Iso[From, To]) extends ViewElem[From, To]()(iso)
+  abstract class SRDDElem[A, From, To <: SRDD[A]](iso: Iso[From, To]) extends ViewElem[From, To](iso)
 
   trait SRDDCompanionElem extends CompanionElem[SRDDCompanionAbs]
   implicit lazy val SRDDCompanionElem: SRDDCompanionElem = new SRDDCompanionElem {
@@ -59,6 +59,11 @@ trait RDDsAbs extends Scalan with RDDs {
       methodCallEx[A](self,
         this.getClass.getMethod("fold", classOf[AnyRef], classOf[AnyRef]),
         List(zeroValue.asInstanceOf[AnyRef], op.asInstanceOf[AnyRef]))
+
+    def collect: Rep[Array[A]] =
+      methodCallEx[Array[A]](self,
+        this.getClass.getMethod("collect"),
+        List())
 
     def cartesian[B:Elem](other: Rep[RDD[B]]): Rep[RDD[(A,B)]] =
       methodCallEx[RDD[(A,B)]](self,
@@ -166,6 +171,9 @@ trait RDDsSeq extends RDDsDsl with ScalanSeq {
 
     override def fold(zeroValue: Rep[A])(op: Rep[((A,A)) => A]): Rep[A] =
       wrappedValueOfBaseType.fold(zeroValue)(scala.Function.untupled(op))
+
+    override def collect: Rep[Array[A]] =
+      wrappedValueOfBaseType.collect
 
     override def cartesian[B:Elem](other: Rep[RDD[B]]): Rep[RDD[(A,B)]] =
       wrappedValueOfBaseType.cartesian[B](other)
@@ -275,6 +283,18 @@ trait RDDsExp extends RDDsDsl with ScalanExp {
         case _ => None
       }
       def unapply(exp: Exp[_]): Option[(Rep[SRDD[A]], Rep[A], Rep[((A,A)) => A]) forSome {type A}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object collect {
+      def unapply(d: Def[_]): Option[Rep[SRDD[A]] forSome {type A}] = d match {
+        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SRDDElem[_, _, _]] && method.getName == "collect" =>
+          Some(receiver).asInstanceOf[Option[Rep[SRDD[A]] forSome {type A}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[Rep[SRDD[A]] forSome {type A}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }

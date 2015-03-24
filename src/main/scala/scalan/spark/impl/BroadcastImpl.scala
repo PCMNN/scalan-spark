@@ -21,7 +21,7 @@ trait BroadcastsAbs extends Scalan with Broadcasts {
   implicit def defaultSBroadcastElem[A:Elem]: Elem[SBroadcast[A]] = element[SBroadcastImpl[A]].asElem[SBroadcast[A]]
   implicit def SparkBroadcastElement[A:Elem:WeakTypeTag]: Elem[SparkBroadcast[A]]
 
-  abstract class SBroadcastElem[A, From, To <: SBroadcast[A]](iso: Iso[From, To]) extends ViewElem[From, To]()(iso)
+  abstract class SBroadcastElem[A, From, To <: SBroadcast[A]](iso: Iso[From, To]) extends ViewElem[From, To](iso)
 
   trait SBroadcastCompanionElem extends CompanionElem[SBroadcastCompanionAbs]
   implicit lazy val SBroadcastCompanionElem: SBroadcastCompanionElem = new SBroadcastCompanionElem {

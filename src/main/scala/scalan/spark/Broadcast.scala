@@ -12,6 +12,7 @@ trait Broadcasts extends Base with BaseTypes { self: SparkDsl =>
     * rather than shipping a copy of it with tasks. */
   trait SBroadcast[A] extends BaseTypeEx[SparkBroadcast[A], SBroadcast[A]] { self =>
     implicit def eA: Elem[A]
+    def wrappedValueOfBaseType: Rep[SparkBroadcast[A]]
 
     /** Gets the current value of the broadcast variable */
     @External def value: Rep[A]
@@ -19,12 +20,13 @@ trait Broadcasts extends Base with BaseTypes { self: SparkDsl =>
 
   trait SBroadcastCompanion
 
-  implicit def DefaultOfBroadcast[A :Elem]: Default[SparkBroadcast[A]] = {
+  implicit def DefaultOfSparkBroadcast[A :Elem]: Default[SparkBroadcast[A]] = {
     val eA = element[A]
     implicit val ctA = eA.classTag
     val defaultA: A = ctA.newArray(1)(0)
     Default.defaultVal(sparkContext.broadcast(defaultA))
   }
+
 }
 
 trait BroadcastsDsl extends impl.BroadcastsAbs  { self: SparkDsl => }

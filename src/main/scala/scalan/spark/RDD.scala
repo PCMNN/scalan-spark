@@ -13,7 +13,9 @@ trait RDDs extends Base with BaseTypes { self: SparkDsl =>
   /** The trait contains the basic operations available on all RDDs */
   trait SRDD[A] extends BaseTypeEx[RDD[A], SRDD[A]] { self =>
     implicit def eA: Elem[A]
-                                /** Transformations **/
+    def wrappedValueOfBaseType: Rep[RDD[A]]
+
+    /** Transformations **/
 
     /** Applies a function to all elements of this RDD end returns new RDD **/
     @External def map[B: Elem](f: Rep[A => B]): Rep[RDD[B]]
@@ -27,6 +29,9 @@ trait RDDs extends Base with BaseTypes { self: SparkDsl =>
 
     /** Aggregates the elements of each partition, and then the results for all the partitions */
     @External def fold(zeroValue: Rep[A])(op: Rep[((A, A)) => A]): Rep[A]
+
+    /** Return an array with all elements of RDD */
+    @External def collect(): Rep[Array[A]]
 
     /** Returns the RDD of all pairs of elements (a, b) where a is in `this` and b is in `other` */
     @External def cartesian[B: Elem](other: Rep[RDD[B]]): Rep[RDD[(A, B)]]

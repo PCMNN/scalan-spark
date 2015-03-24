@@ -20,7 +20,7 @@ trait PartitionersAbs extends Scalan with Partitioners {
   implicit def defaultSPartitionerElem: Elem[SPartitioner] = element[SPartitionerImpl].asElem[SPartitioner]
   implicit def PartitionerElement: Elem[Partitioner]
 
-  abstract class SPartitionerElem[From, To <: SPartitioner](iso: Iso[From, To]) extends ViewElem[From, To]()(iso)
+  abstract class SPartitionerElem[From, To <: SPartitioner](iso: Iso[From, To]) extends ViewElem[From, To](iso)
 
   trait SPartitionerCompanionElem extends CompanionElem[SPartitionerCompanionAbs]
   implicit lazy val SPartitionerCompanionElem: SPartitionerCompanionElem = new SPartitionerCompanionElem {
