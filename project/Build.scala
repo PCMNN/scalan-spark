@@ -6,7 +6,7 @@ import sbt.Keys._
 
 object ScalanStartRootBuild extends Build {
   val commonDeps = libraryDependencies ++= Seq(
-    "org.scalaz.stream" %% "scalaz-stream" % "0.6a",
+    //"org.scalaz.stream" %% "scalaz-stream" % "0.6a",
     //"junit" % "junit" % "4.11" % "test",
     //("com.novocode" % "junit-interface" % "0.11" % "test").exclude("junit", "junit-dep").exclude("org.scala-tools.testing", "test-interface"),
     "org.scalatest" %% "scalatest" % "2.2.1" % "test",
@@ -46,7 +46,7 @@ object ScalanStartRootBuild extends Build {
   lazy val commonSettings =
     buildSettings /*++ assemblySettings ++ releaseSettings*/ ++ testSettings ++
       Seq(
-      resolvers += "Scalaz Bintray Repo" at "http://dl.bintray.com/scalaz/releases",
+      //resolvers += "Scalaz Bintray Repo" at "http://dl.bintray.com/scalaz/releases",
       publishTo := {
         val nexus = "http://10.122.85.37:9081/nexus/"
         if (version.value.trim.endsWith("SNAPSHOT"))
@@ -76,6 +76,7 @@ object ScalanStartRootBuild extends Build {
   lazy val core = liteDependency("core")
   lazy val common = liteDependency("common")
   lazy val community = liteDependency("community-edition")
+  lazy val ml = "com.huawei.scalan" %% "scalan-ml" % "0.3.0"
 
   lazy val start = Project(
     id = "scalan-spark",
@@ -86,6 +87,13 @@ object ScalanStartRootBuild extends Build {
       common,
       common % "test" classifier "tests",
       community
+      )
+    )
+  lazy val examples = Project("scalan-spark-examples", file("examples")).
+    dependsOn(start.allConfigDependency).addTestConfigsAndCommonSettings.
+    settings(libraryDependencies ++= Seq(
+      ml,
+      ml % "test" classifier "tests"
       )
     )
 
