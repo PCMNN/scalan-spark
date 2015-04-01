@@ -29,6 +29,7 @@ trait SparkConfsAbs extends ScalanCommunityDsl with SparkConfs {
     override def convert(x: Rep[Reifiable[_]]) = convertSSparkConf(x.asRep[SSparkConf])
     def convertSSparkConf(x : Rep[SSparkConf]): Rep[To]
   }
+
   trait SSparkConfCompanionElem extends CompanionElem[SSparkConfCompanionAbs]
   implicit lazy val SSparkConfCompanionElem: SSparkConfCompanionElem = new SSparkConfCompanionElem {
     lazy val tag = weakTypeTag[SSparkConfCompanionAbs]
@@ -162,7 +163,7 @@ trait SparkConfsSeq extends SparkConfsDsl with ScalanCommunityDslSeq {
   }
 
   def mkSSparkConfImpl
-      (wrappedValueOfBaseType: Rep[SparkConf]) =
+      (wrappedValueOfBaseType: Rep[SparkConf]): Rep[SSparkConfImpl] =
       new SeqSSparkConfImpl(wrappedValueOfBaseType)
   def unmkSSparkConfImpl(p: Rep[SSparkConfImpl]) =
     Some((p.wrappedValueOfBaseType))
@@ -196,7 +197,7 @@ trait SparkConfsExp extends SparkConfsDsl with ScalanCommunityDslExp {
   }
 
   def mkSSparkConfImpl
-    (wrappedValueOfBaseType: Rep[SparkConf]) =
+    (wrappedValueOfBaseType: Rep[SparkConf]): Rep[SSparkConfImpl] =
     new ExpSSparkConfImpl(wrappedValueOfBaseType)
   def unmkSSparkConfImpl(p: Rep[SSparkConfImpl]) =
     Some((p.wrappedValueOfBaseType))

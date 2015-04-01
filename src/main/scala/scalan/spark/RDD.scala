@@ -36,6 +36,8 @@ trait RDDs extends Base with BaseTypes { self: SparkDsl =>
     /** Returns an RDD with the elements from `this` that are not in `other`. */
     @External def subtract(other: Rep[SRDD[A]]): Rep[SRDD[A]]
 
+    @External def zip[B:Elem](other: Rep[SRDD[B]]): Rep[SRDD[(A,B)]]
+
     /** Zips this RDD with its element indices. */
     @External def zipWithIndex(): Rep[SRDD[(A, Long)]]
 
@@ -72,4 +74,12 @@ trait RDDsDsl extends impl.RDDsAbs { self: SparkDsl => }
 trait RDDsDslSeq extends impl.RDDsSeq { self: SparkDslSeq =>
   implicit def rddToSRdd[A:Elem](rdd: RDD[A]): SRDD[A] = SRDDImpl(rdd)
 }
-trait RDDsDslExp extends impl.RDDsExp { self: SparkDslExp => }
+trait RDDsDslExp extends impl.RDDsExp {
+  self: SparkDslExp =>
+  override def rewriteDef[T](d: Def[T]) = d match {
+    case SSparkContextMethods.makeRDD(_, Def(SSeqCompanionMethods.apply(Def(SRDDMethods.collect(rdd)))), _) => rdd
+    case _ => super.rewriteDef(d)
+  }
+
+}
+

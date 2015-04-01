@@ -29,6 +29,7 @@ trait RDDsAbs extends ScalanCommunityDsl with RDDs {
     override def convert(x: Rep[Reifiable[_]]) = convertSRDD(x.asRep[SRDD[A]])
     def convertSRDD(x : Rep[SRDD[A]]): Rep[To]
   }
+
   trait SRDDCompanionElem extends CompanionElem[SRDDCompanionAbs]
   implicit lazy val SRDDCompanionElem: SRDDCompanionElem = new SRDDCompanionElem {
     lazy val tag = weakTypeTag[SRDDCompanionAbs]
@@ -79,6 +80,11 @@ trait RDDsAbs extends ScalanCommunityDsl with RDDs {
       methodCallEx[SRDD[A]](self,
         this.getClass.getMethod("subtract", classOf[AnyRef]),
         List(other.asInstanceOf[AnyRef]))
+
+    def zip[B:Elem](other: Rep[SRDD[B]]): Rep[SRDD[(A,B)]] =
+      methodCallEx[SRDD[(A,B)]](self,
+        this.getClass.getMethod("zip", classOf[AnyRef], classOf[Elem[B]]),
+        List(other.asInstanceOf[AnyRef], element[B]))
 
     def zipWithIndex: Rep[SRDD[(A,Long)]] =
       methodCallEx[SRDD[(A,Long)]](self,
@@ -208,6 +214,9 @@ trait RDDsSeq extends RDDsDsl with ScalanCommunityDslSeq {
     override def subtract(other: Rep[SRDD[A]]): Rep[SRDD[A]] =
       SRDDImpl(wrappedValueOfBaseType.subtract(other))
 
+    override def zip[B:Elem](other: Rep[SRDD[B]]): Rep[SRDD[(A,B)]] =
+      SRDDImpl(wrappedValueOfBaseType.zip[B](other))
+
     override def zipWithIndex: Rep[SRDD[(A,Long)]] =
       SRDDImpl(wrappedValueOfBaseType.zipWithIndex)
 
@@ -228,7 +237,7 @@ trait RDDsSeq extends RDDsDsl with ScalanCommunityDslSeq {
   }
 
   def mkSRDDImpl[A]
-      (wrappedValueOfBaseType: Rep[RDD[A]])(implicit eA: Elem[A]) =
+      (wrappedValueOfBaseType: Rep[RDD[A]])(implicit eA: Elem[A]): Rep[SRDDImpl[A]] =
       new SeqSRDDImpl[A](wrappedValueOfBaseType)
   def unmkSRDDImpl[A:Elem](p: Rep[SRDDImpl[A]]) =
     Some((p.wrappedValueOfBaseType))
@@ -262,7 +271,7 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
   }
 
   def mkSRDDImpl[A]
-    (wrappedValueOfBaseType: Rep[RDD[A]])(implicit eA: Elem[A]) =
+    (wrappedValueOfBaseType: Rep[RDD[A]])(implicit eA: Elem[A]): Rep[SRDDImpl[A]] =
     new ExpSRDDImpl[A](wrappedValueOfBaseType)
   def unmkSRDDImpl[A:Elem](p: Rep[SRDDImpl[A]]) =
     Some((p.wrappedValueOfBaseType))
@@ -371,6 +380,18 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
         case _ => None
       }
       def unapply(exp: Exp[_]): Option[(Rep[SRDD[A]], Rep[SRDD[A]]) forSome {type A}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object zip {
+      def unapply(d: Def[_]): Option[(Rep[SRDD[A]], Rep[SRDD[B]]) forSome {type A; type B}] = d match {
+        case MethodCall(receiver, method, Seq(other, _*), _) if receiver.elem.isInstanceOf[SRDDElem[_, _, _]] && method.getName == "zip" =>
+          Some((receiver, other)).asInstanceOf[Option[(Rep[SRDD[A]], Rep[SRDD[B]]) forSome {type A; type B}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[SRDD[A]], Rep[SRDD[B]]) forSome {type A; type B}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }

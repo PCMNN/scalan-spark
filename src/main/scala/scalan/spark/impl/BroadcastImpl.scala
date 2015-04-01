@@ -29,6 +29,7 @@ trait BroadcastsAbs extends ScalanCommunityDsl with Broadcasts {
     override def convert(x: Rep[Reifiable[_]]) = convertSBroadcast(x.asRep[SBroadcast[A]])
     def convertSBroadcast(x : Rep[SBroadcast[A]]): Rep[To]
   }
+
   trait SBroadcastCompanionElem extends CompanionElem[SBroadcastCompanionAbs]
   implicit lazy val SBroadcastCompanionElem: SBroadcastCompanionElem = new SBroadcastCompanionElem {
     lazy val tag = weakTypeTag[SBroadcastCompanionAbs]
@@ -140,7 +141,7 @@ trait BroadcastsSeq extends BroadcastsDsl with ScalanCommunityDslSeq {
   }
 
   def mkSBroadcastImpl[A]
-      (wrappedValueOfBaseType: Rep[Broadcast[A]])(implicit eA: Elem[A]) =
+      (wrappedValueOfBaseType: Rep[Broadcast[A]])(implicit eA: Elem[A]): Rep[SBroadcastImpl[A]] =
       new SeqSBroadcastImpl[A](wrappedValueOfBaseType)
   def unmkSBroadcastImpl[A:Elem](p: Rep[SBroadcastImpl[A]]) =
     Some((p.wrappedValueOfBaseType))
@@ -174,7 +175,7 @@ trait BroadcastsExp extends BroadcastsDsl with ScalanCommunityDslExp {
   }
 
   def mkSBroadcastImpl[A]
-    (wrappedValueOfBaseType: Rep[Broadcast[A]])(implicit eA: Elem[A]) =
+    (wrappedValueOfBaseType: Rep[Broadcast[A]])(implicit eA: Elem[A]): Rep[SBroadcastImpl[A]] =
     new ExpSBroadcastImpl[A](wrappedValueOfBaseType)
   def unmkSBroadcastImpl[A:Elem](p: Rep[SBroadcastImpl[A]]) =
     Some((p.wrappedValueOfBaseType))

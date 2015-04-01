@@ -30,6 +30,7 @@ trait PairRDDFunctionssAbs extends ScalanCommunityDsl with PairRDDFunctionss {
     override def convert(x: Rep[Reifiable[_]]) = convertSPairRDDFunctions(x.asRep[SPairRDDFunctions[K, V]])
     def convertSPairRDDFunctions(x : Rep[SPairRDDFunctions[K, V]]): Rep[To]
   }
+
   trait SPairRDDFunctionsCompanionElem extends CompanionElem[SPairRDDFunctionsCompanionAbs]
   implicit lazy val SPairRDDFunctionsCompanionElem: SPairRDDFunctionsCompanionElem = new SPairRDDFunctionsCompanionElem {
     lazy val tag = weakTypeTag[SPairRDDFunctionsCompanionAbs]
@@ -68,6 +69,16 @@ trait PairRDDFunctionssAbs extends ScalanCommunityDsl with PairRDDFunctionss {
       methodCallEx[SRDD[(K,V)]](self,
         this.getClass.getMethod("reduceByKey", classOf[AnyRef]),
         List(func.asInstanceOf[AnyRef]))
+
+    def lookup(key: Rep[K]): Rep[SSeq[V]] =
+      methodCallEx[SSeq[V]](self,
+        this.getClass.getMethod("lookup", classOf[AnyRef]),
+        List(key.asInstanceOf[AnyRef]))
+
+    def join[W:Elem](other: Rep[SRDD[(K,W)]]): Rep[SRDD[(K,(V,W))]] =
+      methodCallEx[SRDD[(K,(V,W))]](self,
+        this.getClass.getMethod("join", classOf[AnyRef], classOf[Elem[W]]),
+        List(other.asInstanceOf[AnyRef], element[W]))(defaultSRDDElem(PairElem(element[K], PairElem(element[V], element[W]))))
   }
   trait SPairRDDFunctionsImplCompanion
   // elem for concrete class
@@ -142,17 +153,17 @@ trait PairRDDFunctionssSeq extends PairRDDFunctionssDsl with ScalanCommunityDslS
       SPairRDDFunctionsImpl(new PairRDDFunctions[K, V](rdd))
   }
 
-    // override proxy if we deal with BaseTypeEx
+  // override proxy if we deal with BaseTypeEx
   //override def proxyPairRDDFunctions[K:Elem, V:Elem](p: Rep[PairRDDFunctions[K, V]]): SPairRDDFunctions[K, V] =
   //  proxyOpsEx[PairRDDFunctions[K, V],SPairRDDFunctions[K, V], SeqSPairRDDFunctionsImpl[K, V]](p, bt => SeqSPairRDDFunctionsImpl(bt))
 
-    implicit def PairRDDFunctionsElement[K:Elem:WeakTypeTag, V:Elem:WeakTypeTag]: Elem[PairRDDFunctions[K, V]] = new SeqBaseElemEx[PairRDDFunctions[K, V], SPairRDDFunctions[K, V]](element[SPairRDDFunctions[K, V]])(weakTypeTag[PairRDDFunctions[K, V]], DefaultOfPairRDDFunctions[K, V])
+  implicit def PairRDDFunctionsElement[K:Elem:WeakTypeTag, V:Elem:WeakTypeTag]: Elem[PairRDDFunctions[K, V]] = new SeqBaseElemEx[PairRDDFunctions[K, V], SPairRDDFunctions[K, V]](element[SPairRDDFunctions[K, V]])(weakTypeTag[PairRDDFunctions[K, V]], DefaultOfPairRDDFunctions[K, V])
 
   case class SeqSPairRDDFunctionsImpl[K, V]
-      (override val wrappedValueOfBaseType: Rep[PairRDDFunctions[K,V]])
-      (implicit eK: Elem[K], eV: Elem[V])
+  (override val wrappedValueOfBaseType: Rep[PairRDDFunctions[K,V]])
+  (implicit eK: Elem[K], eV: Elem[V])
     extends SPairRDDFunctionsImpl[K, V](wrappedValueOfBaseType)
-        with UserTypeSeq[SPairRDDFunctions[K,V], SPairRDDFunctionsImpl[K, V]] {
+    with UserTypeSeq[SPairRDDFunctions[K,V], SPairRDDFunctionsImpl[K, V]] {
     lazy val selfType = element[SPairRDDFunctionsImpl[K, V]].asInstanceOf[Elem[SPairRDDFunctions[K,V]]]
     override def keys: Rep[SRDD[K]] =
       wrappedValueOfBaseType.keys
@@ -165,14 +176,23 @@ trait PairRDDFunctionssSeq extends PairRDDFunctionssDsl with ScalanCommunityDslS
 
     override def reduceByKey(func: Rep[((V,V)) => V]): Rep[SRDD[(K,V)]] =
       wrappedValueOfBaseType.reduceByKey(scala.Function.untupled(func))
+
+    override def lookup(key: Rep[K]): Rep[SSeq[V]] =
+      wrappedValueOfBaseType.lookup(key)
+
+    override def join[W:Elem](other: Rep[SRDD[(K,W)]]): Rep[SRDD[(K,(V,W))]] = {
+      ???
+      //implicit val ppElem = PairElem(element[K], PairElem(element[V], element[W]))
+      //wrappedValueOfBaseType.join[W](other)
+    }
   }
   lazy val SPairRDDFunctionsImpl = new SPairRDDFunctionsImplCompanionAbs with UserTypeSeq[SPairRDDFunctionsImplCompanionAbs, SPairRDDFunctionsImplCompanionAbs] {
     lazy val selfType = element[SPairRDDFunctionsImplCompanionAbs]
   }
 
   def mkSPairRDDFunctionsImpl[K, V]
-      (wrappedValueOfBaseType: Rep[PairRDDFunctions[K,V]])(implicit eK: Elem[K], eV: Elem[V]) =
-      new SeqSPairRDDFunctionsImpl[K, V](wrappedValueOfBaseType)
+  (wrappedValueOfBaseType: Rep[PairRDDFunctions[K,V]])(implicit eK: Elem[K], eV: Elem[V]): Rep[SPairRDDFunctionsImpl[K, V]] =
+    new SeqSPairRDDFunctionsImpl[K, V](wrappedValueOfBaseType)
   def unmkSPairRDDFunctionsImpl[K:Elem, V:Elem](p: Rep[SPairRDDFunctionsImpl[K, V]]) =
     Some((p.wrappedValueOfBaseType))
 
@@ -189,8 +209,8 @@ trait PairRDDFunctionssExp extends PairRDDFunctionssDsl with ScalanCommunityDslE
 
   implicit def PairRDDFunctionsElement[K:Elem:WeakTypeTag, V:Elem:WeakTypeTag]: Elem[PairRDDFunctions[K, V]] = new ExpBaseElemEx[PairRDDFunctions[K, V], SPairRDDFunctions[K, V]](element[SPairRDDFunctions[K, V]])(weakTypeTag[PairRDDFunctions[K, V]], DefaultOfPairRDDFunctions[K, V])
   case class ExpSPairRDDFunctionsImpl[K, V]
-      (override val wrappedValueOfBaseType: Rep[PairRDDFunctions[K,V]])
-      (implicit eK: Elem[K], eV: Elem[V])
+  (override val wrappedValueOfBaseType: Rep[PairRDDFunctions[K,V]])
+  (implicit eK: Elem[K], eV: Elem[V])
     extends SPairRDDFunctionsImpl[K, V](wrappedValueOfBaseType) with UserTypeDef[SPairRDDFunctions[K,V], SPairRDDFunctionsImpl[K, V]] {
     lazy val selfType = element[SPairRDDFunctionsImpl[K, V]].asInstanceOf[Elem[SPairRDDFunctions[K,V]]]
     override def mirror(t: Transformer) = ExpSPairRDDFunctionsImpl[K, V](t(wrappedValueOfBaseType))
@@ -205,7 +225,7 @@ trait PairRDDFunctionssExp extends PairRDDFunctionssDsl with ScalanCommunityDslE
   }
 
   def mkSPairRDDFunctionsImpl[K, V]
-    (wrappedValueOfBaseType: Rep[PairRDDFunctions[K,V]])(implicit eK: Elem[K], eV: Elem[V]) =
+  (wrappedValueOfBaseType: Rep[PairRDDFunctions[K,V]])(implicit eK: Elem[K], eV: Elem[V]): Rep[SPairRDDFunctionsImpl[K, V]] =
     new ExpSPairRDDFunctionsImpl[K, V](wrappedValueOfBaseType)
   def unmkSPairRDDFunctionsImpl[K:Elem, V:Elem](p: Rep[SPairRDDFunctionsImpl[K, V]]) =
     Some((p.wrappedValueOfBaseType))
@@ -266,6 +286,30 @@ trait PairRDDFunctionssExp extends PairRDDFunctionssDsl with ScalanCommunityDslE
         case _ => None
       }
       def unapply(exp: Exp[_]): Option[(Rep[SPairRDDFunctions[K, V]], Rep[((V,V)) => V]) forSome {type K; type V}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object lookup {
+      def unapply(d: Def[_]): Option[(Rep[SPairRDDFunctions[K, V]], Rep[K]) forSome {type K; type V}] = d match {
+        case MethodCall(receiver, method, Seq(key, _*), _) if receiver.elem.isInstanceOf[SPairRDDFunctionsElem[_, _, _, _]] && method.getName == "lookup" =>
+          Some((receiver, key)).asInstanceOf[Option[(Rep[SPairRDDFunctions[K, V]], Rep[K]) forSome {type K; type V}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[SPairRDDFunctions[K, V]], Rep[K]) forSome {type K; type V}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object join {
+      def unapply(d: Def[_]): Option[(Rep[SPairRDDFunctions[K, V]], Rep[SRDD[(K,W)]]) forSome {type K; type V; type W}] = d match {
+        case MethodCall(receiver, method, Seq(other, _*), _) if receiver.elem.isInstanceOf[SPairRDDFunctionsElem[_, _, _, _]] && method.getName == "join" =>
+          Some((receiver, other)).asInstanceOf[Option[(Rep[SPairRDDFunctions[K, V]], Rep[SRDD[(K,W)]]) forSome {type K; type V; type W}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[SPairRDDFunctions[K, V]], Rep[SRDD[(K,W)]]) forSome {type K; type V; type W}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }

@@ -2,6 +2,7 @@ package scalan.spark
 
 import scala.reflect.ClassTag
 import scalan._
+import scalan.spark.collections.{RDDCollectionsDslExp, RDDCollectionsDslSeq, RDDCollectionsDsl}
 
 trait SparkDsl extends ScalanCommunityDsl
 with SparkContextsDsl

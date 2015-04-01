@@ -21,6 +21,7 @@ trait PartitionersAbs extends ScalanCommunityDsl with Partitioners {
     override def convert(x: Rep[Reifiable[_]]) = convertSPartitioner(x.asRep[SPartitioner])
     def convertSPartitioner(x : Rep[SPartitioner]): Rep[To]
   }
+
   trait SPartitionerCompanionElem extends CompanionElem[SPartitionerCompanionAbs]
   implicit lazy val SPartitionerCompanionElem: SPartitionerCompanionElem = new SPartitionerCompanionElem {
     lazy val tag = weakTypeTag[SPartitionerCompanionAbs]
