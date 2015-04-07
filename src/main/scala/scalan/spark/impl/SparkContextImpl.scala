@@ -6,6 +6,7 @@ import org.apache.spark.rdd.RDD
 import scalan._
 import scalan.common.Default
 import org.apache.spark.{SparkConf, SparkContext}
+import scala.reflect._
 import scala.reflect.runtime.universe._
 import scalan.common.Default
 
@@ -14,8 +15,7 @@ trait SparkContextsAbs extends ScalanCommunityDsl with SparkContexts {
   self: SparkDsl =>
   // single proxy for each type family
   implicit def proxySSparkContext(p: Rep[SSparkContext]): SSparkContext = {
-    implicit val tag = weakTypeTag[SSparkContext]
-    proxyOps[SSparkContext](p)(TagImplicits.typeTagToClassTag[SSparkContext])
+    proxyOps[SSparkContext](p)(classTag[SSparkContext])
   }
   // BaseTypeEx proxy
   //implicit def proxySparkContext(p: Rep[SparkContext]): SSparkContext =
@@ -24,13 +24,24 @@ trait SparkContextsAbs extends ScalanCommunityDsl with SparkContexts {
   implicit def unwrapValueOfSSparkContext(w: Rep[SSparkContext]): Rep[SparkContext] = w.wrappedValueOfBaseType
 
   implicit def defaultSSparkContextElem: Elem[SSparkContext] = element[SSparkContextImpl].asElem[SSparkContext]
-  implicit def SparkContextElement: Elem[SparkContext]
+  implicit def sparkContextElement: Elem[SparkContext]
 
-  abstract class SSparkContextElem[From, To <: SSparkContext](iso: Iso[From, To])
-    extends ViewElem[From, To](iso) {
+  class SSparkContextElem[To <: SSparkContext]
+    extends EntityElem[To] {
+    override def isEntityType = true
+    override def tag = {
+      weakTypeTag[SSparkContext].asInstanceOf[WeakTypeTag[To]]
+    }
     override def convert(x: Rep[Reifiable[_]]) = convertSSparkContext(x.asRep[SSparkContext])
-    def convertSSparkContext(x : Rep[SSparkContext]): Rep[To]
+    def convertSSparkContext(x : Rep[SSparkContext]): Rep[To] = {
+      assert(x.selfType1.isInstanceOf[SSparkContextElem[_]])
+      x.asRep[To]
+    }
+    override def getDefaultRep: Rep[To] = ???
   }
+
+  implicit def sSparkContextElement =
+    new SSparkContextElem[SSparkContext]()
 
   trait SSparkContextCompanionElem extends CompanionElem[SSparkContextCompanionAbs]
   implicit lazy val SSparkContextCompanionElem: SSparkContextCompanionElem = new SSparkContextCompanionElem {
@@ -73,9 +84,12 @@ trait SparkContextsAbs extends ScalanCommunityDsl with SparkContexts {
   }
   trait SSparkContextImplCompanion
   // elem for concrete class
-  class SSparkContextImplElem(iso: Iso[SSparkContextImplData, SSparkContextImpl])
-    extends SSparkContextElem[SSparkContextImplData, SSparkContextImpl](iso) {
-    def convertSSparkContext(x: Rep[SSparkContext]) = SSparkContextImpl(x.wrappedValueOfBaseType)
+  class SSparkContextImplElem(val iso: Iso[SSparkContextImplData, SSparkContextImpl])
+    extends SSparkContextElem[SSparkContextImpl]
+    with ViewElem[SSparkContextImplData, SSparkContextImpl] {
+    override def convertSSparkContext(x: Rep[SSparkContext]) = SSparkContextImpl(x.wrappedValueOfBaseType)
+    override def getDefaultRep = super[ViewElem].getDefaultRep
+    override lazy val tag = super[ViewElem].tag
   }
 
   // state representation type
@@ -148,7 +162,7 @@ trait SparkContextsSeq extends SparkContextsDsl with ScalanCommunityDslSeq {
   //override def proxySparkContext(p: Rep[SparkContext]): SSparkContext =
   //  proxyOpsEx[SparkContext,SSparkContext, SeqSSparkContextImpl](p, bt => SeqSSparkContextImpl(bt))
 
-    implicit lazy val SparkContextElement: Elem[SparkContext] = new SeqBaseElemEx[SparkContext, SSparkContext](element[SSparkContext])(weakTypeTag[SparkContext], DefaultOfSparkContext)
+    implicit lazy val sparkContextElement: Elem[SparkContext] = new SeqBaseElemEx[SparkContext, SSparkContext](element[SSparkContext])(weakTypeTag[SparkContext], DefaultOfSparkContext)
 
   case class SeqSSparkContextImpl
       (override val wrappedValueOfBaseType: Rep[SparkContext])
@@ -189,7 +203,7 @@ trait SparkContextsExp extends SparkContextsDsl with ScalanCommunityDslExp {
     override def mirror(t: Transformer) = this
   }
 
-  implicit lazy val SparkContextElement: Elem[SparkContext] = new ExpBaseElemEx[SparkContext, SSparkContext](element[SSparkContext])(weakTypeTag[SparkContext], DefaultOfSparkContext)
+  implicit lazy val sparkContextElement: Elem[SparkContext] = new ExpBaseElemEx[SparkContext, SSparkContext](element[SSparkContext])(weakTypeTag[SparkContext], DefaultOfSparkContext)
   case class ExpSSparkContextImpl
       (override val wrappedValueOfBaseType: Rep[SparkContext])
 
@@ -215,7 +229,7 @@ trait SparkContextsExp extends SparkContextsDsl with ScalanCommunityDslExp {
   object SSparkContextMethods {
     object wrappedValueOfBaseType {
       def unapply(d: Def[_]): Option[Rep[SSparkContext]] = d match {
-        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SSparkContextElem[_, _]] && method.getName == "wrappedValueOfBaseType" =>
+        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SSparkContextElem[_]] && method.getName == "wrappedValueOfBaseType" =>
           Some(receiver).asInstanceOf[Option[Rep[SSparkContext]]]
         case _ => None
       }
@@ -227,7 +241,7 @@ trait SparkContextsExp extends SparkContextsDsl with ScalanCommunityDslExp {
 
     object defaultParallelism {
       def unapply(d: Def[_]): Option[Rep[SSparkContext]] = d match {
-        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SSparkContextElem[_, _]] && method.getName == "defaultParallelism" =>
+        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SSparkContextElem[_]] && method.getName == "defaultParallelism" =>
           Some(receiver).asInstanceOf[Option[Rep[SSparkContext]]]
         case _ => None
       }
@@ -239,7 +253,7 @@ trait SparkContextsExp extends SparkContextsDsl with ScalanCommunityDslExp {
 
     object broadcast {
       def unapply(d: Def[_]): Option[(Rep[SSparkContext], Rep[T]) forSome {type T}] = d match {
-        case MethodCall(receiver, method, Seq(value, _*), _) if receiver.elem.isInstanceOf[SSparkContextElem[_, _]] && method.getName == "broadcast" =>
+        case MethodCall(receiver, method, Seq(value, _*), _) if receiver.elem.isInstanceOf[SSparkContextElem[_]] && method.getName == "broadcast" =>
           Some((receiver, value)).asInstanceOf[Option[(Rep[SSparkContext], Rep[T]) forSome {type T}]]
         case _ => None
       }
@@ -251,7 +265,7 @@ trait SparkContextsExp extends SparkContextsDsl with ScalanCommunityDslExp {
 
     object makeRDD {
       def unapply(d: Def[_]): Option[(Rep[SSparkContext], Rep[SSeq[T]], Rep[Int]) forSome {type T}] = d match {
-        case MethodCall(receiver, method, Seq(seq, numSlices, _*), _) if receiver.elem.isInstanceOf[SSparkContextElem[_, _]] && method.getName == "makeRDD" =>
+        case MethodCall(receiver, method, Seq(seq, numSlices, _*), _) if receiver.elem.isInstanceOf[SSparkContextElem[_]] && method.getName == "makeRDD" =>
           Some((receiver, seq, numSlices)).asInstanceOf[Option[(Rep[SSparkContext], Rep[SSeq[T]], Rep[Int]) forSome {type T}]]
         case _ => None
       }
@@ -263,7 +277,7 @@ trait SparkContextsExp extends SparkContextsDsl with ScalanCommunityDslExp {
 
     object emptyRDD {
       def unapply(d: Def[_]): Option[Rep[SSparkContext] forSome {type T}] = d match {
-        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SSparkContextElem[_, _]] && method.getName == "emptyRDD" =>
+        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SSparkContextElem[_]] && method.getName == "emptyRDD" =>
           Some(receiver).asInstanceOf[Option[Rep[SSparkContext] forSome {type T}]]
         case _ => None
       }

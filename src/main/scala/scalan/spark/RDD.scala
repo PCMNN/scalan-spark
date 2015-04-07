@@ -8,6 +8,7 @@ trait RDDs extends Base with BaseTypes { self: SparkDsl =>
   type RepRDD[A] = Rep[SRDD[A]]
 
   /** The trait contains the basic operations available on all RDDs */
+  @ContainerType
   trait SRDD[A] extends BaseTypeEx[RDD[A], SRDD[A]] { self =>
     implicit def eA: Elem[A]
     def wrappedValueOfBaseType: Rep[RDD[A]]
@@ -21,7 +22,7 @@ trait RDDs extends Base with BaseTypes { self: SparkDsl =>
     @External def filter(f: Rep[A => Boolean]): Rep[SRDD[A]]
 
     /** Applies a function to all elements of the RDD and returns flattening the results */
-    @External def flatMap[B: Elem](f: Rep[A => TraversableOnce[B]]): Rep[SRDD[B]]
+    @External def flatMap[B: Elem](f: Rep[A => SSeq[B]]): Rep[SRDD[B]]
 
     /** Returns the union of this RDD and another one. */
     @External def union(other: Rep[SRDD[A]]): Rep[SRDD[A]]

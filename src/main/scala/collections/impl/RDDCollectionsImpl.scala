@@ -6,6 +6,7 @@ import scalan.OverloadId
 import scalan.common.Default
 import scalan.common.OverloadHack.Overloaded1
 import scalan.spark.{SparkDslExp, SparkDslSeq, SparkDsl}
+import scala.reflect._
 import scala.reflect.runtime.universe._
 import scalan.common.Default
 
@@ -14,15 +15,26 @@ trait RDDCollectionsAbs extends SparkDsl with RDDCollections {
   self: SparkDsl with RDDCollectionsDsl =>
   // single proxy for each type family
   implicit def proxyIRDDCollection[A](p: Rep[IRDDCollection[A]]): IRDDCollection[A] = {
-    implicit val tag = weakTypeTag[IRDDCollection[A]]
-    proxyOps[IRDDCollection[A]](p)(TagImplicits.typeTagToClassTag[IRDDCollection[A]])
+    proxyOps[IRDDCollection[A]](p)(classTag[IRDDCollection[A]])
   }
 
-  abstract class IRDDCollectionElem[A, From, To <: IRDDCollection[A]](iso: Iso[From, To])(implicit eA: Elem[A])
-    extends ViewElem[From, To](iso) {
+  class IRDDCollectionElem[A, To <: IRDDCollection[A]](implicit val eA: Elem[A])
+    extends CollectionElem[A, To] {
+    override def isEntityType = true
+    override def tag = {
+      implicit val tagA = eA.tag
+      weakTypeTag[IRDDCollection[A]].asInstanceOf[WeakTypeTag[To]]
+    }
     override def convert(x: Rep[Reifiable[_]]) = convertIRDDCollection(x.asRep[IRDDCollection[A]])
-    def convertIRDDCollection(x : Rep[IRDDCollection[A]]): Rep[To]
+    def convertIRDDCollection(x : Rep[IRDDCollection[A]]): Rep[To] = {
+      assert(x.selfType1.isInstanceOf[IRDDCollectionElem[_,_]])
+      x.asRep[To]
+    }
+    override def getDefaultRep: Rep[To] = ???
   }
+
+  implicit def iRDDCollectionElement[A](implicit eA: Elem[A]) =
+    new IRDDCollectionElem[A, IRDDCollection[A]]()(eA)
 
   trait IRDDCollectionCompanionElem extends CompanionElem[IRDDCollectionCompanionAbs]
   implicit lazy val IRDDCollectionCompanionElem: IRDDCollectionCompanionElem = new IRDDCollectionCompanionElem {
@@ -40,30 +52,56 @@ trait RDDCollectionsAbs extends SparkDsl with RDDCollections {
 
   // single proxy for each type family
   implicit def proxyIRDDPairCollection[A, B](p: Rep[IRDDPairCollection[A, B]]): IRDDPairCollection[A, B] = {
-    implicit val tag = weakTypeTag[IRDDPairCollection[A, B]]
-    proxyOps[IRDDPairCollection[A, B]](p)(TagImplicits.typeTagToClassTag[IRDDPairCollection[A, B]])
+    proxyOps[IRDDPairCollection[A, B]](p)(classTag[IRDDPairCollection[A, B]])
   }
-  abstract class IRDDPairCollectionElem[A, B, From, To <: IRDDPairCollection[A, B]](iso: Iso[From, To])
-    extends ViewElem[From, To](iso) {
+  class IRDDPairCollectionElem[A, B, To <: IRDDPairCollection[A, B]](implicit override val eA: Elem[A], override val eB: Elem[B])
+    extends IPairCollectionElem[A, B, To] {
+    override def isEntityType = true
+    override def tag = {
+      implicit val tagA = eA.tag
+      implicit val tagB = eB.tag
+      weakTypeTag[IRDDPairCollection[A, B]].asInstanceOf[WeakTypeTag[To]]
+    }
     override def convert(x: Rep[Reifiable[_]]) = convertIRDDPairCollection(x.asRep[IRDDPairCollection[A, B]])
-    def convertIRDDPairCollection(x : Rep[IRDDPairCollection[A, B]]): Rep[To]
+    def convertIRDDPairCollection(x : Rep[IRDDPairCollection[A, B]]): Rep[To] = {
+      assert(x.selfType1.isInstanceOf[IRDDPairCollectionElem[_,_,_]])
+      x.asRep[To]
+    }
+    override def getDefaultRep: Rep[To] = ???
   }
+
+  implicit def iRDDPairCollectionElement[A, B](implicit eA: Elem[A], eB: Elem[B]) =
+    new IRDDPairCollectionElem[A, B, IRDDPairCollection[A, B]]()(eA, eB)
 
   // single proxy for each type family
   implicit def proxyIRDDNestedCollection[A](p: Rep[IRDDNestedCollection[A]]): IRDDNestedCollection[A] = {
-    implicit val tag = weakTypeTag[IRDDNestedCollection[A]]
-    proxyOps[IRDDNestedCollection[A]](p)(TagImplicits.typeTagToClassTag[IRDDNestedCollection[A]])
+    proxyOps[IRDDNestedCollection[A]](p)(classTag[IRDDNestedCollection[A]])
   }
-  abstract class IRDDNestedCollectionElem[A, From, To <: IRDDNestedCollection[A]](iso: Iso[From, To])(implicit eA: Elem[A])
-    extends ViewElem[From, To](iso) {
+  class IRDDNestedCollectionElem[A, To <: IRDDNestedCollection[A]](implicit override val eA: Elem[A])
+    extends INestedCollectionElem[A, To] {
+    override def isEntityType = true
+    override def tag = {
+      implicit val tagA = eA.tag
+      weakTypeTag[IRDDNestedCollection[A]].asInstanceOf[WeakTypeTag[To]]
+    }
     override def convert(x: Rep[Reifiable[_]]) = convertIRDDNestedCollection(x.asRep[IRDDNestedCollection[A]])
-    def convertIRDDNestedCollection(x : Rep[IRDDNestedCollection[A]]): Rep[To]
+    def convertIRDDNestedCollection(x : Rep[IRDDNestedCollection[A]]): Rep[To] = {
+      assert(x.selfType1.isInstanceOf[IRDDNestedCollectionElem[_,_]])
+      x.asRep[To]
+    }
+    override def getDefaultRep: Rep[To] = ???
   }
 
+  implicit def iRDDNestedCollectionElement[A](implicit eA: Elem[A]) =
+    new IRDDNestedCollectionElem[A, IRDDNestedCollection[A]]()(eA)
+
   // elem for concrete class
-  class RDDCollectionElem[A](iso: Iso[RDDCollectionData[A], RDDCollection[A]])(implicit val eA: Elem[A])
-    extends IRDDCollectionElem[A, RDDCollectionData[A], RDDCollection[A]](iso) {
-    def convertIRDDCollection(x: Rep[IRDDCollection[A]]) = RDDCollection(x.rdd)
+  class RDDCollectionElem[A](val iso: Iso[RDDCollectionData[A], RDDCollection[A]])(implicit eA: Elem[A])
+    extends IRDDCollectionElem[A, RDDCollection[A]]
+    with ViewElem[RDDCollectionData[A], RDDCollection[A]] {
+    override def convertIRDDCollection(x: Rep[IRDDCollection[A]]) = RDDCollection(x.rdd)
+    override def getDefaultRep = super[ViewElem].getDefaultRep
+    override lazy val tag = super[ViewElem].tag
   }
 
   // state representation type
@@ -82,6 +120,7 @@ trait RDDCollectionsAbs extends SparkDsl with RDDCollections {
       RDDCollection(rdd)
     }
     lazy val tag = {
+      implicit val tagA = eA.tag
       weakTypeTag[RDDCollection[A]]
     }
     lazy val defaultRepTo = Default.defaultVal[Rep[RDDCollection[A]]](RDDCollection(element[SRDD[A]].defaultRepValue))
@@ -122,13 +161,16 @@ trait RDDCollectionsAbs extends SparkDsl with RDDCollections {
   def unmkRDDCollection[A:Elem](p: Rep[RDDCollection[A]]): Option[(Rep[SRDD[A]])]
 
   // elem for concrete class
-  class PairRDDCollectionElem[A, B](iso: Iso[PairRDDCollectionData[A, B], PairRDDCollection[A, B]])(implicit val eA: Elem[A], val eB: Elem[B])
-    extends IRDDPairCollectionElem[A, B, PairRDDCollectionData[A, B], PairRDDCollection[A, B]](iso) {
-    def convertIRDDPairCollection(x: Rep[IRDDPairCollection[A, B]]) = PairRDDCollection(x.pairRDD)
+  class PairRDDCollectionElem[A, B](val iso: Iso[PairRDDCollectionData[A, B], PairRDDCollection[A, B]])(implicit eA: Elem[A], eB: Elem[B])
+    extends IRDDPairCollectionElem[A, B, PairRDDCollection[A, B]]
+    with ViewElem[PairRDDCollectionData[A, B], PairRDDCollection[A, B]] {
+    override def convertIRDDPairCollection(x: Rep[IRDDPairCollection[A, B]]) = PairRDDCollection(x.pairRDD)
+    override def getDefaultRep = super[ViewElem].getDefaultRep
+    override lazy val tag = super[ViewElem].tag
   }
 
   // state representation type
-  type PairRDDCollectionData[A, B] = SRDD[(A,B)]
+  type PairRDDCollectionData[A, B] = SRDD[(A, B)]
 
   // 3) Iso for concrete class
   class PairRDDCollectionIso[A, B](implicit eA: Elem[A], eB: Elem[B])
@@ -138,21 +180,23 @@ trait RDDCollectionsAbs extends SparkDsl with RDDCollections {
         case Some((pairRDD)) => pairRDD
         case None => !!!
       }
-    override def to(p: Rep[SRDD[(A,B)]]) = {
+    override def to(p: Rep[SRDD[(A, B)]]) = {
       val pairRDD = p
       PairRDDCollection(pairRDD)
     }
     lazy val tag = {
+      implicit val tagA = eA.tag
+      implicit val tagB = eB.tag
       weakTypeTag[PairRDDCollection[A, B]]
     }
-    lazy val defaultRepTo = Default.defaultVal[Rep[PairRDDCollection[A, B]]](PairRDDCollection(element[SRDD[(A,B)]].defaultRepValue))
+    lazy val defaultRepTo = Default.defaultVal[Rep[PairRDDCollection[A, B]]](PairRDDCollection(element[SRDD[(A, B)]].defaultRepValue))
     lazy val eTo = new PairRDDCollectionElem[A, B](this)
   }
   // 4) constructor and deconstructor
   abstract class PairRDDCollectionCompanionAbs extends CompanionBase[PairRDDCollectionCompanionAbs] with PairRDDCollectionCompanion {
     override def toString = "PairRDDCollection"
 
-    def apply[A, B](pairRDD: RepRDD[(A,B)])(implicit eA: Elem[A], eB: Elem[B]): Rep[PairRDDCollection[A, B]] =
+    def apply[A, B](pairRDD: RepRDD[(A, B)])(implicit eA: Elem[A], eB: Elem[B]): Rep[PairRDDCollection[A, B]] =
       mkPairRDDCollection(pairRDD)
     def unapply[A:Elem, B:Elem](p: Rep[PairRDDCollection[A, B]]) = unmkPairRDDCollection(p)
   }
@@ -179,13 +223,16 @@ trait RDDCollectionsAbs extends SparkDsl with RDDCollections {
     new PairRDDCollectionIso[A, B]
 
   // 6) smart constructor and deconstructor
-  def mkPairRDDCollection[A, B](pairRDD: RepRDD[(A,B)])(implicit eA: Elem[A], eB: Elem[B]): Rep[PairRDDCollection[A, B]]
-  def unmkPairRDDCollection[A:Elem, B:Elem](p: Rep[PairRDDCollection[A, B]]): Option[(Rep[SRDD[(A,B)]])]
+  def mkPairRDDCollection[A, B](pairRDD: RepRDD[(A, B)])(implicit eA: Elem[A], eB: Elem[B]): Rep[PairRDDCollection[A, B]]
+  def unmkPairRDDCollection[A:Elem, B:Elem](p: Rep[PairRDDCollection[A, B]]): Option[(Rep[SRDD[(A, B)]])]
 
   // elem for concrete class
-  class RDDNestedCollectionElem[A](iso: Iso[RDDNestedCollectionData[A], RDDNestedCollection[A]])(implicit val eA: Elem[A])
-    extends IRDDNestedCollectionElem[A, RDDNestedCollectionData[A], RDDNestedCollection[A]](iso) {
-    def convertIRDDNestedCollection(x: Rep[IRDDNestedCollection[A]]) = RDDNestedCollection(x.values, x.segments)
+  class RDDNestedCollectionElem[A](val iso: Iso[RDDNestedCollectionData[A], RDDNestedCollection[A]])(implicit eA: Elem[A])
+    extends IRDDNestedCollectionElem[A, RDDNestedCollection[A]]
+    with ViewElem[RDDNestedCollectionData[A], RDDNestedCollection[A]] {
+    override def convertIRDDNestedCollection(x: Rep[IRDDNestedCollection[A]]) = RDDNestedCollection(x.values, x.segments)
+    override def getDefaultRep = super[ViewElem].getDefaultRep
+    override lazy val tag = super[ViewElem].tag
   }
 
   // state representation type
@@ -204,6 +251,7 @@ trait RDDCollectionsAbs extends SparkDsl with RDDCollections {
       RDDNestedCollection(values, segments)
     }
     lazy val tag = {
+      implicit val tagA = eA.tag
       weakTypeTag[RDDNestedCollection[A]]
     }
     lazy val defaultRepTo = Default.defaultVal[Rep[RDDNestedCollection[A]]](RDDNestedCollection(element[IRDDCollection[A]].defaultRepValue, element[PairRDDCollection[Int,Int]].defaultRepValue))
@@ -270,7 +318,7 @@ trait RDDCollectionsSeq extends RDDCollectionsDsl with SparkDslSeq {
     Some((p.rdd))
 
   case class SeqPairRDDCollection[A, B]
-      (override val pairRDD: RepRDD[(A,B)])
+      (override val pairRDD: RepRDD[(A, B)])
       (implicit eA: Elem[A], eB: Elem[B])
     extends PairRDDCollection[A, B](pairRDD)
         with UserTypeSeq[IRDDPairCollection[A,B], PairRDDCollection[A, B]] {
@@ -281,7 +329,7 @@ trait RDDCollectionsSeq extends RDDCollectionsDsl with SparkDslSeq {
   }
 
   def mkPairRDDCollection[A, B]
-      (pairRDD: RepRDD[(A,B)])(implicit eA: Elem[A], eB: Elem[B]): Rep[PairRDDCollection[A, B]] =
+      (pairRDD: RepRDD[(A, B)])(implicit eA: Elem[A], eB: Elem[B]): Rep[PairRDDCollection[A, B]] =
       new SeqPairRDDCollection[A, B](pairRDD)
   def unmkPairRDDCollection[A:Elem, B:Elem](p: Rep[PairRDDCollection[A, B]]) =
     Some((p.pairRDD))
@@ -414,13 +462,17 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
       }
     }
 
-    // WARNING: Cannot generate matcher for method `zip`: Method's return type Coll[(A,B)] is not a Rep
+    // WARNING: Cannot generate matcher for method `zip`: Method's return type PairColl[A,B] is not a Rep
 
     // WARNING: Cannot generate matcher for method `update`: Method's return type Coll[A] is not a Rep
 
     // WARNING: Cannot generate matcher for method `updateMany`: Method's return type Coll[A] is not a Rep
 
     // WARNING: Cannot generate matcher for method `filter`: Method has function arguments f
+
+    // WARNING: Cannot generate matcher for method `filterBy`: Method's return type Coll[A] is not a Rep
+
+    // WARNING: Cannot generate matcher for method `flatMapBy`: Method's return type Coll[B] is not a Rep
 
     // WARNING: Cannot generate matcher for method `flatMap`: Method has function arguments f
 
@@ -448,7 +500,7 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
     Some((p.rdd))
 
   case class ExpPairRDDCollection[A, B]
-      (override val pairRDD: RepRDD[(A,B)])
+      (override val pairRDD: RepRDD[(A, B)])
       (implicit eA: Elem[A], eB: Elem[B])
     extends PairRDDCollection[A, B](pairRDD) with UserTypeDef[IRDDPairCollection[A,B], PairRDDCollection[A, B]] {
     lazy val selfType = element[PairRDDCollection[A, B]].asInstanceOf[Elem[IRDDPairCollection[A,B]]]
@@ -545,35 +597,39 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
       }
     }
 
-    // WARNING: Cannot generate matcher for method `apply`: Method's return type Coll[(A,B)] is not a Rep
+    // WARNING: Cannot generate matcher for method `apply`: Method's return type PairColl[A,B] is not a Rep
 
     // WARNING: Cannot generate matcher for method `map`: Method has function arguments f
 
     // WARNING: Cannot generate matcher for method `mapBy`: Method's return type Coll[C] is not a Rep
 
     object reduce {
-      def unapply(d: Def[_]): Option[(Rep[PairRDDCollection[A, B]], RepMonoid[(A,B)]) forSome {type A; type B}] = d match {
+      def unapply(d: Def[_]): Option[(Rep[PairRDDCollection[A, B]], RepMonoid[(A, B)]) forSome {type A; type B}] = d match {
         case MethodCall(receiver, method, Seq(m, _*), _) if receiver.elem.isInstanceOf[PairRDDCollectionElem[_, _]] && method.getName == "reduce" =>
-          Some((receiver, m)).asInstanceOf[Option[(Rep[PairRDDCollection[A, B]], RepMonoid[(A,B)]) forSome {type A; type B}]]
+          Some((receiver, m)).asInstanceOf[Option[(Rep[PairRDDCollection[A, B]], RepMonoid[(A, B)]) forSome {type A; type B}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[(Rep[PairRDDCollection[A, B]], RepMonoid[(A,B)]) forSome {type A; type B}] = exp match {
+      def unapply(exp: Exp[_]): Option[(Rep[PairRDDCollection[A, B]], RepMonoid[(A, B)]) forSome {type A; type B}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
     }
 
-    // WARNING: Cannot generate matcher for method `zip`: Method's return type Coll[((A,B),C)] is not a Rep
+    // WARNING: Cannot generate matcher for method `zip`: Method's return type PairColl[(A, B),C] is not a Rep
 
-    // WARNING: Cannot generate matcher for method `update`: Method's return type Coll[(A,B)] is not a Rep
+    // WARNING: Cannot generate matcher for method `update`: Method's return type Coll[(A, B)] is not a Rep
 
-    // WARNING: Cannot generate matcher for method `updateMany`: Method's return type Coll[(A,B)] is not a Rep
+    // WARNING: Cannot generate matcher for method `updateMany`: Method's return type Coll[(A, B)] is not a Rep
 
     // WARNING: Cannot generate matcher for method `filter`: Method has function arguments f
 
     // WARNING: Cannot generate matcher for method `flatMap`: Method has function arguments f
 
-    // WARNING: Cannot generate matcher for method `append`: Method's return type Coll[(A,B)] is not a Rep
+    // WARNING: Cannot generate matcher for method `filterBy`: Method's return type PairColl[A,B] is not a Rep
+
+    // WARNING: Cannot generate matcher for method `flatMapBy`: Method's return type Coll[C] is not a Rep
+
+    // WARNING: Cannot generate matcher for method `append`: Method's return type Coll[(A, B)] is not a Rep
   }
 
   object PairRDDCollectionCompanionMethods {
@@ -591,7 +647,7 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
   }
 
   def mkPairRDDCollection[A, B]
-    (pairRDD: RepRDD[(A,B)])(implicit eA: Elem[A], eB: Elem[B]): Rep[PairRDDCollection[A, B]] =
+    (pairRDD: RepRDD[(A, B)])(implicit eA: Elem[A], eB: Elem[B]): Rep[PairRDDCollection[A, B]] =
     new ExpPairRDDCollection[A, B](pairRDD)
   def unmkPairRDDCollection[A:Elem, B:Elem](p: Rep[PairRDDCollection[A, B]]) =
     Some((p.pairRDD))
@@ -712,7 +768,7 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
 
     // WARNING: Cannot generate matcher for method `reduce`: Method's return type Coll[A] is not a Rep
 
-    // WARNING: Cannot generate matcher for method `zip`: Method's return type Coll[(Collection[A],B)] is not a Rep
+    // WARNING: Cannot generate matcher for method `zip`: Method's return type PairColl[Collection[A],B] is not a Rep
 
     object update {
       def unapply(d: Def[_]): Option[(Rep[RDDNestedCollection[A]], Rep[Int], Rep[Collection[A]]) forSome {type A}] = d match {
@@ -741,6 +797,20 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
     // WARNING: Cannot generate matcher for method `filter`: Method has function arguments f
 
     // WARNING: Cannot generate matcher for method `flatMap`: Method has function arguments f
+
+    object filterBy {
+      def unapply(d: Def[_]): Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A] => Boolean]) forSome {type A}] = d match {
+        case MethodCall(receiver, method, Seq(f, _*), _) if receiver.elem.isInstanceOf[RDDNestedCollectionElem[_]] && method.getName == "filterBy" =>
+          Some((receiver, f)).asInstanceOf[Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A] => Boolean]) forSome {type A}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A] => Boolean]) forSome {type A}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    // WARNING: Cannot generate matcher for method `flatMapBy`: Method's return type Coll[B] is not a Rep
 
     object append {
       def unapply(d: Def[_]): Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A]]) forSome {type A}] = d match {
@@ -790,7 +860,7 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
   object IRDDCollectionMethods {
     object rdd {
       def unapply(d: Def[_]): Option[Rep[IRDDCollection[A]] forSome {type A}] = d match {
-        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[IRDDCollectionElem[_, _, _]] && method.getName == "rdd" =>
+        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[IRDDCollectionElem[_, _]] && method.getName == "rdd" =>
           Some(receiver).asInstanceOf[Option[Rep[IRDDCollection[A]] forSome {type A}]]
         case _ => None
       }

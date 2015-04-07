@@ -24,12 +24,29 @@ object SparkBoilerplateTool extends BoilerplateTool {
     seqContextTrait = "ScalanCommunityDslSeq",
     stagedContextTrait = "ScalanCommunityDslExp",
     extraImports = List(
+      "scala.reflect._",
       "scala.reflect.runtime.universe._",
       "scalan.common.Default"),
     sparkTypeSynonims
   )
 
-  override def getConfigs(args: Array[String]) = Seq(sparkConfig)
+  lazy val rddCollConfig = CodegenConfig(
+    name = "ScalanSpark",
+    srcPath = "src/main/scala/collections",
+    entityFiles = List(
+      "RDDCollections.scala"
+     ),
+    baseContextTrait = "SparkDsl",
+    seqContextTrait = "SparkDslSeq",
+    stagedContextTrait = "SparkDslExp",
+    extraImports = List(
+      "scala.reflect._",
+      "scala.reflect.runtime.universe._",
+      "scalan.common.Default"),
+    sparkTypeSynonims
+  )
+
+  override def getConfigs(args: Array[String]) = Seq(sparkConfig, rddCollConfig)
 
   override def main(args: Array[String]) = super.main(args)
 }

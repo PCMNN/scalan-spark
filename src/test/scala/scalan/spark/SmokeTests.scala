@@ -50,7 +50,7 @@ class SmokeTests extends BaseTests with BeforeAndAfterAll { suite =>
       val Pair(rdd, i) = in
       val rddColl = RDDCollection(rdd)
       val resColl = rddColl.map(v => v + i)
-      convertRDDColl(resColl).rdd
+      resColl.convertTo[IRDDCollection[Double]].rdd
     }}
 
     lazy val reduceRDDColl = fun { (rdd: RepRDD[Double]) => {
@@ -60,7 +60,7 @@ class SmokeTests extends BaseTests with BeforeAndAfterAll { suite =>
 
   }
 
-  /*test("simpleSparkStaged") {
+  test("simpleSparkStaged") {
     val ctx = new TestContext(this, "simpleSparkStaged") with SimpleSparkTests with SparkDslExp with RDDCollectionsDslExp {
       val sparkContext = globalSparkContext
       val sSparkContext = ExpSSparkContextImpl(globalSparkContext)
@@ -75,7 +75,7 @@ class SmokeTests extends BaseTests with BeforeAndAfterAll { suite =>
     ctx.emit("emptyRDD", ctx.emptyRDD)
     ctx.emit("mapRDD", ctx.mapRDD)
     ctx.emit("mapRDDColl", ctx.mapRDDColl)
-  } */
+  }
   test("simpleSparkCollectionsStaged") {
     val ctx = new TestContext(this, "simpleCollectionSparkStaged") with SimpleSparkTests with SparkDslExp with RDDCollectionsDslExp {
       val sparkContext = globalSparkContext
@@ -86,7 +86,7 @@ class SmokeTests extends BaseTests with BeforeAndAfterAll { suite =>
     ctx.emit("mapRDDColl", ctx.mapRDDColl)
     ctx.emit("reduceRDDColl", ctx.reduceRDDColl)
   }
-  /*
+
   test("simpleSparkSeq") {
     val ctx = new ScalanCtxSeq with SimpleSparkTests with SparkDslSeq with RDDCollectionsDslSeq {
       val sparkContext = globalSparkContext
@@ -99,6 +99,6 @@ class SmokeTests extends BaseTests with BeforeAndAfterAll { suite =>
       val res = ctx.broadcastDouble((ctx.sSparkContext, gravityAcc))
       assertResult(gravityAcc)(res)
     }
-  }  */
+  }
 }
 

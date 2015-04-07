@@ -4,6 +4,7 @@ package impl
 import scalan._
 import scalan.common.Default
 import org.apache.spark.broadcast.Broadcast
+import scala.reflect._
 import scala.reflect.runtime.universe._
 import scalan.common.Default
 
@@ -12,8 +13,7 @@ trait BroadcastsAbs extends ScalanCommunityDsl with Broadcasts {
   self: SparkDsl =>
   // single proxy for each type family
   implicit def proxySBroadcast[A](p: Rep[SBroadcast[A]]): SBroadcast[A] = {
-    implicit val tag = weakTypeTag[SBroadcast[A]]
-    proxyOps[SBroadcast[A]](p)(TagImplicits.typeTagToClassTag[SBroadcast[A]])
+    proxyOps[SBroadcast[A]](p)(classTag[SBroadcast[A]])
   }
   // BaseTypeEx proxy
   //implicit def proxyBroadcast[A:Elem](p: Rep[Broadcast[A]]): SBroadcast[A] =
@@ -22,13 +22,25 @@ trait BroadcastsAbs extends ScalanCommunityDsl with Broadcasts {
   implicit def unwrapValueOfSBroadcast[A](w: Rep[SBroadcast[A]]): Rep[Broadcast[A]] = w.wrappedValueOfBaseType
 
   implicit def defaultSBroadcastElem[A:Elem]: Elem[SBroadcast[A]] = element[SBroadcastImpl[A]].asElem[SBroadcast[A]]
-  implicit def BroadcastElement[A:Elem:WeakTypeTag]: Elem[Broadcast[A]]
+  implicit def broadcastElement[A:Elem]: Elem[Broadcast[A]]
 
-  abstract class SBroadcastElem[A, From, To <: SBroadcast[A]](iso: Iso[From, To])(implicit eA: Elem[A])
-    extends ViewElem[From, To](iso) {
+  class SBroadcastElem[A, To <: SBroadcast[A]](implicit val eA: Elem[A])
+    extends EntityElem[To] {
+    override def isEntityType = true
+    override def tag = {
+      implicit val tagA = eA.tag
+      weakTypeTag[SBroadcast[A]].asInstanceOf[WeakTypeTag[To]]
+    }
     override def convert(x: Rep[Reifiable[_]]) = convertSBroadcast(x.asRep[SBroadcast[A]])
-    def convertSBroadcast(x : Rep[SBroadcast[A]]): Rep[To]
+    def convertSBroadcast(x : Rep[SBroadcast[A]]): Rep[To] = {
+      assert(x.selfType1.isInstanceOf[SBroadcastElem[_,_]])
+      x.asRep[To]
+    }
+    override def getDefaultRep: Rep[To] = ???
   }
+
+  implicit def sBroadcastElement[A](implicit eA: Elem[A]) =
+    new SBroadcastElem[A, SBroadcast[A]]()(eA)
 
   trait SBroadcastCompanionElem extends CompanionElem[SBroadcastCompanionAbs]
   implicit lazy val SBroadcastCompanionElem: SBroadcastCompanionElem = new SBroadcastCompanionElem {
@@ -53,9 +65,12 @@ trait BroadcastsAbs extends ScalanCommunityDsl with Broadcasts {
   }
   trait SBroadcastImplCompanion
   // elem for concrete class
-  class SBroadcastImplElem[A](iso: Iso[SBroadcastImplData[A], SBroadcastImpl[A]])(implicit val eA: Elem[A])
-    extends SBroadcastElem[A, SBroadcastImplData[A], SBroadcastImpl[A]](iso) {
-    def convertSBroadcast(x: Rep[SBroadcast[A]]) = SBroadcastImpl(x.wrappedValueOfBaseType)
+  class SBroadcastImplElem[A](val iso: Iso[SBroadcastImplData[A], SBroadcastImpl[A]])(implicit eA: Elem[A])
+    extends SBroadcastElem[A, SBroadcastImpl[A]]
+    with ViewElem[SBroadcastImplData[A], SBroadcastImpl[A]] {
+    override def convertSBroadcast(x: Rep[SBroadcast[A]]) = SBroadcastImpl(x.wrappedValueOfBaseType)
+    override def getDefaultRep = super[ViewElem].getDefaultRep
+    override lazy val tag = super[ViewElem].tag
   }
 
   // state representation type
@@ -74,6 +89,7 @@ trait BroadcastsAbs extends ScalanCommunityDsl with Broadcasts {
       SBroadcastImpl(wrappedValueOfBaseType)
     }
     lazy val tag = {
+      implicit val tagA = eA.tag
       weakTypeTag[SBroadcastImpl[A]]
     }
     lazy val defaultRepTo = Default.defaultVal[Rep[SBroadcastImpl[A]]](SBroadcastImpl(DefaultOfBroadcast[A].value))
@@ -125,7 +141,7 @@ trait BroadcastsSeq extends BroadcastsDsl with ScalanCommunityDslSeq {
   //override def proxyBroadcast[A:Elem](p: Rep[Broadcast[A]]): SBroadcast[A] =
   //  proxyOpsEx[Broadcast[A],SBroadcast[A], SeqSBroadcastImpl[A]](p, bt => SeqSBroadcastImpl(bt))
 
-    implicit def BroadcastElement[A:Elem:WeakTypeTag]: Elem[Broadcast[A]] = new SeqBaseElemEx[Broadcast[A], SBroadcast[A]](element[SBroadcast[A]])(weakTypeTag[Broadcast[A]], DefaultOfBroadcast[A])
+    implicit def broadcastElement[A:Elem]: Elem[Broadcast[A]] = new SeqBaseElemEx[Broadcast[A], SBroadcast[A]](element[SBroadcast[A]])(weakTypeTag[Broadcast[A]], DefaultOfBroadcast[A])
 
   case class SeqSBroadcastImpl[A]
       (override val wrappedValueOfBaseType: Rep[Broadcast[A]])
@@ -157,7 +173,7 @@ trait BroadcastsExp extends BroadcastsDsl with ScalanCommunityDslExp {
     override def mirror(t: Transformer) = this
   }
 
-  implicit def BroadcastElement[A:Elem:WeakTypeTag]: Elem[Broadcast[A]] = new ExpBaseElemEx[Broadcast[A], SBroadcast[A]](element[SBroadcast[A]])(weakTypeTag[Broadcast[A]], DefaultOfBroadcast[A])
+  implicit def broadcastElement[A:Elem]: Elem[Broadcast[A]] = new ExpBaseElemEx[Broadcast[A], SBroadcast[A]](element[SBroadcast[A]])(weakTypeTag[Broadcast[A]], DefaultOfBroadcast[A])
   case class ExpSBroadcastImpl[A]
       (override val wrappedValueOfBaseType: Rep[Broadcast[A]])
       (implicit eA: Elem[A])
@@ -183,7 +199,7 @@ trait BroadcastsExp extends BroadcastsDsl with ScalanCommunityDslExp {
   object SBroadcastMethods {
     object wrappedValueOfBaseType {
       def unapply(d: Def[_]): Option[Rep[SBroadcast[A]] forSome {type A}] = d match {
-        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SBroadcastElem[_, _, _]] && method.getName == "wrappedValueOfBaseType" =>
+        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SBroadcastElem[_, _]] && method.getName == "wrappedValueOfBaseType" =>
           Some(receiver).asInstanceOf[Option[Rep[SBroadcast[A]] forSome {type A}]]
         case _ => None
       }
@@ -197,7 +213,7 @@ trait BroadcastsExp extends BroadcastsDsl with ScalanCommunityDslExp {
 
     object value {
       def unapply(d: Def[_]): Option[Rep[SBroadcast[A]] forSome {type A}] = d match {
-        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SBroadcastElem[_, _, _]] && method.getName == "value" =>
+        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SBroadcastElem[_, _]] && method.getName == "value" =>
           Some(receiver).asInstanceOf[Option[Rep[SBroadcast[A]] forSome {type A}]]
         case _ => None
       }
