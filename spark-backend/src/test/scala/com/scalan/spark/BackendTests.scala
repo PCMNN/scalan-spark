@@ -33,24 +33,24 @@ class BackendTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil { s
     lazy val sparkConfElem = element[SparkConf]
     lazy val defaultSparkConfRep = sparkConfElem.defaultRepValue
 
-    lazy val broadcastPi = fun { (sc: Rep[SparkContext]) => sc.broadcast(toRep(3.14)) }
+    lazy val broadcastPi = fun { (sc: Rep[SSparkContext]) => sc.broadcast(toRep(3.14)) }
 
-    lazy val readE = fun { (sc: Rep[SparkContext]) => {
+    lazy val readE = fun { (sc: Rep[SSparkContext]) => {
       val be = sc.broadcast(toRep(2.71828))
       be.value
     }}
 
-    lazy val broadcastDouble = fun { (in: Rep[(SparkContext, Double)]) => {
-      val Pair(sc, d) = in
-      val bd = sc.broadcast(d)
+    lazy val broadcastDouble = fun { (in: Rep[Double]) => {
+      val d = in
+      val bd = repSparkContext.broadcast(d)
       bd.value
     }}
 
-    lazy val emptyRDD = fun { (sc: Rep[SparkContext]) => {
-      val rdd: Rep[RDD[Double]] = sc.emptyRDD
+    lazy val emptyRDD = fun { (sc: Rep[SSparkContext]) => {
+      val rdd: Rep[SRDD[Double]] = sc.emptyRDD
       rdd
     }}
-    lazy val mapRDD = fun { (in: Rep[(RDD[Double], Double)]) => {
+    lazy val mapRDD = fun { (in: Rep[(SRDD[Double], Double)]) => {
       val Pair(rdd, i) = in
       rdd.map(fun {v => v + i})
     }}
@@ -61,9 +61,12 @@ class BackendTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil { s
     val testCompiler = new SparkScalanCompiler with BackendSparkTests {
       self =>
       val sparkContext = globalSparkContext
+      val sSparkContext = ExpSSparkContextImpl(globalSparkContext)
+      val conf = SSparkConf().setAppName(toRep("BTests")).setMaster(toRep("local[8]"))
+      val repSparkContext: Rep[SSparkContext] = SSparkContext(conf)
     }
 
-    val res = getStagedOutputConfig(testCompiler)(testCompiler.broadcastPi, "broadcastPiCodeGen", globalSparkContext, testCompiler.defaultCompilerConfig.copy(scalaVersion = Some("2.11.4")))
+    val res = getStagedOutputConfig(testCompiler)(testCompiler.broadcastDouble, "broadcastDouble", 2.1, testCompiler.defaultCompilerConfig.copy(scalaVersion = Some("2.11.4")))
   }
 
 }
