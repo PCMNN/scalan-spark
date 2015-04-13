@@ -209,7 +209,17 @@ trait BroadcastsExp extends BroadcastsDsl with ScalanCommunityDslExp {
       }
     }
 
-    // WARNING: Cannot generate matcher for method `map`: Method's return type SBroadcast[B] is not a Rep
+    object map {
+      def unapply(d: Def[_]): Option[(Rep[SBroadcast[A]], Rep[A => B]) forSome {type A; type B}] = d match {
+        case MethodCall(receiver, method, Seq(f, _*), _) if receiver.elem.isInstanceOf[SBroadcastElem[_, _]] && method.getName == "map" =>
+          Some((receiver, f)).asInstanceOf[Option[(Rep[SBroadcast[A]], Rep[A => B]) forSome {type A; type B}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[SBroadcast[A]], Rep[A => B]) forSome {type A; type B}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
 
     object value {
       def unapply(d: Def[_]): Option[Rep[SBroadcast[A]] forSome {type A}] = d match {

@@ -12,7 +12,7 @@ trait Broadcasts extends Base with BaseTypes { self: SparkDsl =>
   trait SBroadcast[A] extends BaseTypeEx[Broadcast[A], SBroadcast[A]] { self =>
     implicit def eA: Elem[A]
     def wrappedValueOfBaseType: Rep[Broadcast[A]]
-    def map[B: Elem](f: Rep[A => B]): SBroadcast[B] = repSparkContext.broadcast(f(value))
+    def map[B: Elem](f: Rep[A => B]): RepBroadcast[B] = repSparkContext.broadcast(f(value))
 
     /** Gets the current value of the broadcast variable */
     @External def value: Rep[A]

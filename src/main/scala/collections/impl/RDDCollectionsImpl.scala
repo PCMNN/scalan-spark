@@ -446,9 +446,17 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
       }
     }
 
-    // WARNING: Cannot generate matcher for method `map`: Method has function arguments f
-
-    // WARNING: Cannot generate matcher for method `mapBy`: Method's return type Coll[B] is not a Rep
+    object mapBy {
+      def unapply(d: Def[_]): Option[(Rep[RDDCollection[A]], Rep[A => B]) forSome {type A; type B}] = d match {
+        case MethodCall(receiver, method, Seq(f, _*), _) if receiver.elem.isInstanceOf[RDDCollectionElem[_]] && method.getName == "mapBy" =>
+          Some((receiver, f)).asInstanceOf[Option[(Rep[RDDCollection[A]], Rep[A => B]) forSome {type A; type B}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[RDDCollection[A]], Rep[A => B]) forSome {type A; type B}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
 
     object reduce {
       def unapply(d: Def[_]): Option[(Rep[RDDCollection[A]], RepMonoid[A]) forSome {type A}] = d match {
@@ -462,35 +470,80 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
       }
     }
 
-    // WARNING: Cannot generate matcher for method `zip`: Method's return type PairColl[A,B] is not a Rep
-
-    // WARNING: Cannot generate matcher for method `update`: Method's return type Coll[A] is not a Rep
-
-    // WARNING: Cannot generate matcher for method `updateMany`: Method's return type Coll[A] is not a Rep
-
-    // WARNING: Cannot generate matcher for method `filter`: Method has function arguments f
-
-    // WARNING: Cannot generate matcher for method `filterBy`: Method's return type Coll[A] is not a Rep
-
-    // WARNING: Cannot generate matcher for method `flatMapBy`: Method's return type Coll[B] is not a Rep
-
-    // WARNING: Cannot generate matcher for method `flatMap`: Method has function arguments f
-
-    // WARNING: Cannot generate matcher for method `append`: Method's return type Coll[A] is not a Rep
-  }
-
-  object RDDCollectionCompanionMethods {
-    object defaultOf {
-      def unapply(d: Def[_]): Option[Elem[A] forSome {type A}] = d match {
-        case MethodCall(receiver, method, Seq(ea, _*), _) if receiver.elem.isInstanceOf[RDDCollectionCompanionElem] && method.getName == "defaultOf" =>
-          Some(ea).asInstanceOf[Option[Elem[A] forSome {type A}]]
+    object zip {
+      def unapply(d: Def[_]): Option[(Rep[RDDCollection[A]], Coll[B]) forSome {type A; type B}] = d match {
+        case MethodCall(receiver, method, Seq(ys, _*), _) if receiver.elem.isInstanceOf[RDDCollectionElem[_]] && method.getName == "zip" =>
+          Some((receiver, ys)).asInstanceOf[Option[(Rep[RDDCollection[A]], Coll[B]) forSome {type A; type B}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[Elem[A] forSome {type A}] = exp match {
+      def unapply(exp: Exp[_]): Option[(Rep[RDDCollection[A]], Coll[B]) forSome {type A; type B}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
     }
+
+    object update {
+      def unapply(d: Def[_]): Option[(Rep[RDDCollection[A]], Rep[Int], Rep[A]) forSome {type A}] = d match {
+        case MethodCall(receiver, method, Seq(idx, value, _*), _) if receiver.elem.isInstanceOf[RDDCollectionElem[_]] && method.getName == "update" =>
+          Some((receiver, idx, value)).asInstanceOf[Option[(Rep[RDDCollection[A]], Rep[Int], Rep[A]) forSome {type A}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[RDDCollection[A]], Rep[Int], Rep[A]) forSome {type A}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object updateMany {
+      def unapply(d: Def[_]): Option[(Rep[RDDCollection[A]], Coll[Int], Coll[A]) forSome {type A}] = d match {
+        case MethodCall(receiver, method, Seq(idxs, vals, _*), _) if receiver.elem.isInstanceOf[RDDCollectionElem[_]] && method.getName == "updateMany" =>
+          Some((receiver, idxs, vals)).asInstanceOf[Option[(Rep[RDDCollection[A]], Coll[Int], Coll[A]) forSome {type A}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[RDDCollection[A]], Coll[Int], Coll[A]) forSome {type A}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object filterBy {
+      def unapply(d: Def[_]): Option[(Rep[RDDCollection[A]], Rep[A => Boolean]) forSome {type A}] = d match {
+        case MethodCall(receiver, method, Seq(f, _*), _) if receiver.elem.isInstanceOf[RDDCollectionElem[_]] && method.getName == "filterBy" =>
+          Some((receiver, f)).asInstanceOf[Option[(Rep[RDDCollection[A]], Rep[A => Boolean]) forSome {type A}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[RDDCollection[A]], Rep[A => Boolean]) forSome {type A}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object flatMapBy {
+      def unapply(d: Def[_]): Option[(Rep[RDDCollection[A]], Rep[A => Collection[B]]) forSome {type A; type B}] = d match {
+        case MethodCall(receiver, method, Seq(f, _*), _) if receiver.elem.isInstanceOf[RDDCollectionElem[_]] && method.getName == "flatMapBy" =>
+          Some((receiver, f)).asInstanceOf[Option[(Rep[RDDCollection[A]], Rep[A => Collection[B]]) forSome {type A; type B}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[RDDCollection[A]], Rep[A => Collection[B]]) forSome {type A; type B}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object append {
+      def unapply(d: Def[_]): Option[(Rep[RDDCollection[A]], Rep[A]) forSome {type A}] = d match {
+        case MethodCall(receiver, method, Seq(value, _*), _) if receiver.elem.isInstanceOf[RDDCollectionElem[_]] && method.getName == "append" =>
+          Some((receiver, value)).asInstanceOf[Option[(Rep[RDDCollection[A]], Rep[A]) forSome {type A}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[RDDCollection[A]], Rep[A]) forSome {type A}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+  }
+
+  object RDDCollectionCompanionMethods {
   }
 
   def mkRDDCollection[A]
@@ -597,11 +650,29 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
       }
     }
 
-    // WARNING: Cannot generate matcher for method `apply`: Method's return type PairColl[A,B] is not a Rep
+    object apply_many {
+      def unapply(d: Def[_]): Option[(Rep[PairRDDCollection[A, B]], Coll[Int]) forSome {type A; type B}] = d match {
+        case MethodCall(receiver, method, Seq(indices, _*), _) if receiver.elem.isInstanceOf[PairRDDCollectionElem[_, _]] && method.getName == "apply" && { val ann = method.getAnnotation(classOf[scalan.OverloadId]); ann != null && ann.value == "many" } =>
+          Some((receiver, indices)).asInstanceOf[Option[(Rep[PairRDDCollection[A, B]], Coll[Int]) forSome {type A; type B}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[PairRDDCollection[A, B]], Coll[Int]) forSome {type A; type B}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
 
-    // WARNING: Cannot generate matcher for method `map`: Method has function arguments f
-
-    // WARNING: Cannot generate matcher for method `mapBy`: Method's return type Coll[C] is not a Rep
+    object mapBy {
+      def unapply(d: Def[_]): Option[(Rep[PairRDDCollection[A, B]], Rep[((A, B)) => C]) forSome {type A; type B; type C}] = d match {
+        case MethodCall(receiver, method, Seq(f, _*), _) if receiver.elem.isInstanceOf[PairRDDCollectionElem[_, _]] && method.getName == "mapBy" =>
+          Some((receiver, f)).asInstanceOf[Option[(Rep[PairRDDCollection[A, B]], Rep[((A, B)) => C]) forSome {type A; type B; type C}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[PairRDDCollection[A, B]], Rep[((A, B)) => C]) forSome {type A; type B; type C}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
 
     object reduce {
       def unapply(d: Def[_]): Option[(Rep[PairRDDCollection[A, B]], RepMonoid[(A, B)]) forSome {type A; type B}] = d match {
@@ -615,35 +686,80 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
       }
     }
 
-    // WARNING: Cannot generate matcher for method `zip`: Method's return type PairColl[(A, B),C] is not a Rep
-
-    // WARNING: Cannot generate matcher for method `update`: Method's return type Coll[(A, B)] is not a Rep
-
-    // WARNING: Cannot generate matcher for method `updateMany`: Method's return type Coll[(A, B)] is not a Rep
-
-    // WARNING: Cannot generate matcher for method `filter`: Method has function arguments f
-
-    // WARNING: Cannot generate matcher for method `flatMap`: Method has function arguments f
-
-    // WARNING: Cannot generate matcher for method `filterBy`: Method's return type PairColl[A,B] is not a Rep
-
-    // WARNING: Cannot generate matcher for method `flatMapBy`: Method's return type Coll[C] is not a Rep
-
-    // WARNING: Cannot generate matcher for method `append`: Method's return type Coll[(A, B)] is not a Rep
-  }
-
-  object PairRDDCollectionCompanionMethods {
-    object defaultOf {
-      def unapply(d: Def[_]): Option[(Elem[A], Elem[B]) forSome {type A; type B}] = d match {
-        case MethodCall(receiver, method, Seq(ea, eb, _*), _) if receiver.elem.isInstanceOf[PairRDDCollectionCompanionElem] && method.getName == "defaultOf" =>
-          Some((ea, eb)).asInstanceOf[Option[(Elem[A], Elem[B]) forSome {type A; type B}]]
+    object zip {
+      def unapply(d: Def[_]): Option[(Rep[PairRDDCollection[A, B]], Coll[C]) forSome {type A; type B; type C}] = d match {
+        case MethodCall(receiver, method, Seq(ys, _*), _) if receiver.elem.isInstanceOf[PairRDDCollectionElem[_, _]] && method.getName == "zip" =>
+          Some((receiver, ys)).asInstanceOf[Option[(Rep[PairRDDCollection[A, B]], Coll[C]) forSome {type A; type B; type C}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[(Elem[A], Elem[B]) forSome {type A; type B}] = exp match {
+      def unapply(exp: Exp[_]): Option[(Rep[PairRDDCollection[A, B]], Coll[C]) forSome {type A; type B; type C}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
     }
+
+    object update {
+      def unapply(d: Def[_]): Option[(Rep[PairRDDCollection[A, B]], Rep[Int], Rep[(A, B)]) forSome {type A; type B}] = d match {
+        case MethodCall(receiver, method, Seq(idx, value, _*), _) if receiver.elem.isInstanceOf[PairRDDCollectionElem[_, _]] && method.getName == "update" =>
+          Some((receiver, idx, value)).asInstanceOf[Option[(Rep[PairRDDCollection[A, B]], Rep[Int], Rep[(A, B)]) forSome {type A; type B}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[PairRDDCollection[A, B]], Rep[Int], Rep[(A, B)]) forSome {type A; type B}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object updateMany {
+      def unapply(d: Def[_]): Option[(Rep[PairRDDCollection[A, B]], Coll[Int], Coll[(A, B)]) forSome {type A; type B}] = d match {
+        case MethodCall(receiver, method, Seq(idxs, vals, _*), _) if receiver.elem.isInstanceOf[PairRDDCollectionElem[_, _]] && method.getName == "updateMany" =>
+          Some((receiver, idxs, vals)).asInstanceOf[Option[(Rep[PairRDDCollection[A, B]], Coll[Int], Coll[(A, B)]) forSome {type A; type B}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[PairRDDCollection[A, B]], Coll[Int], Coll[(A, B)]) forSome {type A; type B}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object filterBy {
+      def unapply(d: Def[_]): Option[(Rep[PairRDDCollection[A, B]], Rep[((A, B)) => Boolean]) forSome {type A; type B}] = d match {
+        case MethodCall(receiver, method, Seq(f, _*), _) if receiver.elem.isInstanceOf[PairRDDCollectionElem[_, _]] && method.getName == "filterBy" =>
+          Some((receiver, f)).asInstanceOf[Option[(Rep[PairRDDCollection[A, B]], Rep[((A, B)) => Boolean]) forSome {type A; type B}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[PairRDDCollection[A, B]], Rep[((A, B)) => Boolean]) forSome {type A; type B}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object flatMapBy {
+      def unapply(d: Def[_]): Option[(Rep[PairRDDCollection[A, B]], Rep[((A, B)) => Collection[C]]) forSome {type A; type B; type C}] = d match {
+        case MethodCall(receiver, method, Seq(f, _*), _) if receiver.elem.isInstanceOf[PairRDDCollectionElem[_, _]] && method.getName == "flatMapBy" =>
+          Some((receiver, f)).asInstanceOf[Option[(Rep[PairRDDCollection[A, B]], Rep[((A, B)) => Collection[C]]) forSome {type A; type B; type C}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[PairRDDCollection[A, B]], Rep[((A, B)) => Collection[C]]) forSome {type A; type B; type C}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object append {
+      def unapply(d: Def[_]): Option[(Rep[PairRDDCollection[A, B]], Rep[(A, B)]) forSome {type A; type B}] = d match {
+        case MethodCall(receiver, method, Seq(value, _*), _) if receiver.elem.isInstanceOf[PairRDDCollectionElem[_, _]] && method.getName == "append" =>
+          Some((receiver, value)).asInstanceOf[Option[(Rep[PairRDDCollection[A, B]], Rep[(A, B)]) forSome {type A; type B}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[PairRDDCollection[A, B]], Rep[(A, B)]) forSome {type A; type B}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+  }
+
+  object PairRDDCollectionCompanionMethods {
   }
 
   def mkPairRDDCollection[A, B]
@@ -762,13 +878,41 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
       }
     }
 
-    // WARNING: Cannot generate matcher for method `map`: Method has function arguments f
+    object mapBy {
+      def unapply(d: Def[_]): Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A] => B]) forSome {type A; type B}] = d match {
+        case MethodCall(receiver, method, Seq(f, _*), _) if receiver.elem.isInstanceOf[RDDNestedCollectionElem[_]] && method.getName == "mapBy" =>
+          Some((receiver, f)).asInstanceOf[Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A] => B]) forSome {type A; type B}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A] => B]) forSome {type A; type B}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
 
-    // WARNING: Cannot generate matcher for method `mapBy`: Method's return type Coll[B] is not a Rep
+    object reduce {
+      def unapply(d: Def[_]): Option[(Rep[RDDNestedCollection[A]], RepMonoid[Collection[A]]) forSome {type A}] = d match {
+        case MethodCall(receiver, method, Seq(m, _*), _) if receiver.elem.isInstanceOf[RDDNestedCollectionElem[_]] && method.getName == "reduce" =>
+          Some((receiver, m)).asInstanceOf[Option[(Rep[RDDNestedCollection[A]], RepMonoid[Collection[A]]) forSome {type A}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[RDDNestedCollection[A]], RepMonoid[Collection[A]]) forSome {type A}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
 
-    // WARNING: Cannot generate matcher for method `reduce`: Method's return type Coll[A] is not a Rep
-
-    // WARNING: Cannot generate matcher for method `zip`: Method's return type PairColl[Collection[A],B] is not a Rep
+    object zip {
+      def unapply(d: Def[_]): Option[(Rep[RDDNestedCollection[A]], Coll[B]) forSome {type A; type B}] = d match {
+        case MethodCall(receiver, method, Seq(ys, _*), _) if receiver.elem.isInstanceOf[RDDNestedCollectionElem[_]] && method.getName == "zip" =>
+          Some((receiver, ys)).asInstanceOf[Option[(Rep[RDDNestedCollection[A]], Coll[B]) forSome {type A; type B}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[RDDNestedCollection[A]], Coll[B]) forSome {type A; type B}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
 
     object update {
       def unapply(d: Def[_]): Option[(Rep[RDDNestedCollection[A]], Rep[Int], Rep[Collection[A]]) forSome {type A}] = d match {
@@ -794,10 +938,6 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
       }
     }
 
-    // WARNING: Cannot generate matcher for method `filter`: Method has function arguments f
-
-    // WARNING: Cannot generate matcher for method `flatMap`: Method has function arguments f
-
     object filterBy {
       def unapply(d: Def[_]): Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A] => Boolean]) forSome {type A}] = d match {
         case MethodCall(receiver, method, Seq(f, _*), _) if receiver.elem.isInstanceOf[RDDNestedCollectionElem[_]] && method.getName == "filterBy" =>
@@ -810,7 +950,17 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
       }
     }
 
-    // WARNING: Cannot generate matcher for method `flatMapBy`: Method's return type Coll[B] is not a Rep
+    object flatMapBy {
+      def unapply(d: Def[_]): Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A] => Collection[B]]) forSome {type A; type B}] = d match {
+        case MethodCall(receiver, method, Seq(f, _*), _) if receiver.elem.isInstanceOf[RDDNestedCollectionElem[_]] && method.getName == "flatMapBy" =>
+          Some((receiver, f)).asInstanceOf[Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A] => Collection[B]]) forSome {type A; type B}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A] => Collection[B]]) forSome {type A; type B}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
 
     object append {
       def unapply(d: Def[_]): Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A]]) forSome {type A}] = d match {
@@ -826,18 +976,6 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
   }
 
   object RDDNestedCollectionCompanionMethods {
-    object defaultOf {
-      def unapply(d: Def[_]): Option[Elem[A] forSome {type A}] = d match {
-        case MethodCall(receiver, method, Seq(ea, _*), _) if receiver.elem.isInstanceOf[RDDNestedCollectionCompanionElem] && method.getName == "defaultOf" =>
-          Some(ea).asInstanceOf[Option[Elem[A] forSome {type A}]]
-        case _ => None
-      }
-      def unapply(exp: Exp[_]): Option[Elem[A] forSome {type A}] = exp match {
-        case Def(d) => unapply(d)
-        case _ => None
-      }
-    }
-
     object createRDDNestedCollection {
       def unapply(d: Def[_]): Option[(Rep[RDDCollection[A]], Rep[PairRDDCollection[Int,Int]]) forSome {type A}] = d match {
         case MethodCall(receiver, method, Seq(vals, segments, _*), _) if receiver.elem.isInstanceOf[RDDNestedCollectionCompanionElem] && method.getName == "createRDDNestedCollection" =>
@@ -872,6 +1010,5 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
   }
 
   object IRDDCollectionCompanionMethods {
-    // WARNING: Cannot generate matcher for method `defaultOf`: Method's return type Default[Rep[IRDDCollection[A]]] is not a Rep
   }
 }

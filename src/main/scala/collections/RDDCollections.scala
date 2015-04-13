@@ -19,11 +19,7 @@ trait RDDCollections { self: SparkDsl with RDDCollectionsDsl =>
     def rdd: RepRDD[A]
   }
 
-  //implicit def convertRDDColl[A:Elem](x: Coll[A]) = x.asRep[IRDDCollection[A]]
-  //implicit def eIRDDColl[A: Elem]: Elem[IRDDCollection[A]] = element[RDDCollection[A]].asElem[IRDDCollection[A]]
-
   trait IRDDCollectionCompanion extends TypeFamily1[IRDDCollection] {
-    def defaultOf[A](implicit ea: Elem[A]): Default[Rep[IRDDCollection[A]]] = RDDCollection.defaultOf[A](ea)
   }
 
 
@@ -52,22 +48,16 @@ trait RDDCollections { self: SparkDsl with RDDCollectionsDsl =>
       implicit val ppElem = PairElem(element[Long], PairElem(element[Int], elem))
       RDDCollection( joinedRdd.map(fun {(in: Rep[(Long, (Int, A))]) => in._3}) )
     }
-    def map[B: Elem](f: Rep[A @uncheckedVariance] => Rep[B]): Coll[B] =  RDDCollection(rdd.map(fun(f)))
     def mapBy[B: Elem](f: Rep[A @uncheckedVariance => B]): Coll[B] = RDDCollection(rdd.map(f))
-    def reduce(implicit m: RepMonoid[A @uncheckedVariance]): Rep[A] = rdd.fold(m.zero)( fun {in: Rep[(A,A)] => m.append(in)} )
+    def reduce(implicit m: RepMonoid[A @uncheckedVariance]): Rep[A] = rdd.fold(m.zero)( fun {in: Rep[(A,A)] => m.append(in._1, in._2)} )
     def zip[B: Elem](ys: Coll[B]): PairColl[A,B] = PairRDDCollection(rdd zip SRDD.fromArray(ys.arr) )
     def update (idx: Rep[Int], value: Rep[A]): Coll[A] = ??? //PCollection(parr <<- (idx, value))
     def updateMany (idxs: Coll[Int], vals: Coll[A]): Coll[A] = ??? //PCollection(parr <<- (PArray.fromArray(idxs.arr), PArray.fromArray(vals.arr)))
-    def filter(f: Rep[A @uncheckedVariance] => Rep[Boolean]): Coll[A] = RDDCollection(rdd.filter(f))
     def filterBy(f: Rep[A @uncheckedVariance => Boolean]): Coll[A] = ???
     def flatMapBy[B: Elem](f: Rep[A @uncheckedVariance => Collection[B]]): Coll[B] = RDDCollection(rdd.flatMap({in: Rep[A] => SSeq(f(in).arr)}))
-    def flatMap[B: Elem](f: Rep[A @uncheckedVariance] => Coll[B]): Coll[B] = RDDCollection(rdd.flatMap(fun ({in => SSeq(f(in).arr)}) ) )
     def append(value: Rep[A @uncheckedVariance]): Coll[A]  = ??? //PCollection(PArray.replicate(length+1, value) <<- (parr.indices, parr))
   }
   trait RDDCollectionCompanion extends ConcreteClass1[RDDCollection] with IRDDCollectionCompanion {
-    override def defaultOf[A](implicit ea: Elem[A]) = {
-      Default.defaultVal(RDDCollection(SRDD.empty[A]))
-    }
   }
 
   trait IRDDPairCollection[A,B] extends IPairCollection[A,B] {
@@ -111,27 +101,20 @@ trait RDDCollections { self: SparkDsl with RDDCollectionsDsl =>
       val lElem1 = toLazyElem(PairElem(element[Long], PairElem(element[Int], elem)))
       PairRDDCollection( joinedRdd.map(fun {(in: Rep[(Long, (Int, (A,B)))]) => Pair(in._3, in._4)} (lElem1)) )
     }
-    def map[C: Elem](f: Rep[(A,B) @uncheckedVariance] => Rep[C]): Coll[C] =  RDDCollection(pairRDD.map(fun(f)))
     def mapBy[C: Elem](f: Rep[(A,B) @uncheckedVariance => C]): Coll[C] = RDDCollection(pairRDD.map(f))
     def reduce(implicit m: RepMonoid[(A,B) @uncheckedVariance]): Rep[(A,B)] = {
       val lElem = toLazyElem(PairElem(elem, elem))
-      pairRDD.fold(m.zero)(fun { in: Rep[((A, B), (A, B))] => m.append(in)}(lElem))
+      pairRDD.fold(m.zero)(fun { in: Rep[((A, B), (A, B))] => m.append(in._1, (in._2, in._3))}(lElem))
     }
     def zip[C: Elem](ys: Coll[C]): PairColl[(A,B),C] = PairRDDCollection(pairRDD zip SRDD.fromArray(ys.arr) )
     def update (idx: Rep[Int], value: Rep[(A,B)]): Coll[(A,B)] = ??? //PCollection(parr <<- (idx, value))
     def updateMany (idxs: Coll[Int], vals: Coll[(A,B)]): Coll[(A,B)] = ??? //PCollection(parr <<- (PArray.fromArray(idxs.arr), PArray.fromArray(vals.arr)))
-    def filter(f: Rep[(A,B) @uncheckedVariance] => Rep[Boolean]): PairColl[A,B] = PairRDDCollection(pairRDD.filter(f))
-    def flatMap[C: Elem](f: Rep[(A,B) @uncheckedVariance] => Coll[C]): Coll[C] = ??? //RDDCollection(rdd.flatMap(fun ({in => f(in).arr}) ) )
     def filterBy(f: Rep[(A,B) @uncheckedVariance => Boolean]): PairColl[A,B] = ???
     def flatMapBy[C: Elem](f: Rep[(A,B) @uncheckedVariance => Collection[C]]): Coll[C] = ???
     def append(value: Rep[(A,B) @uncheckedVariance]): Coll[(A,B)]  = ??? //PCollection(PArray.replicate(length+1, value) <<- (parr.indices, parr))
-
   }
 
   trait PairRDDCollectionCompanion extends ConcreteClass2[PairRDDCollection] {
-    def defaultOf[A, B](implicit ea: Elem[A], eb: Elem[B]) = {
-      Default.defaultVal(PairRDDCollection(SRDD.empty[A] zip SRDD.empty[B]))
-    }
   }
 
 
@@ -140,8 +123,6 @@ trait RDDCollections { self: SparkDsl with RDDCollectionsDsl =>
     def values: Rep[IRDDCollection[A]]
     def segments: Rep[PairRDDCollection[Int, Int]]
   }
-
-  //implicit def eIRDDNestedColl[A: Elem]: Elem[IRDDNestedCollection[A]] = element[RDDNestedCollection[A]].asElem[IRDDNestedCollection[A]]
 
   abstract class RDDNestedCollection[A](val values: Rep[IRDDCollection[A]], val segments: Rep[PairRDDCollection[Int, Int]])(implicit val eA: Elem[A])
     extends IRDDNestedCollection[A] {
@@ -171,38 +152,17 @@ trait RDDCollections { self: SparkDsl with RDDCollectionsDsl =>
       RDDNestedCollection(newVals, newSegments)
     }
 
-    def map[B: Elem](f: Rep[Collection[A @uncheckedVariance]] => Rep[B]): Coll[B] =  ??? // PCollection(narr.map({ x => f(PCollection(x))}))
-    def mapBy[B: Elem](f: Rep[Collection[A @uncheckedVariance] => B @uncheckedVariance]): Coll[B] = ??? /*{
-      val parr = PArray.fromArray(arr.mapBy(f))
-      PCollection(parr)
-    }*/
+    def mapBy[B: Elem](f: Rep[Collection[A @uncheckedVariance] => B @uncheckedVariance]): Coll[B] = ???
     def reduce(implicit m: RepMonoid[Collection[A @uncheckedVariance]]): Coll[A] = ??? //PCollection(narr.reduce(m))
     def zip[B: Elem](ys: Coll[B]): PairColl[Collection[A],B] = ??? //PCollection(PArray.fromArray(arr)) zip PCollection(PArray.fromArray(ys.arr))
     def update (idx: Rep[Int], value: Rep[Collection[A]]): Rep[IRDDNestedCollection[A]] = ??? //PNestedCollection(narr <<- (idx, PArray.fromArray(value.arr)))
-    def updateMany (idxs: Coll[Int], vals: Coll[Collection[A]]): Rep[IRDDNestedCollection[A]] = ??? /*{
-      val values = vals.map{ v => PArray.fromArray(v.arr)}
-      PNestedCollection(narr <<-(PArray.fromArray(idxs.arr), PArray.fromArray(values.arr)))
-    }                                                                                              */
-    def filter(f: Rep[Collection[A @uncheckedVariance]] => Rep[Boolean]): Rep[IRDDNestedCollection[A]] = {
-      ??? //PNestedCollection(narr.filter(x => f(PCollection(x))))
-    }
-    def flatMap[B: Elem](f: Rep[Collection[A @uncheckedVariance]] => Coll[B]): Coll[B] = {
-      ??? /*PCollection(narr.flatMap { in =>
-        PArray.fromArray(f(PCollection(in)).arr)
-      })   */
-    }
+    def updateMany (idxs: Coll[Int], vals: Coll[Collection[A]]): Rep[IRDDNestedCollection[A]] = ???
     def filterBy(f: Rep[Collection[A @uncheckedVariance] => Boolean]): Rep[IRDDNestedCollection[A]] = ???
     def flatMapBy[B: Elem](f: Rep[Collection[A @uncheckedVariance] => Collection[B]]): Coll[B] = ???
     def append(value: Rep[Collection[A @uncheckedVariance]]): Rep[IRDDNestedCollection[A]]  = ??? //Collection(arr.append(value))
   }
 
-  /*implicit def rddNestedCollectionDataElem[A](implicit eA: Elem[A]): Elem[PNestedCollectionData[A]] =
-    parrayElement[PArray[A]]
-  */
   trait RDDNestedCollectionCompanion extends ConcreteClass1[RDDNestedCollection] {
-    override def defaultOf[A](implicit ea: Elem[A]) = {
-      Default.defaultVal(RDDNestedCollection(RDDCollection(SRDD.empty[A]), PairRDDCollection(SRDD.empty[Int] zip SRDD.empty[Int])))
-    }
     def createRDDNestedCollection[A:Elem](vals: Rep[RDDCollection[A]], segments: Rep[PairRDDCollection[Int,Int]]) = RDDNestedCollection(vals,segments)
   }
 }

@@ -556,69 +556,33 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
       super.unapplyViews(s)
   }).asInstanceOf[Option[Unpacked[T]]]
 
-  type SRDDMapArgs[A,B] = (Rep[SRDD[A]], Rep[A => B])
-  type SRDDFlatMapArgs[A,B] = (Rep[SRDD[A]], Rep[A => SSeq[B]])
-
   override def rewriteDef[T](d: Def[T]) = d match {
     case SRDDMethods.map(xs, Def(l: Lambda[_, _])) if l.isIdentity => xs
-    case SRDDMethods.map(t: SRDDMapArgs[_,c] @unchecked) => t match {
-      case (xs: RepRDD[a]@unchecked, f @ Def(Lambda(_, _, _, UnpackableExp(_, iso: Iso[b, c])))) => {
+    case SRDDMethods.map(xs, f) => (xs, f) match {
+      case (xs: RepRDD[a] @unchecked, f @ Def(Lambda(_, _, _, UnpackableExp(_, iso: Iso[b, c])))) =>
         val f1 = f.asRep[a => c]
         implicit val eA = xs.elem.eItem
         implicit val eB = iso.eFrom
-        val s = xs.map( fun { x =>
+        val s = xs.map(fun { x =>
           val tmp = f1(x)
           iso.from(tmp)
         })
         val res = ViewSRDD(s)(SRDDIso(iso))
         res
-      }
-      case (Def(view: ViewSRDD[a, b]), _) => {
+      case (Def(view: ViewSRDD[a, b]), f: Rep[Function1[_, c] @unchecked]) =>
         val iso = view.innerIso
-        val ff = t._2.asRep[b => c]
+        val f1 = f.asRep[b => c]
         implicit val eA = iso.eFrom
         implicit val eB = iso.eTo
-        implicit val eC = ff.elem.eRange
-        view.source.map(fun { x => ff(iso.to(x))})
-      }
+        implicit val eC = f1.elem.eRange
+        view.source.map(fun { x => f1(iso.to(x)) })
       case _ =>
         super.rewriteDef(d)
     }
-
-    case SRDDMethods.flatMap(t: SRDDFlatMapArgs[_,c] @unchecked) => t match {
-      case (xs: RepRDD[a]@unchecked, f @ Def(Lambda(_, _, _, UnpackableExp(_, iso: SSeqIso[b, c])) ) ) => {
-        val f1 = f.asRep[a => SSeq[c]]
-        val baseIso = iso.iso
-        implicit val eA = xs.elem.eItem
-        implicit val eB = baseIso.eFrom
-        implicit val eC = iso.eFrom
-
-        val s = xs.flatMap( fun { x =>
-          val tmp = f1(x)
-          iso.from(tmp)
-        })
-        ViewSRDD(s)(SRDDIso(baseIso))
-      }
-      case (Def(view: ViewSRDD[a, b]), _) => {
-        val iso = view.innerIso
-        val ff = t._2.asRep[b => SSeq[c]]
-        implicit val eA = iso.eFrom
-        implicit val eB = iso.eTo
-        val elem =  ff.elem.eRange match {
-          case sEl: SSeqElem[_,_] => sEl.eA
-          case _ => !!!
-        }
-        implicit val eC = elem.asElem[c]
-        view.source.flatMap(fun { x => ff(iso.to(x))})
-      }
-      case _ =>
-        super.rewriteDef(d)
-    }
-    case view1@ViewSRDD(Def(view2@ViewSRDD(arr))) => {
+    case view1@ViewSRDD(Def(view2@ViewSRDD(arr))) =>
       val compIso = composeIso(view1.innerIso, view2.innerIso)
       implicit val eAB = compIso.eTo
       ViewSRDD(arr)(SRDDIso(compIso))
-    }
 
     case _ => super.rewriteDef(d)
   }
