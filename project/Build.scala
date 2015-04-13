@@ -11,7 +11,7 @@ object ScalanStartRootBuild extends Build {
     //("com.novocode" % "junit-interface" % "0.11" % "test").exclude("junit", "junit-dep").exclude("org.scala-tools.testing", "test-interface"),
     "org.scalatest" %% "scalatest" % "2.2.1" % "test",
     "org.scalacheck" %% "scalacheck" % "1.11.5" % "test",
-    "org.apache.spark" %% "spark-core" % "1.2.1"
+    "org.apache.spark" %% "spark-core" % "1.2.0"
   )
 
   val testSettings = inConfig(ItTest)(Defaults.testTasks /*++ baseAssemblySettings*/) ++ Seq(
@@ -96,6 +96,17 @@ object ScalanStartRootBuild extends Build {
       ml % "test" classifier "tests"
       )
     )
+
+  val virtScala = Option(System.getenv("SCALA_VIRTUALIZED_VERSION")).getOrElse("2.10.2")
+
+  lazy val backend = liteDependency("lms-backend")
+  lazy val sparkBackend = Project("spark-backend",file("spark-backend")).dependsOn(start.allConfigDependency).
+    settings(libraryDependencies ++= Seq(backend,
+      "org.scala-lang.virtualized" % "scala-library" % virtScala,
+      "org.scala-lang.virtualized" % "scala-compiler" % virtScala),
+    scalaOrganization := "org.scala-lang.virtualized",
+    scalaVersion := virtScala
+)
 
   def itFilter(name: String): Boolean =
     name endsWith "ItTests"
