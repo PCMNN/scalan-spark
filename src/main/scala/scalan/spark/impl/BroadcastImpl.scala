@@ -9,13 +9,13 @@ import scala.reflect.runtime.universe._
 import scalan.common.Default
 
 // Abs -----------------------------------
-trait BroadcastsAbs extends ScalanCommunityDsl with Broadcasts {
+trait BroadcastsAbs extends Broadcasts with ScalanCommunityDsl {
   self: SparkDsl =>
   // single proxy for each type family
   implicit def proxySBroadcast[A](p: Rep[SBroadcast[A]]): SBroadcast[A] = {
     proxyOps[SBroadcast[A]](p)(classTag[SBroadcast[A]])
   }
-  // BaseTypeEx proxy
+  // TypeWrapper proxy
   //implicit def proxyBroadcast[A:Elem](p: Rep[Broadcast[A]]): SBroadcast[A] =
   //  proxyOps[SBroadcast[A]](p.asRep[SBroadcast[A]])
 
@@ -24,6 +24,7 @@ trait BroadcastsAbs extends ScalanCommunityDsl with Broadcasts {
   implicit def defaultSBroadcastElem[A:Elem]: Elem[SBroadcast[A]] = element[SBroadcastImpl[A]].asElem[SBroadcast[A]]
   implicit def broadcastElement[A:Elem]: Elem[Broadcast[A]]
 
+  // familyElem
   class SBroadcastElem[A, To <: SBroadcast[A]](implicit val eA: Elem[A])
     extends EntityElem[To] {
     override def isEntityType = true
@@ -33,7 +34,7 @@ trait BroadcastsAbs extends ScalanCommunityDsl with Broadcasts {
     }
     override def convert(x: Rep[Reifiable[_]]) = convertSBroadcast(x.asRep[SBroadcast[A]])
     def convertSBroadcast(x : Rep[SBroadcast[A]]): Rep[To] = {
-      assert(x.selfType1.isInstanceOf[SBroadcastElem[_,_]])
+      //assert(x.selfType1.isInstanceOf[SBroadcastElem[_,_]])
       x.asRep[To]
     }
     override def getDefaultRep: Rep[To] = ???
@@ -67,10 +68,10 @@ trait BroadcastsAbs extends ScalanCommunityDsl with Broadcasts {
   // elem for concrete class
   class SBroadcastImplElem[A](val iso: Iso[SBroadcastImplData[A], SBroadcastImpl[A]])(implicit eA: Elem[A])
     extends SBroadcastElem[A, SBroadcastImpl[A]]
-    with ViewElem[SBroadcastImplData[A], SBroadcastImpl[A]] {
+    with ConcreteElem[SBroadcastImplData[A], SBroadcastImpl[A]] {
     override def convertSBroadcast(x: Rep[SBroadcast[A]]) = SBroadcastImpl(x.wrappedValueOfBaseType)
-    override def getDefaultRep = super[ViewElem].getDefaultRep
-    override lazy val tag = super[ViewElem].tag
+    override def getDefaultRep = super[ConcreteElem].getDefaultRep
+    override lazy val tag = super[ConcreteElem].tag
   }
 
   // state representation type
@@ -133,11 +134,11 @@ trait BroadcastsAbs extends ScalanCommunityDsl with Broadcasts {
 // Seq -----------------------------------
 trait BroadcastsSeq extends BroadcastsDsl with ScalanCommunityDslSeq {
   self: SparkDslSeq =>
-  lazy val SBroadcast: Rep[SBroadcastCompanionAbs] = new SBroadcastCompanionAbs with UserTypeSeq[SBroadcastCompanionAbs, SBroadcastCompanionAbs] {
+  lazy val SBroadcast: Rep[SBroadcastCompanionAbs] = new SBroadcastCompanionAbs with UserTypeSeq[SBroadcastCompanionAbs] {
     lazy val selfType = element[SBroadcastCompanionAbs]
   }
 
-    // override proxy if we deal with BaseTypeEx
+    // override proxy if we deal with TypeWrapper
   //override def proxyBroadcast[A:Elem](p: Rep[Broadcast[A]]): SBroadcast[A] =
   //  proxyOpsEx[Broadcast[A],SBroadcast[A], SeqSBroadcastImpl[A]](p, bt => SeqSBroadcastImpl(bt))
 
@@ -147,12 +148,12 @@ trait BroadcastsSeq extends BroadcastsDsl with ScalanCommunityDslSeq {
       (override val wrappedValueOfBaseType: Rep[Broadcast[A]])
       (implicit eA: Elem[A])
     extends SBroadcastImpl[A](wrappedValueOfBaseType)
-        with UserTypeSeq[SBroadcast[A], SBroadcastImpl[A]] {
-    lazy val selfType = element[SBroadcastImpl[A]].asInstanceOf[Elem[SBroadcast[A]]]
+        with UserTypeSeq[SBroadcastImpl[A]] {
+    lazy val selfType = element[SBroadcastImpl[A]]
     override def value: Rep[A] =
       wrappedValueOfBaseType.value
   }
-  lazy val SBroadcastImpl = new SBroadcastImplCompanionAbs with UserTypeSeq[SBroadcastImplCompanionAbs, SBroadcastImplCompanionAbs] {
+  lazy val SBroadcastImpl = new SBroadcastImplCompanionAbs with UserTypeSeq[SBroadcastImplCompanionAbs] {
     lazy val selfType = element[SBroadcastImplCompanionAbs]
   }
 
@@ -168,7 +169,7 @@ trait BroadcastsSeq extends BroadcastsDsl with ScalanCommunityDslSeq {
 // Exp -----------------------------------
 trait BroadcastsExp extends BroadcastsDsl with ScalanCommunityDslExp {
   self: SparkDslExp =>
-  lazy val SBroadcast: Rep[SBroadcastCompanionAbs] = new SBroadcastCompanionAbs with UserTypeDef[SBroadcastCompanionAbs, SBroadcastCompanionAbs] {
+  lazy val SBroadcast: Rep[SBroadcastCompanionAbs] = new SBroadcastCompanionAbs with UserTypeDef[SBroadcastCompanionAbs] {
     lazy val selfType = element[SBroadcastCompanionAbs]
     override def mirror(t: Transformer) = this
   }
@@ -177,12 +178,12 @@ trait BroadcastsExp extends BroadcastsDsl with ScalanCommunityDslExp {
   case class ExpSBroadcastImpl[A]
       (override val wrappedValueOfBaseType: Rep[Broadcast[A]])
       (implicit eA: Elem[A])
-    extends SBroadcastImpl[A](wrappedValueOfBaseType) with UserTypeDef[SBroadcast[A], SBroadcastImpl[A]] {
-    lazy val selfType = element[SBroadcastImpl[A]].asInstanceOf[Elem[SBroadcast[A]]]
+    extends SBroadcastImpl[A](wrappedValueOfBaseType) with UserTypeDef[SBroadcastImpl[A]] {
+    lazy val selfType = element[SBroadcastImpl[A]]
     override def mirror(t: Transformer) = ExpSBroadcastImpl[A](t(wrappedValueOfBaseType))
   }
 
-  lazy val SBroadcastImpl: Rep[SBroadcastImplCompanionAbs] = new SBroadcastImplCompanionAbs with UserTypeDef[SBroadcastImplCompanionAbs, SBroadcastImplCompanionAbs] {
+  lazy val SBroadcastImpl: Rep[SBroadcastImplCompanionAbs] = new SBroadcastImplCompanionAbs with UserTypeDef[SBroadcastImplCompanionAbs] {
     lazy val selfType = element[SBroadcastImplCompanionAbs]
     override def mirror(t: Transformer) = this
   }

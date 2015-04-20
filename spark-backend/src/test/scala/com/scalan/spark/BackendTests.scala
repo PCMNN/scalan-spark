@@ -14,15 +14,15 @@ import scalan.{BaseTests, ScalanDsl}
 
 class BackendTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil { suite =>
   val pref = new File("test-out/scalan/spark/backend/")
-  val globalSparkConf = new SparkConf().setAppName("R/W Broadcast").setMaster("local")
+  val globalSparkConf = null //new SparkConf().setAppName("R/W Broadcast").setMaster("local")
   var globalSparkContext: SparkContext = null
 
   override def beforeAll() = {
-    globalSparkContext = new SparkContext(globalSparkConf)
+    //globalSparkContext = new SparkContext(globalSparkConf)
   }
 
   override def afterAll() = {
-    globalSparkContext.stop()
+    //globalSparkContext.stop()
   }
 
   trait BackendSparkTests extends ScalanDsl with SparkDsl {
@@ -33,7 +33,10 @@ class BackendTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil { s
     lazy val sparkConfElem = element[SparkConf]
     lazy val defaultSparkConfRep = sparkConfElem.defaultRepValue
 
-    lazy val broadcastPi = fun { (sc: Rep[SSparkContext]) => sc.broadcast(toRep(3.14)) }
+    lazy val broadcastPi = fun { (sc: Rep[SSparkContext]) =>
+      //val sc1: Rep[SSparkContext] = SSparkContextImpl(sc)
+      sc.broadcast(toRep(3.14))
+    }
 
     lazy val readE = fun { (sc: Rep[SSparkContext]) => {
       val be = sc.broadcast(toRep(2.71828))
@@ -54,7 +57,21 @@ class BackendTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil { s
       val Pair(rdd, i) = in
       rdd.map(fun {v => v + i})
     }}
+
+    lazy val newRDD = fun { (in: Rep[Int]) => {
+      val rdd: Rep[SRDD[Int]] = repSparkContext.makeRDD(SSeq.single(in),2)
+      val res = rdd.collect
+      (repSparkContext.stop | res)
+    }}
   }
+
+  def generationConfig(cmpl: SparkScalanCompiler, pack : String = "gen", command: String = null, getOutput: Boolean = false) =
+    cmpl.defaultCompilerConfig.copy(scalaVersion = Some("2.10.4"),
+      sbt = cmpl.defaultCompilerConfig.sbt.copy(mainPack = Some(s"com.scalan.spark.$pack"),
+        resources = Seq("log4j.properties"),
+        extraClasses = Seq("com.scalan.spark.method.Methods"),
+        toSystemOut = !getOutput,
+        commands = if (command == null) cmpl.defaultCompilerConfig.sbt.commands else Seq(command)))
 
   test("Broadcast Code Gen") {
 
@@ -66,7 +83,13 @@ class BackendTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil { s
       val repSparkContext: Rep[SSparkContext] = SSparkContext(conf)
     }
 
-    val res = getStagedOutputConfig(testCompiler)(testCompiler.broadcastDouble, "broadcastDouble", 2.1, testCompiler.defaultCompilerConfig.copy(scalaVersion = Some("2.11.4")))
+    //val compiled = compileSource(testCompiler)(testCompiler.broadcastPi, "broadcastPi", generationConfig(testCompiler, "broadcastPi", "package"))
+    //val compiled1 = compileSource(testCompiler)(testCompiler.mapRDD, "mapRDD", generationConfig(testCompiler, "mapRDD", "package"))
+    val compiled1 = compileSource(testCompiler)(testCompiler.newRDD, "newRDD", generationConfig(testCompiler, "newRDD", "package"))
+    //testCompiler.execute(compiled, values(-8.0, -15.0, 15.0, 1)) should equal(true)
+    //val res = getStagedOutputConfig(testCompiler)(testCompiler.newRDD, "newRDD", 2, generationConfig(testCompiler, "newRDD", "package"))
+    //println(res.mkString(","))
+    //val res = getStagedOutputConfig(testCompiler)(testCompiler.broadcastPi, "broadcastPi", testCompiler.sSparkContext, testCompiler.defaultCompilerConfig.copy(scalaVersion = Some("2.11.4")))
   }
 
 }

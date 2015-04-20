@@ -9,7 +9,7 @@ trait RDDs extends Base with BaseTypes { self: SparkDsl =>
 
   /** The trait contains the basic operations available on all RDDs */
   @ContainerType
-  trait SRDD[A] extends BaseTypeEx[RDD[A], SRDD[A]] { self =>
+  trait SRDD[A] extends TypeWrapper[RDD[A], SRDD[A]] { self =>
     implicit def eA: Elem[A]
     def wrappedValueOfBaseType: Rep[RDD[A]]
 

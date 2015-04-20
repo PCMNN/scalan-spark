@@ -9,13 +9,14 @@ import scala.reflect.runtime.universe._
 import scalan.common.Default
 
 // Abs -----------------------------------
-trait PartitionersAbs extends ScalanCommunityDsl with Partitioners {
+trait PartitionersAbs extends Partitioners with ScalanCommunityDsl {
   self: SparkDsl =>
   // single proxy for each type family
   implicit def proxySPartitioner(p: Rep[SPartitioner]): SPartitioner = {
     proxyOps[SPartitioner](p)(classTag[SPartitioner])
   }
 
+  // familyElem
   class SPartitionerElem[To <: SPartitioner]
     extends EntityElem[To] {
     override def isEntityType = true
@@ -24,7 +25,7 @@ trait PartitionersAbs extends ScalanCommunityDsl with Partitioners {
     }
     override def convert(x: Rep[Reifiable[_]]) = convertSPartitioner(x.asRep[SPartitioner])
     def convertSPartitioner(x : Rep[SPartitioner]): Rep[To] = {
-      assert(x.selfType1.isInstanceOf[SPartitionerElem[_]])
+      //assert(x.selfType1.isInstanceOf[SPartitionerElem[_]])
       x.asRep[To]
     }
     override def getDefaultRep: Rep[To] = ???
@@ -51,6 +52,7 @@ trait PartitionersAbs extends ScalanCommunityDsl with Partitioners {
   implicit def proxySBasePartitioner(p: Rep[SBasePartitioner]): SBasePartitioner = {
     proxyOps[SBasePartitioner](p)(classTag[SBasePartitioner])
   }
+  // familyElem
   class SBasePartitionerElem[To <: SBasePartitioner]
     extends EntityElem[To] {
     override def isEntityType = true
@@ -59,7 +61,7 @@ trait PartitionersAbs extends ScalanCommunityDsl with Partitioners {
     }
     override def convert(x: Rep[Reifiable[_]]) = convertSBasePartitioner(x.asRep[SBasePartitioner])
     def convertSBasePartitioner(x : Rep[SBasePartitioner]): Rep[To] = {
-      assert(x.selfType1.isInstanceOf[SBasePartitionerElem[_]])
+      //assert(x.selfType1.isInstanceOf[SBasePartitionerElem[_]])
       x.asRep[To]
     }
     override def getDefaultRep: Rep[To] = ???
@@ -72,7 +74,7 @@ trait PartitionersAbs extends ScalanCommunityDsl with Partitioners {
 // Seq -----------------------------------
 trait PartitionersSeq extends PartitionersDsl with ScalanCommunityDslSeq {
   self: SparkDslSeq =>
-  lazy val SPartitioner: Rep[SPartitionerCompanionAbs] = new SPartitionerCompanionAbs with UserTypeSeq[SPartitionerCompanionAbs, SPartitionerCompanionAbs] {
+  lazy val SPartitioner: Rep[SPartitionerCompanionAbs] = new SPartitionerCompanionAbs with UserTypeSeq[SPartitionerCompanionAbs] {
     lazy val selfType = element[SPartitionerCompanionAbs]
   }
 }
@@ -80,7 +82,7 @@ trait PartitionersSeq extends PartitionersDsl with ScalanCommunityDslSeq {
 // Exp -----------------------------------
 trait PartitionersExp extends PartitionersDsl with ScalanCommunityDslExp {
   self: SparkDslExp =>
-  lazy val SPartitioner: Rep[SPartitionerCompanionAbs] = new SPartitionerCompanionAbs with UserTypeDef[SPartitionerCompanionAbs, SPartitionerCompanionAbs] {
+  lazy val SPartitioner: Rep[SPartitionerCompanionAbs] = new SPartitionerCompanionAbs with UserTypeDef[SPartitionerCompanionAbs] {
     lazy val selfType = element[SPartitionerCompanionAbs]
     override def mirror(t: Transformer) = this
   }

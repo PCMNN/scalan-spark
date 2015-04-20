@@ -9,7 +9,7 @@ trait Broadcasts extends Base with BaseTypes { self: SparkDsl =>
 
   /** A broadcast variable. It allows to keep a read-only variable cached on each machine
     * rather than shipping a copy of it with tasks. */
-  trait SBroadcast[A] extends BaseTypeEx[Broadcast[A], SBroadcast[A]] { self =>
+  trait SBroadcast[A] extends TypeWrapper[Broadcast[A], SBroadcast[A]] { self =>
     implicit def eA: Elem[A]
     def wrappedValueOfBaseType: Rep[Broadcast[A]]
     def map[B: Elem](f: Rep[A => B]): RepBroadcast[B] = repSparkContext.broadcast(f(value))

@@ -9,7 +9,7 @@ trait PairRDDFunctionss extends Base with BaseTypes { self: SparkDsl =>
   type RepPairRDDFunctions[K, V] = Rep[SPairRDDFunctions[K, V]]
 
   /** Extra functions available on RDDs of (key, value) pairs */
-  trait SPairRDDFunctions[K, V] extends BaseTypeEx[PairRDDFunctions[K, V], SPairRDDFunctions[K, V]] { self =>
+  trait SPairRDDFunctions[K, V] extends TypeWrapper[PairRDDFunctions[K, V], SPairRDDFunctions[K, V]] { self =>
     implicit def eK: Elem[K]
     implicit def eV: Elem[V]
     def wrappedValueOfBaseType: Rep[PairRDDFunctions[K, V]]

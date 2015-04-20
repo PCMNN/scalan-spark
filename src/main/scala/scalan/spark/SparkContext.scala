@@ -16,7 +16,7 @@ trait SparkContexts extends Base with BaseTypes { self: SparkDsl =>
 
   /** A SparkContext represents the connection to a Spark
     * cluster, and can be used to create RDDs, accumulators and broadcast variables on that cluster.*/
-  trait SSparkContext extends BaseTypeEx[SparkContext, SSparkContext] {self =>
+  trait SSparkContext extends TypeWrapper[SparkContext, SSparkContext] {self =>
     def wrappedValueOfBaseType: Rep[SparkContext]
 
     /** Default level of parallelism */
@@ -30,6 +30,9 @@ trait SparkContexts extends Base with BaseTypes { self: SparkDsl =>
 
     /** Creates an RDD without elements and partitions */
     @External def emptyRDD[T:Elem]: Rep[SRDD[T]]
+
+    /* Stops Spark context */
+    @External def stop: Rep[Unit]
   }
 
   trait SSparkContextCompanion extends ExCompanion0[SSparkContext] {

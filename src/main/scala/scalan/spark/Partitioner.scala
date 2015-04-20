@@ -14,7 +14,7 @@ trait Partitioners extends Base with BaseTypes { self: SparkDsl =>
   implicit def unwrapValueOfSPartitioner(w: Rep[SPartitioner]): Rep[Partitioner] = w.wrappedValueOfBaseType
 
   /** Partitioner defines how the elements in a key-value pair RDD are partitioned by key. */
-  trait SBasePartitioner extends BaseTypeEx[Partitioner, SBasePartitioner] with SPartitioner { self =>
+  trait SBasePartitioner extends TypeWrapper[Partitioner, SBasePartitioner] with SPartitioner { self =>
     def wrappedValueOfBaseType: Rep[Partitioner]
   }
 
