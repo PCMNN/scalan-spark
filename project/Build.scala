@@ -102,6 +102,8 @@ object ScalanStartRootBuild extends Build {
   lazy val backend = liteDependency("lms-backend")
   lazy val sparkBackend = Project("spark-backend",file("spark-backend")).dependsOn(start.allConfigDependency).
     settings(libraryDependencies ++= Seq(backend,
+      ml,
+      ml % "test" classifier "tests",
       "org.scala-lang.virtualized" % "scala-library" % virtScala,
       "org.scala-lang.virtualized" % "scala-compiler" % virtScala),
     scalaOrganization := "org.scala-lang.virtualized",

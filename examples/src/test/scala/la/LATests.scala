@@ -30,7 +30,7 @@ class LATests extends BaseTests with BeforeAndAfterAll { suite =>
     globalSparkContext.stop()
   }
 
-  class Context  extends SimpleLASparkTests with MLDslExp with SparkDslExp with RDDCollectionsDslExp
+  class Context  extends SimpleLASparkTests with MLDslExp with SparkLADslExp
   with scalan.compilation.DummyCompilerWithPasses {
     val sparkContext = globalSparkContext
     val sSparkContext = ExpSSparkContextImpl(globalSparkContext)
@@ -68,14 +68,17 @@ class LATests extends BaseTests with BeforeAndAfterAll { suite =>
     val ctx3 = new Context
     ctx3.emitGraph("ddMVM", ctx3.ddmvm)
 
-    //val ctx4 = new Context
-    //ctx4.emitGraph("trainAndTestCF", ctx4.trainAndTestCF)
+    val ctx4 = new Context
+    ctx4.emitGraph("trainAndTestCF", ctx4.trainAndTestCF)
 
     val ctx5 = new Context
     ctx5.emitGraph("rmse", ctx5.rmse)
 
     val ctx6 = new Context
     ctx6.emitGraph("flatMapDomain", ctx6.flatMapDomain)
+
+    val ctx7 = new Context
+    ctx7.emitGraph("sdmvm", ctx7.sdmvm)
   }
 
 }

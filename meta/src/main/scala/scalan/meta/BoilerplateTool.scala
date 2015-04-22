@@ -48,7 +48,25 @@ object SparkBoilerplateTool extends BoilerplateTool {
     sparkTypeSynonims
   )
 
-  override def getConfigs(args: Array[String]) = Seq(sparkConfig, rddCollConfig)
+  lazy val sparkLAConfig = CodegenConfig(
+    name = "ScalanSpark",
+    srcPath = "src/main/scala/la",
+    entityFiles = List(
+      "SparkMatrices.scala"
+    ),
+    baseContextTrait = "SparkDsl",
+    seqContextTrait = "SparkDslSeq",
+    stagedContextTrait = "SparkDslExp",
+    extraImports = List(
+      "scala.reflect._",
+      "scala.reflect.runtime.universe._",
+      "scalan.common.Default",
+      "scalan.spark._"
+    ),
+    sparkTypeSynonims ++ laTypeSynonyms
+  )
+
+  override def getConfigs(args: Array[String]) = Seq( sparkConfig, rddCollConfig, sparkLAConfig)
 
   override def main(args: Array[String]) = super.main(args)
 }

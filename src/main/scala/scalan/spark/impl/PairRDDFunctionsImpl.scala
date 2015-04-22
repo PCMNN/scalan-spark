@@ -89,6 +89,21 @@ trait PairRDDFunctionssAbs extends PairRDDFunctionss with ScalanCommunityDsl {
         this.getClass.getMethod("lookup", classOf[AnyRef]),
         List(key.asInstanceOf[AnyRef]))
 
+    def combineByKey: Rep[SRDD[(K, Array[V])]] =
+      methodCallEx[SRDD[(K, Array[V])]](self,
+        this.getClass.getMethod("combineByKey"),
+        List())
+
+    def countByKey: Rep[MMap[K,Int]] =
+      methodCallEx[MMap[K,Int]](self,
+        this.getClass.getMethod("countByKey"),
+        List())
+
+    def foldByKey(zeroValue: Rep[V])(op: Rep[((V, V)) => V]): Rep[SRDD[(K, V)]] =
+      methodCallEx[SRDD[(K, V)]](self,
+        this.getClass.getMethod("foldByKey", classOf[AnyRef], classOf[AnyRef]),
+        List(zeroValue.asInstanceOf[AnyRef], op.asInstanceOf[AnyRef]))
+
     def join[W:Elem](other: Rep[SRDD[(K, W)]]): Rep[SRDD[(K, (V, W))]] =
       methodCallEx[SRDD[(K, (V, W))]](self,
         this.getClass.getMethod("join", classOf[AnyRef], classOf[Elem[W]]),
@@ -198,6 +213,15 @@ trait PairRDDFunctionssSeq extends PairRDDFunctionssDsl with ScalanCommunityDslS
 
     override def lookup(key: Rep[K]): Rep[SSeq[V]] =
       wrappedValueOfBaseType.lookup(key)
+
+    override def combineByKey: Rep[SRDD[(K, Array[V])]] =
+      ??? //wrappedValueOfBaseType.combineByKey
+
+    override def countByKey: Rep[MMap[K,Int]] =
+      ??? //wrappedValueOfBaseType.countByKey
+
+    override def foldByKey(zeroValue: Rep[V])(op: Rep[((V, V)) => V]): Rep[SRDD[(K, V)]] =
+      ??? //wrappedValueOfBaseType.foldByKey(zeroValue)(scala.Function.untupled(op))
 
     override def join[W:Elem](other: Rep[SRDD[(K, W)]]): Rep[SRDD[(K, (V, W))]] =
       ??? //wrappedValueOfBaseType.join[W](other)
@@ -314,6 +338,42 @@ trait PairRDDFunctionssExp extends PairRDDFunctionssDsl with ScalanCommunityDslE
         case _ => None
       }
       def unapply(exp: Exp[_]): Option[(Rep[SPairRDDFunctions[K, V]], Rep[K]) forSome {type K; type V}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object combineByKey {
+      def unapply(d: Def[_]): Option[Rep[SPairRDDFunctions[K, V]] forSome {type K; type V}] = d match {
+        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SPairRDDFunctionsElem[_, _, _]] && method.getName == "combineByKey" =>
+          Some(receiver).asInstanceOf[Option[Rep[SPairRDDFunctions[K, V]] forSome {type K; type V}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[Rep[SPairRDDFunctions[K, V]] forSome {type K; type V}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object countByKey {
+      def unapply(d: Def[_]): Option[Rep[SPairRDDFunctions[K, V]] forSome {type K; type V}] = d match {
+        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SPairRDDFunctionsElem[_, _, _]] && method.getName == "countByKey" =>
+          Some(receiver).asInstanceOf[Option[Rep[SPairRDDFunctions[K, V]] forSome {type K; type V}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[Rep[SPairRDDFunctions[K, V]] forSome {type K; type V}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object foldByKey {
+      def unapply(d: Def[_]): Option[(Rep[SPairRDDFunctions[K, V]], Rep[V], Rep[((V, V)) => V]) forSome {type K; type V}] = d match {
+        case MethodCall(receiver, method, Seq(zeroValue, op, _*), _) if receiver.elem.isInstanceOf[SPairRDDFunctionsElem[_, _, _]] && method.getName == "foldByKey" =>
+          Some((receiver, zeroValue, op)).asInstanceOf[Option[(Rep[SPairRDDFunctions[K, V]], Rep[V], Rep[((V, V)) => V]) forSome {type K; type V}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[SPairRDDFunctions[K, V]], Rep[V], Rep[((V, V)) => V]) forSome {type K; type V}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }

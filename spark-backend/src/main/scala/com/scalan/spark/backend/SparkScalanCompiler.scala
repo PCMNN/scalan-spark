@@ -5,7 +5,7 @@ import scalan.compilation.lms.scalac.CommunityLmsCompilerScala
 import scalan.spark.SparkDslExp
 import scalan.{ScalanCommunityDslExp, ScalanCommunityExp}
 
-trait SparkScalanCompiler extends ScalanCommunityExp with SparkDslExp with ScalanCommunityDslExp with ScalanSparkMethodMappingDSL with CommunityLmsCompilerScala {
+trait SparkScalanCompiler extends SparkDslExp with ScalanSparkMethodMappingDSL with CommunityLmsCompilerScala {
   val lms = new CommunityLmsBackend
 }
 

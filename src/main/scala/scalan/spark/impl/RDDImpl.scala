@@ -567,6 +567,8 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
       super.unapplyViews(s)
   }).asInstanceOf[Option[Unpacked[T]]]
 
+  type SRDDFlatMapArgs[A,B] = (Rep[SRDD[A]], Rep[A => SSeq[B]])
+
   override def rewriteDef[T](d: Def[T]) = d match {
     case SRDDMethods.map(xs, Def(l: Lambda[_, _])) if l.isIdentity => xs
     case SRDDMethods.map(xs, f) => (xs, f) match {
@@ -590,6 +592,41 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
       case _ =>
         super.rewriteDef(d)
     }
+
+    case SRDDMethods.flatMap(t: SRDDFlatMapArgs[_,c] @unchecked) => t match {
+      case (xs: RepRDD[a]@unchecked, f @ Def(Lambda(_, _, _, UnpackableExp(_, iso: SSeqIso[b, c])) ) ) => {
+        val f1 = f.asRep[a => SSeq[c]]
+        val baseIso = iso.iso
+        implicit val eA = xs.elem.eItem
+        implicit val eB = baseIso.eFrom
+        implicit val eC = iso.eFrom
+
+        val s = xs.flatMap( fun { x =>
+          val tmp = f1(x)
+          iso.from(tmp)
+        })
+        ViewSRDD(s)(SRDDIso(baseIso))
+      }
+      case (Def(view: ViewSRDD[a, b]), _) => {
+        val iso = view.innerIso
+        val ff = t._2.asRep[b => SSeq[c]]
+        implicit val eA = iso.eFrom
+        implicit val eB = iso.eTo
+        implicit val eC =  (ff.elem.eRange match {
+          case sEl: SSeqElem[_,_] => sEl.eA
+          case _ => !!!
+        }).asElem[c]
+        view.source.flatMap(fun { x => ff(iso.to(x))})
+      }
+      case _ =>
+        super.rewriteDef(d)
+    }
+
+    case SRDDMethods.collect(Def(view: ViewSRDD[_,_])) => {
+      val iso = view.innerIso
+      ViewArray(view.source.collect)(ArrayIso(iso))
+    }
+
     case view1@ViewSRDD(Def(view2@ViewSRDD(arr))) =>
       val compIso = composeIso(view1.innerIso, view2.innerIso)
       implicit val eAB = compIso.eTo

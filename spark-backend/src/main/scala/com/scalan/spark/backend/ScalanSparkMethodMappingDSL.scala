@@ -55,6 +55,8 @@ trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {
     val testMethod = new ScalaLib("", "com.scalan.spark.method.Methods") {
       val reduceByKey = ScalaFunc('reduceByKey)(true)
       val fold = ScalaFunc('fold)(true)
+      val fromList = ScalaFunc('fromList)()
+      val newSeq = ScalaFunc('newSeq)()
     }
     val seq = new ScalaLib(pack = "scala.collection") {
       val empty = ScalaFunc(Symbol("Seq.empty"))()
@@ -62,11 +64,6 @@ trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {
     }
 
     val commonMethods = new ScalaLib(pack = "com.scalan.spark.backend.bounds.gen.CommonMethods") {
-      val fold = ScalaFunc('fold)()
-      val fromList = ScalaFunc('fromList)()
-      val reduceByKey = ScalaFunc('reduceByKey)(true)
-      val newSeq = ScalaFunc('newSeq)()
-      //val single = ScalaFunc('single)()
       val sparkContext = ScalaFunc('sparkContext)()
     }
 
@@ -97,11 +94,11 @@ trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {
       Map(
         scalanSpark.scalanSparkPack.famPairRDDFunctionssAbs.pairRDDFunctions.reduceByKey -> testMethod.reduceByKey,
         scalanSpark.scalanSparkPack.famRDDsAbs.sRDDImpl.fold -> testMethod.fold,
-        scalanSpark.scalanSparkPack.famPairRDDFunctionssAbs.pairRDDFunctions.reduceByKey -> commonMethods.reduceByKey,
+        scalanSpark.scalanSparkPack.famPairRDDFunctionssAbs.pairRDDFunctions.reduceByKey -> testMethod.reduceByKey,
         scalanComunity.scalanColectionsImp.seqsAbs.sSeqCompanionAbs.empty -> seq.empty,
-        scalanComunity.scalanColectionsImp.seqsAbs.sSeqCompanionAbs.fromList -> commonMethods.fromList,
+        scalanComunity.scalanColectionsImp.seqsAbs.sSeqCompanionAbs.fromList -> testMethod.fromList,
         scalanComunity.scalanColectionsImp.seqsAbs.sSeqCompanionAbs.single -> seq.single,
-        scalanComunity.scalanColectionsImp.seqsAbs.sSeqCompanionAbs.apply -> commonMethods.newSeq,
+        scalanComunity.scalanColectionsImp.seqsAbs.sSeqCompanionAbs.apply -> testMethod.newSeq,
         scalanSpark.scalanSparkPack.sparkContexts.sSparkContextCompanion.apply -> commonMethods.sparkContext
       )
     }

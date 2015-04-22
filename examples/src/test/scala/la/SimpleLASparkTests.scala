@@ -1,13 +1,11 @@
 package la
 
 import scalan.ml.{ExampleSVDpp, MLDsl}
-import scalan.spark.SparkDsl
-import scalan.spark.collections.RDDCollectionsDsl
 
 /**
  * Created by afilippov on 4/15/15.
  */
-trait SimpleLASparkTests extends MLDsl with SparkDsl with RDDCollectionsDsl with ExampleSVDpp {
+trait SimpleLASparkTests extends MLDsl with SparkLADsl with ExampleSVDpp {
 
   def dvDotDV(in1: Coll[Int], in2: Coll[Int]) = {
     val (vector1, vector2): (Vector[Int], Vector[Int]) = (DenseVector(in1), DenseVector(in2))
@@ -36,6 +34,13 @@ trait SimpleLASparkTests extends MLDsl with SparkDsl with RDDCollectionsDsl with
   lazy val ddmvm = fun { p: Rep[(SRDD[Array[Double]], Array[Double])] =>
     val Pair(m, v) = p
     val matrix: Matrix[Double] = RowMajorDirectMatrix(RDDCollection(m.map { r: Arr[Double] => DenseVector(Collection(r)) }))
+    val vector: Vector[Double] = DenseVector(Collection(v))
+    (matrix * vector).items.arr
+  }
+
+  lazy val sdmvm = fun { p: Rep[(SRDD[(Array[Int], Array[Double])], (Int, Array[Double]))] =>
+    val Tuple(m, numCols, v) = p
+    val matrix: Matrix[Double] = SparkSparseMatrix(RDDCollection(m), numCols)
     val vector: Vector[Double] = DenseVector(Collection(v))
     (matrix * vector).items.arr
   }

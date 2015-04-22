@@ -29,6 +29,13 @@ trait PairRDDFunctionss extends Base with BaseTypes { self: SparkDsl =>
     /** Returns the list of values in the RDD for the key */
     @External def lookup(key: Rep[K]): Rep[SSeq[V]]
 
+    /** */
+    @External def combineByKey: Rep[SRDD[(K,Array[V])]]
+
+    @External def countByKey: Rep[MMap[K,Int]]
+
+    @External def foldByKey(zeroValue: Rep[V])(op: Rep[((V, V)) => V]): Rep[SRDD[(K,V)]]
+
     /** Return an RDD containing all pairs of elements with matching keys */
     @External def join[W: Elem](other: Rep[SRDD[(K, W)]]): Rep[SRDD[(K, (V, W))]]
   }
