@@ -41,7 +41,7 @@ trait RDDCollections { self: SparkDsl with RDDCollectionsDsl =>
     }
     @OverloadId("many")
     def apply(indices: Coll[Int])(implicit o: Overloaded1): RDDColl[A] = {
-      val irdd: RepPairRDDFunctions[Long, Int] = SRDD.fromArray(indices.arr).map(fun {(i: Rep[Int]) => Pair(i.toLong, 0)})
+      val irdd: RepPairRDDFunctions[Long, Int] = SRDD.fromArraySC(rdd.context, indices.arr).map(fun {(i: Rep[Int]) => Pair(i.toLong, 0)})
       val vrdd: RepRDD[(Long, A)] = rdd.zipWithIndex.map({p: Rep[(A,Long)] => Pair(p._2, p._1)})
 
       val joinedRdd: RepRDD[(Long, (Int, A))] = irdd.join(vrdd)
@@ -50,7 +50,7 @@ trait RDDCollections { self: SparkDsl with RDDCollectionsDsl =>
     }
     def mapBy[B: Elem](f: Rep[A @uncheckedVariance => B]): Coll[B] = RDDCollection(rdd.map(f))
     def reduce(implicit m: RepMonoid[A @uncheckedVariance]): Rep[A] = rdd.fold(m.zero)( fun {in: Rep[(A,A)] => m.append(in._1, in._2)} )
-    def zip[B: Elem](ys: Coll[B]): PairColl[A,B] = PairRDDCollection(rdd zip SRDD.fromArray(ys.arr) )
+    def zip[B: Elem](ys: Coll[B]): PairColl[A,B] = PairRDDCollection(rdd zip SRDD.fromArraySC(rdd.context, ys.arr) )
     def update (idx: Rep[Int], value: Rep[A]): Coll[A] = ??? //PCollection(parr <<- (idx, value))
     def updateMany (idxs: Coll[Int], vals: Coll[A]): Coll[A] = ??? //PCollection(parr <<- (PArray.fromArray(idxs.arr), PArray.fromArray(vals.arr)))
     def filterBy(f: Rep[A @uncheckedVariance => Boolean]): Coll[A] = ???
@@ -92,7 +92,7 @@ trait RDDCollections { self: SparkDsl with RDDCollectionsDsl =>
       implicit val ppElem = PairElem(element[Long], elem)
       val lElem = toLazyElem(PairElem(elem, element[Long]))
 
-      val irdd: RepPairRDDFunctions[Long, Int] = SRDD.fromArray(indices.arr).map(fun {(i: Rep[Int]) => Pair(i.toLong, 0)})
+      val irdd: RepPairRDDFunctions[Long, Int] = SRDD.fromArraySC(pairRDD.context, indices.arr).map(fun {(i: Rep[Int]) => Pair(i.toLong, 0)})
 
       val vrdd: RepRDD[(Long, (A,B))] = pairRDD.zipWithIndex.map(fun({p: Rep[((A,B),Long)] => Pair(p._2, p._1)})(lElem))(ppElem)
 
@@ -106,7 +106,7 @@ trait RDDCollections { self: SparkDsl with RDDCollectionsDsl =>
       val lElem = toLazyElem(PairElem(elem, elem))
       pairRDD.fold(m.zero)(fun { in: Rep[((A, B), (A, B))] => m.append(in._1, (in._2, in._3))}(lElem))
     }
-    def zip[C: Elem](ys: Coll[C]): PairColl[(A,B),C] = PairRDDCollection(pairRDD zip SRDD.fromArray(ys.arr) )
+    def zip[C: Elem](ys: Coll[C]): PairColl[(A,B),C] = PairRDDCollection(pairRDD zip SRDD.fromArraySC(pairRDD.context, ys.arr) )
     def update (idx: Rep[Int], value: Rep[(A,B)]): Coll[(A,B)] = ??? //PCollection(parr <<- (idx, value))
     def updateMany (idxs: Coll[Int], vals: Coll[(A,B)]): Coll[(A,B)] = ??? //PCollection(parr <<- (PArray.fromArray(idxs.arr), PArray.fromArray(vals.arr)))
     def filterBy(f: Rep[(A,B) @uncheckedVariance => Boolean]): PairColl[A,B] = ???

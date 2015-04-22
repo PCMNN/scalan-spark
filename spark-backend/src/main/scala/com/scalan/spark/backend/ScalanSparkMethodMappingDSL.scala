@@ -26,6 +26,11 @@ trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {
             val fold = Method('fold, tyUnit)
           }
         }
+        val famRDDs = new Family('RDDs) {
+          val sRDD = new ClassType('SRDD, TyArg('A)) {
+            val fold = Method('fold, tyUnit)
+          }
+        }
         val sparkContexts = new Family('SparkContexts) {
           val sSparkContextCompanion = new ClassType('SSparkContextCompanion) {
             val apply = Method('apply, typeOf[scalan.spark.impl.SparkConfsAbs#SSparkConfImpl])
@@ -94,6 +99,7 @@ trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {
       Map(
         scalanSpark.scalanSparkPack.famPairRDDFunctionssAbs.pairRDDFunctions.reduceByKey -> testMethod.reduceByKey,
         scalanSpark.scalanSparkPack.famRDDsAbs.sRDDImpl.fold -> testMethod.fold,
+        scalanSpark.scalanSparkPack.famRDDs.sRDD.fold -> testMethod.fold,
         scalanSpark.scalanSparkPack.famPairRDDFunctionssAbs.pairRDDFunctions.reduceByKey -> testMethod.reduceByKey,
         scalanComunity.scalanColectionsImp.seqsAbs.sSeqCompanionAbs.empty -> seq.empty,
         scalanComunity.scalanColectionsImp.seqsAbs.sSeqCompanionAbs.fromList -> testMethod.fromList,

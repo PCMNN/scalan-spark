@@ -55,6 +55,8 @@ trait RDDs extends Base with BaseTypes { self: SparkDsl =>
 
     /** Returns an array that contains all of the elements in this RDD. */
     @External def collect: Rep[Array[A]]
+
+    @External def context: Rep[SSparkContext]
   }
 
   trait SRDDCompanion extends ExCompanion1[SRDD] {
@@ -63,6 +65,11 @@ trait RDDs extends Base with BaseTypes { self: SparkDsl =>
       repSparkContext.makeRDD(SSeq(arr))
     }
     def empty[A: Elem]: Rep[SRDD[A]] = repSparkContext.makeRDD(SSeq.empty[A])
+
+    def fromArraySC[A: Elem](sc: Rep[SSparkContext], arr: Rep[Array[A]]) = {
+      sc.makeRDD(SSeq(arr))
+    }
+    def emptySC[A: Elem](sc: Rep[SSparkContext]) = sc.makeRDD(SSeq.empty[A])
   }
 
   def DefaultOfRDD[A:Elem]: Default[RDD[A]] = {

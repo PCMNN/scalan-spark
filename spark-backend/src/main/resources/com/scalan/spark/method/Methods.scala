@@ -22,7 +22,7 @@ object Methods {
     ???
   }
 
-  def countByKey[K,V](prdd: RDD[(K,V)]): Map[K,Int]  = ???
+  def countByKey[K,V](prdd: RDD[(K,V)]): Map[K,Int]  = prdd.countByKey
 
-  def foldByKey[K,V](prdd: RDD[K,V])(zeroValue: V)(op: (V, V) => V): RDD[(K,V)] = ???
+  def foldByKey[K,V](prdd: RDD[(K,V)])(zeroValue: V)(op: (V, V) => V): RDD[(K,V)] = prdd.foldByKey(zeroValue)(op)
 }

@@ -562,6 +562,30 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
         case _ => None
       }
     }
+
+    object fromArraySC {
+      def unapply(d: Def[_]): Option[(Rep[SSparkContext], Rep[Array[A]]) forSome {type A}] = d match {
+        case MethodCall(receiver, method, Seq(sc, arr, _*), _) if receiver.elem.isInstanceOf[SRDDCompanionElem] && method.getName == "fromArraySC" =>
+          Some((sc, arr)).asInstanceOf[Option[(Rep[SSparkContext], Rep[Array[A]]) forSome {type A}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[SSparkContext], Rep[Array[A]]) forSome {type A}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object emptySC {
+      def unapply(d: Def[_]): Option[Rep[SSparkContext] forSome {type A}] = d match {
+        case MethodCall(receiver, method, Seq(sc, _*), _) if receiver.elem.isInstanceOf[SRDDCompanionElem] && method.getName == "emptySC" =>
+          Some(sc).asInstanceOf[Option[Rep[SSparkContext] forSome {type A}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[Rep[SSparkContext] forSome {type A}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
   }
 
   object UserTypeSRDD {
