@@ -141,6 +141,11 @@ trait RDDsAbs extends RDDs with ScalanCommunityDsl {
       methodCallEx[Array[A]](self,
         this.getClass.getMethod("collect"),
         List())
+
+    def context: Rep[SSparkContext] =
+      methodCallEx[SSparkContext](self,
+        this.getClass.getMethod("context"),
+        List())
   }
   trait SRDDImplCompanion
   // elem for concrete class
@@ -268,6 +273,9 @@ trait RDDsSeq extends RDDsDsl with ScalanCommunityDslSeq {
 
     override def collect: Rep[Array[A]] =
       wrappedValueOfBaseType.collect
+
+    override def context: Rep[SSparkContext] =
+      wrappedValueOfBaseType.context
   }
   lazy val SRDDImpl = new SRDDImplCompanionAbs with UserTypeSeq[SRDDImplCompanionAbs] {
     lazy val selfType = element[SRDDImplCompanionAbs]
@@ -496,6 +504,18 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
     object collect {
       def unapply(d: Def[_]): Option[Rep[SRDD[A]] forSome {type A}] = d match {
         case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SRDDElem[_, _]] && method.getName == "collect" =>
+          Some(receiver).asInstanceOf[Option[Rep[SRDD[A]] forSome {type A}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[Rep[SRDD[A]] forSome {type A}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object context {
+      def unapply(d: Def[_]): Option[Rep[SRDD[A]] forSome {type A}] = d match {
+        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SRDDElem[_, _]] && method.getName == "context" =>
           Some(receiver).asInstanceOf[Option[Rep[SRDD[A]] forSome {type A}]]
         case _ => None
       }
