@@ -64,20 +64,9 @@ class BackendLATests extends BaseTests with BeforeAndAfterAll with ItTestsUtil {
       SparkSparseMatrix(newIdxs, RDDCollection(SRDD.fromArraySC(mR.sc, vsE.arr)), nItems)
     }
 
-    override def calculateBaseline(mE: Matrix[Double], cs0: Vector[Int], mu: Rep[Double],
-                          gamma1: Rep[Double], lambda6: Rep[Double])(baseline: ModBL): ModBL = {
-      val Pair(vBu0, vBi0) = baseline
-      val c0 = one - gamma1 * lambda6
-      val cs = mE.rows.map(v => Collection.replicate(v.nonZeroValues.length, c0).reduce(Multiply))
-      val csT = cs0.items.map(n => Collection.replicate(n, c0).reduce(Multiply))
-      val vBu =  (vBu0 *^ cs) +^ (mE.reduceByRows *^ gamma1)
-      val vBi = (mE.reduceByColumns *^ gamma1) +^ (vBi0 *^ csT)
-      (vBu, vBi)
-    }
-
     lazy val trainAndTestBL = fun { in: Rep[(ParametersBL, (RDD[Array[Int]], (RDD[Array[Double]],
-      (RDD[Array[Int]], (RDD[Array[Double]], (RDD[Double], Int))))))] =>
-      val Tuple(parametersBL, idxs, vals, idxsT, valsT, zeroArr, nItems) = in
+      (RDD[Array[Int]], (RDD[Array[Double]], Int)))))] =>
+      val Tuple(parametersBL, idxs, vals, idxsT, valsT, nItems) = in
 
       val rddIndexes = SRDDImpl(idxs)
       val rddValues = SRDDImpl(vals)
@@ -117,7 +106,8 @@ class BackendLATests extends BaseTests with BeforeAndAfterAll with ItTestsUtil {
       val mdl0: ModBL = Pair(vBu0, vBi0)
       val stateFinal = train(closure1, mdl0)
 
-      stateFinal._1._1.items.arr
+      val Tuple(res1, res2, res3, res4, res5) = stateFinal
+      Pair(res1._1.items.arr, Pair(res1._2.items.arr, Pair(res2, Pair(res3, Pair(res4, res5)))) )
     }
 
     lazy val makeNewRDD = fun { in: Rep[RDD[Int]] =>
@@ -163,7 +153,7 @@ class BackendLATests extends BaseTests with BeforeAndAfterAll with ItTestsUtil {
         toSystemOut = !getOutput,
         commands = if (command == null) cmpl.defaultCompilerConfig.sbt.commands else Seq(command)))
 
-  test("MVM Code Gen") {
+  test("CF Code Gen") {
 
     val testCompiler = new SparkScalanCompiler with SparkLADslExp with BackendLASparkTests with CFDslExp {
       self =>
@@ -173,22 +163,14 @@ class BackendLATests extends BaseTests with BeforeAndAfterAll with ItTestsUtil {
       val repSparkContext = null //SSparkContext(conf)
     }
 
-    //val compiled = compileSource(testCompiler)(testCompiler.broadcastPi, "broadcastPi", generationConfig(testCompiler, "broadcastPi", "package"))
-    //val compiled1 = compileSource(testCompiler)(testCompiler.mapRDD, "mapRDD", generationConfig(testCompiler, "mapRDD", "package"))
-    //val compiled1 = compileSource(testCompiler)(testCompiler.sdmvm, "sdmvm", generationConfig(testCompiler, "sdmvm", "package"))
-    //testCompiler.execute(compiled1, values(-8.0, -15.0, 15.0, 1)) should equal(true)
-
-    //val in = (Array(Array(0), Array(1), Array(2), Array(3)), (Array(Array(1.0), Array(2.0), Array(3.0), Array(4.0)), Array(2.1, 3.2, 4.3, 5.4)))
-    //val res = getStagedOutputConfig(testCompiler)(testCompiler.sdmvm, "sdvmv", in, generationConfig(testCompiler, "sdvmv", "package"))
-    //val compiled0 = compileSource(testCompiler)(testCompiler.makeNewRDD, "makeNewRDD", generationConfig(testCompiler, "makeNewRDD", "package"))
-    //val compiled1 = compileSource(testCompiler)(testCompiler.flatMapFun, "flatMapFun", generationConfig(testCompiler, "flatMapFun", "package"))
-    //val compiled2 = compileSource(testCompiler)(testCompiler.avFun, "avFun", generationConfig(testCompiler, "avFun", "package"))
-    //val compiled3 = compileSource(testCompiler)(testCompiler.countNonZerosFun, "countNonZeros", generationConfig(testCompiler, "countNonZeros", "package"))
-    //val compiled4 = compileSource(testCompiler)(testCompiler.reduceByColumnsFun, "reduceByColumns", generationConfig(testCompiler, "reduceByColumns", "package"))
+    val compiled0 = compileSource(testCompiler)(testCompiler.makeNewRDD, "makeNewRDD", generationConfig(testCompiler, "makeNewRDD", "package"))
+    val compiled1 = compileSource(testCompiler)(testCompiler.flatMapFun, "flatMapFun", generationConfig(testCompiler, "flatMapFun", "package"))
+    val compiled2 = compileSource(testCompiler)(testCompiler.avFun, "avFun", generationConfig(testCompiler, "avFun", "package"))
+    val compiled3 = compileSource(testCompiler)(testCompiler.countNonZerosFun, "countNonZeros", generationConfig(testCompiler, "countNonZeros", "package"))
+    val compiled4 = compileSource(testCompiler)(testCompiler.reduceByColumnsFun, "reduceByColumns", generationConfig(testCompiler, "reduceByColumns", "package"))
     val compiled5 = compileSource(testCompiler)(testCompiler.trainBL, "trainBL", generationConfig(testCompiler, "trainBL", "package"))
-    //val compiled6 = compileSource(testCompiler)(testCompiler.trainAndTestBL, "trainAndTestBL", generationConfig(testCompiler, "trainAndTestBL", "package"))
-    //println(res.mkString(","))
-    //val res = getStagedOutputConfig(testCompiler)(testCompiler.broadcastPi, "broadcastPi", testCompiler.sSparkContext, testCompiler.defaultCompilerConfig.copy(scalaVersion = Some("2.11.4")))
+    val compiled6 = compileSource(testCompiler)(testCompiler.trainAndTestBL, "trainAndTestBL", generationConfig(testCompiler, "trainAndTestBL", "package"))
+
   }
 
 }

@@ -1,4 +1,7 @@
-package com.scalan.spark.trainBL
+/**
+ * Created by afilippov on 4/28/15.
+ */
+package com.scalan.spark.trainAndTestBL
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
@@ -15,6 +18,8 @@ object run {
   lazy val stepDecrease = 0.99
   lazy val jArrTrainIdxs = Array(Array(0,1), Array(1))
   lazy val jArrTrainVals = Array(Array(5.0, 3.0), Array(4.0))
+  lazy val jArrTestIdxs = Array(Array(0,1), Array(0,1))
+  lazy val jArrTestVals = Array(Array(5.0, 3.0), Array(3.0, 4.0))
   lazy val nItems = 2
 
 
@@ -22,12 +27,7 @@ object run {
   def main(args: Array[String]): Unit = {
     println("Start")
     val v = exec(defaultValues())
-    println("Result1: " + v._1.mkString(" , "))
-    println("Result2: " + v._2._1.mkString(" , "))
-    println("Result3: " + v._2._2._1)
-    println("Result4: " + v._2._2._2._1)
-    println("Result5: " + v._2._2._2._2._1)
-    println("Result6: " + v._2._2._2._2._2)
+    println("Result: " + v)
     println("Done")
   }
 
@@ -39,9 +39,9 @@ object run {
     globalSparkContext.stop()
   }
 
-  private def exec(tuple: (ParametersBL, (RDD[Array[Int]], (RDD[Array[Double]], Int)))) = {
+  private def exec(tuple: (ParametersBL, (RDD[Array[Int]], (RDD[Array[Double]], (RDD[Array[Int]], (RDD[Array[Double]], Int)))))) = {
     try {
-      new trainBL()(tuple)
+      new trainAndTestBL()(tuple)
     }
     finally stop()
   }
@@ -51,8 +51,10 @@ object run {
   def values() = {
     globalSparkContext = new SparkContext(globalSparkConf)
     val params = (maxIterations, (delta, (gamma1, (lambda6, stepDecrease))))
-    val rddIdxs = globalSparkContext.makeRDD(jArrTrainIdxs)
-    val rddVals = globalSparkContext.makeRDD(jArrTrainVals)
-    (params, (rddIdxs, (rddVals, nItems)))
+    val rddTrainIdxs = globalSparkContext.makeRDD(jArrTrainIdxs)
+    val rddTrainVals = globalSparkContext.makeRDD(jArrTrainVals)
+    val rddTestIdxs = globalSparkContext.makeRDD(jArrTrainIdxs)
+    val rddTestVals = globalSparkContext.makeRDD(jArrTrainVals)
+    (params, (rddTrainIdxs, (rddTrainVals, (rddTestIdxs, (rddTestVals,nItems)))))
   }
 }
