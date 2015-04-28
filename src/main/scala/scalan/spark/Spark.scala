@@ -27,4 +27,28 @@ with SparkConfsDslExp
 with RDDsDslExp
 with PairRDDFunctionssDslExp
 with PartitionersDslExp
-with BroadcastsDslExp
+with BroadcastsDslExp {
+  def hasViewArg(args: List[AnyRef]): Boolean = {
+    var res = false
+    args.map {
+      case obj if !obj.isInstanceOf[Rep[_]] => obj
+      case HasViews(s, iso) => {res = true; s}
+      case s => s
+    }
+    res
+  }
+  val wrappersCleaner = new PartialRewriter({
+    case Def(mc @ MethodCall(Def(wrapper: ExpSRDDImpl[_]), m, args, neverInvoke)) if !isValueAccessor(m) =>
+      val resultElem = mc.selfType
+      val wrapperIso = getIsoByElem(resultElem)
+      wrapperIso match {
+        case iso: Iso[base,ext] =>
+          val eRes = iso.eFrom
+          val newCall = unwrapMethodCall(mc, wrapper.wrappedValueOfBaseType, eRes)
+          iso.to(newCall)
+      }
+    case Def(mc @ NewObject(clazz, args, neverInvoke)) if hasViewArg(args) =>
+      unwrapNewObj(clazz, args, neverInvoke, mc.selfType)
+
+  })
+}

@@ -19,24 +19,24 @@ import scalan.{BaseTests, ScalanDsl}
 
 class BackendLATests extends BaseTests with BeforeAndAfterAll with ItTestsUtil { suite =>
   val pref = new File("test-out/scalan/spark/backend/")
-  val globalSparkConf = new SparkConf().setAppName("R/W Broadcast").setMaster("local")
+  val globalSparkConf = null //new SparkConf().setAppName("R/W Broadcast").setMaster("local")
   var globalSparkContext: SparkContext = null
 
   override def beforeAll() = {
-    globalSparkContext = new SparkContext(globalSparkConf)
+    //globalSparkContext = new SparkContext(globalSparkConf)
   }
 
   override def afterAll() = {
-    globalSparkContext.stop()
+    //globalSparkContext.stop()
   }
 
   trait BackendLASparkTests extends SparkLADsl with ExampleBL {
     val prefix = suite.pref
     val subfolder = "simple"
-    lazy val sparkContextElem = element[SparkContext]
-    lazy val defaultSparkContextRep = sparkContextElem.defaultRepValue
-    lazy val sparkConfElem = element[SparkConf]
-    lazy val defaultSparkConfRep = sparkConfElem.defaultRepValue
+    //lazy val sparkContextElem = element[SparkContext]
+    //lazy val defaultSparkContextRep = sparkContextElem.defaultRepValue
+    //lazy val sparkConfElem = element[SparkConf]
+    //lazy val defaultSparkConfRep = sparkConfElem.defaultRepValue
 
     lazy val sdmvm = fun { in: Rep[(Array[Array[Int]], (Array[Array[Double]], Array[Double]))] =>
       val Tuple(idxs, vals, vec) = in
@@ -50,11 +50,9 @@ class BackendLATests extends BaseTests with BeforeAndAfterAll with ItTestsUtil {
 
     }
 
-    override def errorMatrix(mR1: Dataset1, mu: DoubleRep)(model: ModelBL): Dataset1 = {
+    override def errorMatrix(mR1: Dataset1, mu: DoubleRep)(model: ModBL): Dataset1 = {
       val Pair(vBu, vBi) = model
-      println("eM start")
       val mR = mR1.asRep[SparkSparseMatrix[Double]]
-      println("cast")
       val nItems = mR.numColumns
       val vsE = (mR.rddIdxs zip mR.rddVals zip vBu.items).map {
         case Pair(Pair(idxs, vals), bu) =>
@@ -63,14 +61,23 @@ class BackendLATests extends BaseTests with BeforeAndAfterAll with ItTestsUtil {
           newValues
       }
       val newIdxs = mR.rddIdxs
-      println("before SM")
       SparkSparseMatrix(newIdxs, RDDCollection(SRDD.fromArraySC(mR.sc, vsE.arr)), nItems)
     }
 
+    override def calculateBaseline(mE: Matrix[Double], cs0: Vector[Int], mu: Rep[Double],
+                          gamma1: Rep[Double], lambda6: Rep[Double])(baseline: ModBL): ModBL = {
+      val Pair(vBu0, vBi0) = baseline
+      val c0 = one - gamma1 * lambda6
+      val cs = mE.rows.map(v => Collection.replicate(v.nonZeroValues.length, c0).reduce(Multiply))
+      val csT = cs0.items.map(n => Collection.replicate(n, c0).reduce(Multiply))
+      val vBu =  (vBu0 *^ cs) +^ (mE.reduceByRows *^ gamma1)
+      val vBi = (mE.reduceByColumns *^ gamma1) +^ (vBi0 *^ csT)
+      (vBu, vBi)
+    }
 
-    lazy val trainAndTestBL = fun { in: Rep[(SparkContext, (ParametersBL, (RDD[Array[Int]], (RDD[Array[Double]],
-      (RDD[Array[Int]], (RDD[Array[Double]], (RDD[Double], Int)))))))] =>
-      val Tuple(sp,parametersBL, idxs, vals, idxsT, valsT, zeroArr, nItems) = in
+    lazy val trainAndTestBL = fun { in: Rep[(ParametersBL, (RDD[Array[Int]], (RDD[Array[Double]],
+      (RDD[Array[Int]], (RDD[Array[Double]], (RDD[Double], Int))))))] =>
+      val Tuple(parametersBL, idxs, vals, idxsT, valsT, zeroArr, nItems) = in
 
       val rddIndexes = SRDDImpl(idxs)
       val rddValues = SRDDImpl(vals)
@@ -85,14 +92,66 @@ class BackendLATests extends BaseTests with BeforeAndAfterAll with ItTestsUtil {
       val closure1 = Pair(parametersBL, mR)
       val nUsers = mR.numRows
 
-      val vBu0: Vector[Double] = DenseVector.zero(nUsers) //DenseVector(RDDCollection(SRDDImpl(zeroArr)))
-      val vBi0: Vector[Double] = DenseVector.zero(nItems) //DenseVector(RDDCollection(SRDDImpl(zeroArr)))
-      val mdl0: ModelBL = Pair(vBu0, vBi0)
+      val vBu0: Vector[Double] = DenseVector(Collection.replicate(nUsers, 0.0)) //DenseVector(RDDCollection(SRDDImpl(zeroArr)))
+      val vBi0: Vector[Double] = DenseVector(Collection.replicate(nItems, 0.0)) //DenseVector(RDDCollection(SRDDImpl(zeroArr)))
+      val mdl0: ModBL = Pair(vBu0, vBi0)
       val stateFinal = train(closure1, mdl0)
 
       //val stateFinal = train(closure1)
       val rmse = predict(mT, stateFinal._1)
       rmse
+    }
+
+    lazy val trainBL = fun { in: Rep[(ParametersBL, (RDD[Array[Int]], (RDD[Array[Double]], Int)))] =>
+      val Tuple(parametersBL, idxs, vals, nItems) = in
+
+      val rddIndexes = SRDDImpl(idxs)
+      val rddValues = SRDDImpl(vals)
+      val mR: Dataset1 = SparkSparseMatrix(RDDCollection(rddIndexes), RDDCollection(rddValues), nItems)
+
+      val closure1 = Pair(parametersBL, mR)
+      val nUsers = mR.numRows
+
+      val vBu0: Vector[Double] = DenseVector(Collection.replicate(nUsers, 0.0)) //DenseVector(RDDCollection(SRDDImpl(zeroArr)))
+      val vBi0: Vector[Double] = DenseVector(Collection.replicate(nItems, 0.0)) //DenseVector(RDDCollection(SRDDImpl(zeroArr)))
+      val mdl0: ModBL = Pair(vBu0, vBi0)
+      val stateFinal = train(closure1, mdl0)
+
+      stateFinal._1._1.items.arr
+    }
+
+    lazy val makeNewRDD = fun { in: Rep[RDD[Int]] =>
+      val newRDD = SRDD.fromArraySC(SRDDImpl(in).context, array_rangeFrom0(10))
+      newRDD.wrappedValueOfBaseType
+    }
+
+    lazy val flatMapFun = fun { in: Rep[RDD[Array[Int]]] =>
+      val res = SRDDImpl(in).flatMap {arg: Rep[Array[Int]] => SSeq(arg) }
+      res.wrappedValueOfBaseType
+    }
+
+    lazy val avFun = fun {in: Rep[(RDD[Array[Int]], (RDD[Array[Double]],Int))] =>
+      val Tuple(idxs, vals, nItems) = in
+      val rddIndexes = SRDDImpl(idxs)
+      val rddValues = SRDDImpl(vals)
+      val mR: Dataset1 = SparkSparseMatrix(RDDCollection(rddIndexes), RDDCollection(rddValues), nItems)
+      average(mR)
+    }
+
+    lazy val countNonZerosFun = fun {in: Rep[(RDD[Array[Int]], (RDD[Array[Double]],Int))] =>
+      val Tuple(idxs, vals, nItems) = in
+      val rddIndexes = SRDDImpl(idxs)
+      val rddValues = SRDDImpl(vals)
+      val mR: Dataset1 = SparkSparseMatrix(RDDCollection(rddIndexes), RDDCollection(rddValues), nItems)
+      mR.countNonZeroesByColumns.items.arr
+    }
+
+    lazy val reduceByColumnsFun = fun {in: Rep[(RDD[Array[Int]], (RDD[Array[Double]],Int))] =>
+      val Tuple(idxs, vals, nItems) = in
+      val rddIndexes = SRDDImpl(idxs)
+      val rddValues = SRDDImpl(vals)
+      val mR: Dataset1 = SparkSparseMatrix(RDDCollection(rddIndexes), RDDCollection(rddValues), nItems)
+      mR.reduceByColumns.items.arr
     }
   }
 
@@ -109,9 +168,9 @@ class BackendLATests extends BaseTests with BeforeAndAfterAll with ItTestsUtil {
     val testCompiler = new SparkScalanCompiler with SparkLADslExp with BackendLASparkTests with CFDslExp {
       self =>
       val sparkContext = globalSparkContext
-      val sSparkContext = ExpSSparkContextImpl(globalSparkContext)
-      val conf = SSparkConf().setAppName(toRep("MVMTests")).setMaster(toRep("local[8]"))
-      val repSparkContext = SSparkContext(conf)
+      val sSparkContext = null //ExpSSparkContextImpl(globalSparkContext)
+      val conf = null //SSparkConf().setAppName(toRep("MVMTests")).setMaster(toRep("local[8]"))
+      val repSparkContext = null //SSparkContext(conf)
     }
 
     //val compiled = compileSource(testCompiler)(testCompiler.broadcastPi, "broadcastPi", generationConfig(testCompiler, "broadcastPi", "package"))
@@ -121,8 +180,13 @@ class BackendLATests extends BaseTests with BeforeAndAfterAll with ItTestsUtil {
 
     //val in = (Array(Array(0), Array(1), Array(2), Array(3)), (Array(Array(1.0), Array(2.0), Array(3.0), Array(4.0)), Array(2.1, 3.2, 4.3, 5.4)))
     //val res = getStagedOutputConfig(testCompiler)(testCompiler.sdmvm, "sdvmv", in, generationConfig(testCompiler, "sdvmv", "package"))
-
-    val compiled1 = compileSource(testCompiler)(testCompiler.trainAndTestBL, "trainAndTestBL", generationConfig(testCompiler, "trainAndTestBL", "package"))
+    //val compiled0 = compileSource(testCompiler)(testCompiler.makeNewRDD, "makeNewRDD", generationConfig(testCompiler, "makeNewRDD", "package"))
+    //val compiled1 = compileSource(testCompiler)(testCompiler.flatMapFun, "flatMapFun", generationConfig(testCompiler, "flatMapFun", "package"))
+    //val compiled2 = compileSource(testCompiler)(testCompiler.avFun, "avFun", generationConfig(testCompiler, "avFun", "package"))
+    //val compiled3 = compileSource(testCompiler)(testCompiler.countNonZerosFun, "countNonZeros", generationConfig(testCompiler, "countNonZeros", "package"))
+    //val compiled4 = compileSource(testCompiler)(testCompiler.reduceByColumnsFun, "reduceByColumns", generationConfig(testCompiler, "reduceByColumns", "package"))
+    val compiled5 = compileSource(testCompiler)(testCompiler.trainBL, "trainBL", generationConfig(testCompiler, "trainBL", "package"))
+    //val compiled6 = compileSource(testCompiler)(testCompiler.trainAndTestBL, "trainAndTestBL", generationConfig(testCompiler, "trainAndTestBL", "package"))
     //println(res.mkString(","))
     //val res = getStagedOutputConfig(testCompiler)(testCompiler.broadcastPi, "broadcastPi", testCompiler.sSparkContext, testCompiler.defaultCompilerConfig.copy(scalaVersion = Some("2.11.4")))
   }

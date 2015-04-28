@@ -6,7 +6,7 @@ import scalan._
 import scalan.common.Default
 import org.apache.spark.{SparkConf, SparkContext}
 
-trait SparkContexts extends Base with BaseTypes { self: SparkDsl =>
+trait SparkContexts extends Base with TypeWrappers { self: SparkDsl =>
 
   type RepSparkContext = Rep[SSparkContext]
   /** Current Spark Context */

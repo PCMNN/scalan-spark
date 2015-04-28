@@ -1,6 +1,7 @@
 package la
 package impl
 
+import scala.annotation.unchecked.uncheckedVariance
 import scalan.OverloadId
 import scalan.common.OverloadHack.{Overloaded1, Overloaded2}
 import scala.reflect._
@@ -11,6 +12,7 @@ import scalan.spark._
 // Abs -----------------------------------
 trait SparkMatricesAbs extends SparkMatrices with SparkDsl {
   self: SparkLADsl =>
+
   // single proxy for each type family
   implicit def proxySparkAbstractMatrix[A](p: Rep[SparkAbstractMatrix[A]]): SparkAbstractMatrix[A] = {
     proxyOps[SparkAbstractMatrix[A]](p)(classTag[SparkAbstractMatrix[A]])
@@ -32,8 +34,9 @@ trait SparkMatricesAbs extends SparkMatrices with SparkDsl {
     override def getDefaultRep: Rep[To] = ???
   }
 
-  implicit def sparkAbstractMatrixElement[A](implicit elem: Elem[A]) =
-    new SparkAbstractMatrixElem[A, SparkAbstractMatrix[A]]()(elem)
+  implicit def sparkAbstractMatrixElement[A](implicit elem: Elem[A]): Elem[SparkAbstractMatrix[A]] =
+    new SparkAbstractMatrixElem[A, SparkAbstractMatrix[A]] {
+    }
 
   trait SparkAbstractMatrixCompanionElem extends CompanionElem[SparkAbstractMatrixCompanionAbs]
   implicit lazy val SparkAbstractMatrixCompanionElem: SparkAbstractMatrixCompanionElem = new SparkAbstractMatrixCompanionElem {
@@ -64,12 +67,9 @@ trait SparkMatricesAbs extends SparkMatrices with SparkDsl {
 
   // 3) Iso for concrete class
   class SparkSparseMatrixIso[T](implicit elem: Elem[T])
-    extends Iso[SparkSparseMatrixData[T], SparkSparseMatrix[T]] {
+    extends Iso[SparkSparseMatrixData[T], SparkSparseMatrix[T]]()(pairElement(implicitly[Elem[RDDCollection[Array[Int]]]], pairElement(implicitly[Elem[RDDCollection[Array[T]]]], implicitly[Elem[Int]]))) {
     override def from(p: Rep[SparkSparseMatrix[T]]) =
-      unmkSparkSparseMatrix(p) match {
-        case Some((rddIdxs, rddVals, numColumns)) => Pair(rddIdxs, Pair(rddVals, numColumns))
-        case None => !!!
-      }
+      (p.rddIdxs, p.rddVals, p.numColumns)
     override def to(p: Rep[(RDDCollection[Array[Int]], (RDDCollection[Array[T]], Int))]) = {
       val Pair(rddIdxs, Pair(rddVals, numColumns)) = p
       SparkSparseMatrix(rddIdxs, rddVals, numColumns)
@@ -88,7 +88,9 @@ trait SparkMatricesAbs extends SparkMatrices with SparkDsl {
       isoSparkSparseMatrix(elem).to(p)
     def apply[T](rddIdxs: Rep[RDDCollection[Array[Int]]], rddVals: Rep[RDDCollection[Array[T]]], numColumns: Rep[Int])(implicit elem: Elem[T]): Rep[SparkSparseMatrix[T]] =
       mkSparkSparseMatrix(rddIdxs, rddVals, numColumns)
-    def unapply[T:Elem](p: Rep[SparkSparseMatrix[T]]) = unmkSparkSparseMatrix(p)
+  }
+  object SparkSparseMatrixMatcher {
+    def unapply[T](p: Rep[SparkAbstractMatrix[T]]) = unmkSparkSparseMatrix(p)
   }
   def SparkSparseMatrix: Rep[SparkSparseMatrixCompanionAbs]
   implicit def proxySparkSparseMatrixCompanion(p: Rep[SparkSparseMatrixCompanionAbs]): SparkSparseMatrixCompanionAbs = {
@@ -114,7 +116,7 @@ trait SparkMatricesAbs extends SparkMatrices with SparkDsl {
 
   // 6) smart constructor and deconstructor
   def mkSparkSparseMatrix[T](rddIdxs: Rep[RDDCollection[Array[Int]]], rddVals: Rep[RDDCollection[Array[T]]], numColumns: Rep[Int])(implicit elem: Elem[T]): Rep[SparkSparseMatrix[T]]
-  def unmkSparkSparseMatrix[T:Elem](p: Rep[SparkSparseMatrix[T]]): Option[(Rep[RDDCollection[Array[Int]]], Rep[RDDCollection[Array[T]]], Rep[Int])]
+  def unmkSparkSparseMatrix[T](p: Rep[SparkAbstractMatrix[T]]): Option[(Rep[RDDCollection[Array[Int]]], Rep[RDDCollection[Array[T]]], Rep[Int])]
 }
 
 // Seq -----------------------------------
@@ -138,8 +140,11 @@ trait SparkMatricesSeq extends SparkMatricesDsl with SparkDslSeq {
   def mkSparkSparseMatrix[T]
       (rddIdxs: Rep[RDDCollection[Array[Int]]], rddVals: Rep[RDDCollection[Array[T]]], numColumns: Rep[Int])(implicit elem: Elem[T]): Rep[SparkSparseMatrix[T]] =
       new SeqSparkSparseMatrix[T](rddIdxs, rddVals, numColumns)
-  def unmkSparkSparseMatrix[T:Elem](p: Rep[SparkSparseMatrix[T]]) =
-    Some((p.rddIdxs, p.rddVals, p.numColumns))
+  def unmkSparkSparseMatrix[T](p: Rep[SparkAbstractMatrix[T]]) = p match {
+    case p: SparkSparseMatrix[T] @unchecked =>
+      Some((p.rddIdxs, p.rddVals, p.numColumns))
+    case _ => None
+  }
 }
 
 // Exp -----------------------------------
@@ -188,9 +193,9 @@ trait SparkMatricesExp extends SparkMatricesDsl with SparkDslExp {
       }
     }
 
-    object rows {
+    object sc {
       def unapply(d: Def[_]): Option[Rep[SparkSparseMatrix[T]] forSome {type T}] = d match {
-        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SparkSparseMatrixElem[_]] && method.getName == "rows" =>
+        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SparkSparseMatrixElem[_]] && method.getName == "sc" =>
           Some(receiver).asInstanceOf[Option[Rep[SparkSparseMatrix[T]] forSome {type T}]]
         case _ => None
       }
@@ -200,9 +205,9 @@ trait SparkMatricesExp extends SparkMatricesDsl with SparkDslExp {
       }
     }
 
-    object columns {
+    object rows {
       def unapply(d: Def[_]): Option[Rep[SparkSparseMatrix[T]] forSome {type T}] = d match {
-        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SparkSparseMatrixElem[_]] && method.getName == "columns" =>
+        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SparkSparseMatrixElem[_]] && method.getName == "rows" =>
           Some(receiver).asInstanceOf[Option[Rep[SparkSparseMatrix[T]] forSome {type T}]]
         case _ => None
       }
@@ -250,11 +255,35 @@ trait SparkMatricesExp extends SparkMatricesDsl with SparkDslExp {
 
     object apply {
       def unapply(d: Def[_]): Option[(Rep[SparkSparseMatrix[T]], Rep[Int], Rep[Int]) forSome {type T}] = d match {
-        case MethodCall(receiver, method, Seq(row, column, _*), _) if receiver.elem.isInstanceOf[SparkSparseMatrixElem[_]] && method.getName == "apply"&& method.getAnnotation(classOf[scalan.OverloadId]) == null =>
+        case MethodCall(receiver, method, Seq(row, column, _*), _) if receiver.elem.isInstanceOf[SparkSparseMatrixElem[_]] && method.getName == "apply" && method.getAnnotation(classOf[scalan.OverloadId]) == null =>
           Some((receiver, row, column)).asInstanceOf[Option[(Rep[SparkSparseMatrix[T]], Rep[Int], Rep[Int]) forSome {type T}]]
         case _ => None
       }
       def unapply(exp: Exp[_]): Option[(Rep[SparkSparseMatrix[T]], Rep[Int], Rep[Int]) forSome {type T}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object mapBy {
+      def unapply(d: Def[_]): Option[(Rep[SparkSparseMatrix[T]], Rep[AbstractVector[T] => AbstractVector[R]]) forSome {type T; type R}] = d match {
+        case MethodCall(receiver, method, Seq(f, _*), _) if receiver.elem.isInstanceOf[SparkSparseMatrixElem[_]] && method.getName == "mapBy" =>
+          Some((receiver, f)).asInstanceOf[Option[(Rep[SparkSparseMatrix[T]], Rep[AbstractVector[T] => AbstractVector[R]]) forSome {type T; type R}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[SparkSparseMatrix[T]], Rep[AbstractVector[T] => AbstractVector[R]]) forSome {type T; type R}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object columns {
+      def unapply(d: Def[_]): Option[(Rep[SparkSparseMatrix[T]], Numeric[T]) forSome {type T}] = d match {
+        case MethodCall(receiver, method, Seq(n, _*), _) if receiver.elem.isInstanceOf[SparkSparseMatrixElem[_]] && method.getName == "columns" =>
+          Some((receiver, n)).asInstanceOf[Option[(Rep[SparkSparseMatrix[T]], Numeric[T]) forSome {type T}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[SparkSparseMatrix[T]], Numeric[T]) forSome {type T}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
@@ -267,6 +296,18 @@ trait SparkMatricesExp extends SparkMatricesDsl with SparkDslExp {
         case _ => None
       }
       def unapply(exp: Exp[_]): Option[(Rep[SparkSparseMatrix[T]], Numeric[T]) forSome {type T}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object reduceByRows {
+      def unapply(d: Def[_]): Option[(Rep[SparkSparseMatrix[T]], RepMonoid[T]) forSome {type T}] = d match {
+        case MethodCall(receiver, method, Seq(m, _*), _) if receiver.elem.isInstanceOf[SparkSparseMatrixElem[_]] && method.getName == "reduceByRows" =>
+          Some((receiver, m)).asInstanceOf[Option[(Rep[SparkSparseMatrix[T]], RepMonoid[T]) forSome {type T}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[SparkSparseMatrix[T]], RepMonoid[T]) forSome {type T}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
@@ -298,11 +339,23 @@ trait SparkMatricesExp extends SparkMatricesDsl with SparkDslExp {
 
     object * {
       def unapply(d: Def[_]): Option[(Rep[SparkSparseMatrix[T]], Vector[T], Numeric[T]) forSome {type T}] = d match {
-        case MethodCall(receiver, method, Seq(vector, n, _*), _) if receiver.elem.isInstanceOf[SparkSparseMatrixElem[_]] && method.getName == "$times" =>
+        case MethodCall(receiver, method, Seq(vector, n, _*), _) if receiver.elem.isInstanceOf[SparkSparseMatrixElem[_]] && method.getName == "$times" && method.getAnnotation(classOf[scalan.OverloadId]) == null =>
           Some((receiver, vector, n)).asInstanceOf[Option[(Rep[SparkSparseMatrix[T]], Vector[T], Numeric[T]) forSome {type T}]]
         case _ => None
       }
       def unapply(exp: Exp[_]): Option[(Rep[SparkSparseMatrix[T]], Vector[T], Numeric[T]) forSome {type T}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object matrix_* {
+      def unapply(d: Def[_]): Option[(Rep[SparkSparseMatrix[T]], Matrix[T], Numeric[T]) forSome {type T}] = d match {
+        case MethodCall(receiver, method, Seq(matrix, n, _*), _) if receiver.elem.isInstanceOf[SparkSparseMatrixElem[_]] && method.getName == "$times" && { val ann = method.getAnnotation(classOf[scalan.OverloadId]); ann != null && ann.value == "matrix" } =>
+          Some((receiver, matrix, n)).asInstanceOf[Option[(Rep[SparkSparseMatrix[T]], Matrix[T], Numeric[T]) forSome {type T}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[SparkSparseMatrix[T]], Matrix[T], Numeric[T]) forSome {type T}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
@@ -363,10 +416,25 @@ trait SparkMatricesExp extends SparkMatricesDsl with SparkDslExp {
   def mkSparkSparseMatrix[T]
     (rddIdxs: Rep[RDDCollection[Array[Int]]], rddVals: Rep[RDDCollection[Array[T]]], numColumns: Rep[Int])(implicit elem: Elem[T]): Rep[SparkSparseMatrix[T]] =
     new ExpSparkSparseMatrix[T](rddIdxs, rddVals, numColumns)
-  def unmkSparkSparseMatrix[T:Elem](p: Rep[SparkSparseMatrix[T]]) =
-    Some((p.rddIdxs, p.rddVals, p.numColumns))
+  def unmkSparkSparseMatrix[T](p: Rep[SparkAbstractMatrix[T]]) = p.elem.asInstanceOf[Elem[_]] match {
+    case _: SparkSparseMatrixElem[T] @unchecked =>
+      Some((p.asRep[SparkSparseMatrix[T]].rddIdxs, p.asRep[SparkSparseMatrix[T]].rddVals, p.asRep[SparkSparseMatrix[T]].numColumns))
+    case _ =>
+      None
+  }
 
   object SparkAbstractMatrixMethods {
+    object sc {
+      def unapply(d: Def[_]): Option[Rep[SparkAbstractMatrix[A]] forSome {type A}] = d match {
+        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SparkAbstractMatrixElem[_, _]] && method.getName == "sc" =>
+          Some(receiver).asInstanceOf[Option[Rep[SparkAbstractMatrix[A]] forSome {type A}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[Rep[SparkAbstractMatrix[A]] forSome {type A}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
   }
 
   object SparkAbstractMatrixCompanionMethods {

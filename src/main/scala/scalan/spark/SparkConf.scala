@@ -4,7 +4,7 @@ import scalan._
 import scalan.common.Default
 import org.apache.spark.SparkConf
 
-trait SparkConfs extends Base with BaseTypes { self: SparkDsl =>
+trait SparkConfs extends Base with TypeWrappers { self: SparkDsl =>
   type RepSparkConf = Rep[SSparkConf]
 
   /** Configuration for a Spark application.

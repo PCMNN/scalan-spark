@@ -4,11 +4,12 @@ import scalan._
 import scalan.common.Default
 import org.apache.spark.broadcast.Broadcast
 
-trait Broadcasts extends Base with BaseTypes { self: SparkDsl =>
+trait Broadcasts extends Base with TypeWrappers { self: SparkDsl =>
   type RepBroadcast[A] = Rep[SBroadcast[A]]
 
   /** A broadcast variable. It allows to keep a read-only variable cached on each machine
     * rather than shipping a copy of it with tasks. */
+  @ContainerType
   trait SBroadcast[A] extends TypeWrapper[Broadcast[A], SBroadcast[A]] { self =>
     implicit def eA: Elem[A]
     def wrappedValueOfBaseType: Rep[Broadcast[A]]

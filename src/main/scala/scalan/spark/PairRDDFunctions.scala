@@ -5,7 +5,7 @@ import scalan._
 import scalan.common.Default
 import org.apache.spark.Partitioner
 
-trait PairRDDFunctionss extends Base with BaseTypes { self: SparkDsl =>
+trait PairRDDFunctionss extends Base with TypeWrappers { self: SparkDsl =>
   type RepPairRDDFunctions[K, V] = Rep[SPairRDDFunctions[K, V]]
 
   /** Extra functions available on RDDs of (key, value) pairs */
@@ -32,7 +32,7 @@ trait PairRDDFunctionss extends Base with BaseTypes { self: SparkDsl =>
     /** */
     @External def combineByKey: Rep[SRDD[(K,Array[V])]]
 
-    @External def countByKey: Rep[MMap[K,Int]]
+    @External def countByKey: Rep[MMap[K,Long]]
 
     @External def foldByKey(zeroValue: Rep[V])(op: Rep[((V, V)) => V]): Rep[SRDD[(K,V)]]
 
@@ -49,8 +49,9 @@ trait PairRDDFunctionss extends Base with BaseTypes { self: SparkDsl =>
   }
 
   def DefaultOfPairRDDFunctions[K:Elem, V:Elem]: Default[PairRDDFunctions[K,V]] = {
-    val pairs = sparkContext.parallelize(Seq.empty[(K,V)])
-    Default.defaultVal(new PairRDDFunctions(pairs)(element[K].classTag, element[V].classTag))
+    null
+    /*val pairs = sparkContext.parallelize(Seq.empty[(K,V)])
+    Default.defaultVal(new PairRDDFunctions(pairs)(element[K].classTag, element[V].classTag)) */
   }
 }
 

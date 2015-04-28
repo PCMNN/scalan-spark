@@ -11,22 +11,42 @@ import scalan.common.Default
 // Abs -----------------------------------
 trait BroadcastsAbs extends Broadcasts with ScalanCommunityDsl {
   self: SparkDsl =>
+
   // single proxy for each type family
   implicit def proxySBroadcast[A](p: Rep[SBroadcast[A]]): SBroadcast[A] = {
     proxyOps[SBroadcast[A]](p)(classTag[SBroadcast[A]])
   }
+
   // TypeWrapper proxy
   //implicit def proxyBroadcast[A:Elem](p: Rep[Broadcast[A]]): SBroadcast[A] =
   //  proxyOps[SBroadcast[A]](p.asRep[SBroadcast[A]])
 
   implicit def unwrapValueOfSBroadcast[A](w: Rep[SBroadcast[A]]): Rep[Broadcast[A]] = w.wrappedValueOfBaseType
 
-  implicit def defaultSBroadcastElem[A:Elem]: Elem[SBroadcast[A]] = element[SBroadcastImpl[A]].asElem[SBroadcast[A]]
   implicit def broadcastElement[A:Elem]: Elem[Broadcast[A]]
 
+  implicit def castSBroadcastElement[A](elem: Elem[SBroadcast[A]]): SBroadcastElem[A, SBroadcast[A]] = elem.asInstanceOf[SBroadcastElem[A, SBroadcast[A]]]
+
+  implicit val containerBroadcast: Cont[Broadcast] = new Container[Broadcast] {
+    def tag[A](implicit evA: WeakTypeTag[A]) = weakTypeTag[Broadcast[A]]
+    def lift[A](implicit evA: Elem[A]) = element[Broadcast[A]]
+  }
+
+  implicit val containerSBroadcast: Cont[SBroadcast] = new Container[SBroadcast] {
+    def tag[A](implicit evA: WeakTypeTag[A]) = weakTypeTag[SBroadcast[A]]
+    def lift[A](implicit evA: Elem[A]) = element[SBroadcast[A]]
+  }
+  case class SBroadcastIso[A,B](iso: Iso[A,B]) extends Iso1[A, B, SBroadcast](iso) {
+    implicit val eA = iso.eFrom
+    implicit val eB = iso.eTo
+    def from(x: Rep[SBroadcast[B]]) = x.map(iso.from _)
+    def to(x: Rep[SBroadcast[A]]) = x.map(iso.to _)
+    lazy val defaultRepTo = Default.defaultVal(SBroadcast.empty[B])
+  }
+
   // familyElem
-  class SBroadcastElem[A, To <: SBroadcast[A]](implicit val eA: Elem[A])
-    extends EntityElem[To] {
+  abstract class SBroadcastElem[A, To <: SBroadcast[A]](implicit val eA: Elem[A])
+    extends WrapperElem1[A, To, Broadcast, SBroadcast]()(eA, container[Broadcast], container[SBroadcast]) {
     override def isEntityType = true
     override def tag = {
       implicit val tagA = eA.tag
@@ -40,8 +60,10 @@ trait BroadcastsAbs extends Broadcasts with ScalanCommunityDsl {
     override def getDefaultRep: Rep[To] = ???
   }
 
-  implicit def sBroadcastElement[A](implicit eA: Elem[A]) =
-    new SBroadcastElem[A, SBroadcast[A]]()(eA)
+  implicit def sBroadcastElement[A](implicit eA: Elem[A]): Elem[SBroadcast[A]] =
+    new SBroadcastElem[A, SBroadcast[A]] {
+      lazy val eTo = element[SBroadcastImpl[A]]
+    }
 
   trait SBroadcastCompanionElem extends CompanionElem[SBroadcastCompanionAbs]
   implicit lazy val SBroadcastCompanionElem: SBroadcastCompanionElem = new SBroadcastCompanionElem {
@@ -68,10 +90,11 @@ trait BroadcastsAbs extends Broadcasts with ScalanCommunityDsl {
   // elem for concrete class
   class SBroadcastImplElem[A](val iso: Iso[SBroadcastImplData[A], SBroadcastImpl[A]])(implicit eA: Elem[A])
     extends SBroadcastElem[A, SBroadcastImpl[A]]
-    with ConcreteElem[SBroadcastImplData[A], SBroadcastImpl[A]] {
+    with ConcreteElem1[A, SBroadcastImplData[A], SBroadcastImpl[A], SBroadcast] {
+    lazy val eTo = this
     override def convertSBroadcast(x: Rep[SBroadcast[A]]) = SBroadcastImpl(x.wrappedValueOfBaseType)
-    override def getDefaultRep = super[ConcreteElem].getDefaultRep
-    override lazy val tag = super[ConcreteElem].tag
+    override def getDefaultRep = super[ConcreteElem1].getDefaultRep
+    override lazy val tag = super[ConcreteElem1].tag
   }
 
   // state representation type
@@ -81,10 +104,7 @@ trait BroadcastsAbs extends Broadcasts with ScalanCommunityDsl {
   class SBroadcastImplIso[A](implicit eA: Elem[A])
     extends Iso[SBroadcastImplData[A], SBroadcastImpl[A]] {
     override def from(p: Rep[SBroadcastImpl[A]]) =
-      unmkSBroadcastImpl(p) match {
-        case Some((wrappedValueOfBaseType)) => wrappedValueOfBaseType
-        case None => !!!
-      }
+      p.wrappedValueOfBaseType
     override def to(p: Rep[Broadcast[A]]) = {
       val wrappedValueOfBaseType = p
       SBroadcastImpl(wrappedValueOfBaseType)
@@ -102,7 +122,9 @@ trait BroadcastsAbs extends Broadcasts with ScalanCommunityDsl {
 
     def apply[A](wrappedValueOfBaseType: Rep[Broadcast[A]])(implicit eA: Elem[A]): Rep[SBroadcastImpl[A]] =
       mkSBroadcastImpl(wrappedValueOfBaseType)
-    def unapply[A:Elem](p: Rep[SBroadcastImpl[A]]) = unmkSBroadcastImpl(p)
+  }
+  object SBroadcastImplMatcher {
+    def unapply[A](p: Rep[SBroadcast[A]]) = unmkSBroadcastImpl(p)
   }
   def SBroadcastImpl: Rep[SBroadcastImplCompanionAbs]
   implicit def proxySBroadcastImplCompanion(p: Rep[SBroadcastImplCompanionAbs]): SBroadcastImplCompanionAbs = {
@@ -128,7 +150,7 @@ trait BroadcastsAbs extends Broadcasts with ScalanCommunityDsl {
 
   // 6) smart constructor and deconstructor
   def mkSBroadcastImpl[A](wrappedValueOfBaseType: Rep[Broadcast[A]])(implicit eA: Elem[A]): Rep[SBroadcastImpl[A]]
-  def unmkSBroadcastImpl[A:Elem](p: Rep[SBroadcastImpl[A]]): Option[(Rep[Broadcast[A]])]
+  def unmkSBroadcastImpl[A](p: Rep[SBroadcast[A]]): Option[(Rep[Broadcast[A]])]
 }
 
 // Seq -----------------------------------
@@ -142,7 +164,9 @@ trait BroadcastsSeq extends BroadcastsDsl with ScalanCommunityDslSeq {
   //override def proxyBroadcast[A:Elem](p: Rep[Broadcast[A]]): SBroadcast[A] =
   //  proxyOpsEx[Broadcast[A],SBroadcast[A], SeqSBroadcastImpl[A]](p, bt => SeqSBroadcastImpl(bt))
 
-    implicit def broadcastElement[A:Elem]: Elem[Broadcast[A]] = new SeqBaseElemEx[Broadcast[A], SBroadcast[A]](element[SBroadcast[A]])(weakTypeTag[Broadcast[A]], DefaultOfBroadcast[A])
+    implicit def broadcastElement[A:Elem]: Elem[Broadcast[A]] =
+      new SeqBaseElemEx1[A, SBroadcast[A], Broadcast](
+           element[SBroadcast[A]])(element[A], container[Broadcast], DefaultOfBroadcast[A])
 
   case class SeqSBroadcastImpl[A]
       (override val wrappedValueOfBaseType: Rep[Broadcast[A]])
@@ -160,8 +184,11 @@ trait BroadcastsSeq extends BroadcastsDsl with ScalanCommunityDslSeq {
   def mkSBroadcastImpl[A]
       (wrappedValueOfBaseType: Rep[Broadcast[A]])(implicit eA: Elem[A]): Rep[SBroadcastImpl[A]] =
       new SeqSBroadcastImpl[A](wrappedValueOfBaseType)
-  def unmkSBroadcastImpl[A:Elem](p: Rep[SBroadcastImpl[A]]) =
-    Some((p.wrappedValueOfBaseType))
+  def unmkSBroadcastImpl[A](p: Rep[SBroadcast[A]]) = p match {
+    case p: SBroadcastImpl[A] @unchecked =>
+      Some((p.wrappedValueOfBaseType))
+    case _ => None
+  }
 
   implicit def wrapBroadcastToSBroadcast[A:Elem](v: Broadcast[A]): SBroadcast[A] = SBroadcastImpl(v)
 }
@@ -174,7 +201,20 @@ trait BroadcastsExp extends BroadcastsDsl with ScalanCommunityDslExp {
     override def mirror(t: Transformer) = this
   }
 
-  implicit def broadcastElement[A:Elem]: Elem[Broadcast[A]] = new ExpBaseElemEx[Broadcast[A], SBroadcast[A]](element[SBroadcast[A]])(weakTypeTag[Broadcast[A]], DefaultOfBroadcast[A])
+  case class ViewSBroadcast[A, B](source: Rep[SBroadcast[A]])(iso: Iso1[A, B, SBroadcast])
+    extends View1[A, B, SBroadcast](iso) {
+    def copy(source: Rep[SBroadcast[A]]) = ViewSBroadcast(source)(iso)
+    override def toString = s"ViewSBroadcast[${innerIso.eTo.name}]($source)"
+    override def equals(other: Any) = other match {
+      case v: ViewSBroadcast[_, _] => source == v.source && innerIso.eTo == v.innerIso.eTo
+      case _ => false
+    }
+  }
+
+  implicit def broadcastElement[A:Elem]: Elem[Broadcast[A]] =
+      new ExpBaseElemEx1[A, SBroadcast[A], Broadcast](
+           element[SBroadcast[A]])(element[A], container[Broadcast], DefaultOfBroadcast[A])
+
   case class ExpSBroadcastImpl[A]
       (override val wrappedValueOfBaseType: Rep[Broadcast[A]])
       (implicit eA: Elem[A])
@@ -194,8 +234,12 @@ trait BroadcastsExp extends BroadcastsDsl with ScalanCommunityDslExp {
   def mkSBroadcastImpl[A]
     (wrappedValueOfBaseType: Rep[Broadcast[A]])(implicit eA: Elem[A]): Rep[SBroadcastImpl[A]] =
     new ExpSBroadcastImpl[A](wrappedValueOfBaseType)
-  def unmkSBroadcastImpl[A:Elem](p: Rep[SBroadcastImpl[A]]) =
-    Some((p.wrappedValueOfBaseType))
+  def unmkSBroadcastImpl[A](p: Rep[SBroadcast[A]]) = p.elem.asInstanceOf[Elem[_]] match {
+    case _: SBroadcastImplElem[A] @unchecked =>
+      Some((p.asRep[SBroadcastImpl[A]].wrappedValueOfBaseType))
+    case _ =>
+      None
+  }
 
   object SBroadcastMethods {
     object wrappedValueOfBaseType {
@@ -247,5 +291,71 @@ trait BroadcastsExp extends BroadcastsDsl with ScalanCommunityDslExp {
         case _ => None
       }
     }
+  }
+
+  object UserTypeSBroadcast {
+    def unapply(s: Exp[_]): Option[Iso[_, _]] = {
+      s.elem match {
+        case e: SBroadcastElem[a,to] => e.eItem match {
+          case UnpackableElem(iso) => Some(iso)
+          case _ => None
+        }
+        case _ => None
+      }
+    }
+  }
+
+  override def unapplyViews[T](s: Exp[T]): Option[Unpacked[T]] = (s match {
+    case Def(view: ViewSBroadcast[_, _]) =>
+      Some((view.source, view.iso))
+    case UserTypeSBroadcast(iso: Iso[a, b]) =>
+      val newIso = SBroadcastIso(iso)
+      val repr = reifyObject(UnpackView(s.asRep[SBroadcast[b]])(newIso))
+      Some((repr, newIso))
+    case _ =>
+      super.unapplyViews(s)
+  }).asInstanceOf[Option[Unpacked[T]]]
+
+  override def rewriteDef[T](d: Def[T]) = d match {
+    case SBroadcastMethods.map(xs, Def(l: Lambda[_, _])) if l.isIdentity => xs
+
+    // Rule: W(a).m(args) ==> iso.to(a.m(unwrap(args)))
+    case mc @ MethodCall(Def(wrapper: ExpSBroadcastImpl[_]), m, args, neverInvoke) if !isValueAccessor(m) =>
+      val resultElem = mc.selfType
+      val wrapperIso = getIsoByElem(resultElem)
+      wrapperIso match {
+        case iso: Iso[base,ext] =>
+          val eRes = iso.eFrom
+          val newCall = unwrapMethodCall(mc, wrapper.wrappedValueOfBaseType, eRes)
+          iso.to(newCall)
+      }
+
+    case SBroadcastMethods.map(xs, f) => (xs, f) match {
+      case (xs: RepBroadcast[a] @unchecked, LambdaResultHasViews(f, iso: Iso[b, c])) =>
+        val f1 = f.asRep[a => c]
+        implicit val eA = xs.elem.eItem
+        implicit val eB = iso.eFrom
+        val s = xs.map(fun { x =>
+          val tmp = f1(x)
+          iso.from(tmp)
+        })
+        val res = ViewSBroadcast(s)(SBroadcastIso(iso))
+        res
+      case (HasViews(source, contIso: SBroadcastIso[a, b]), f: Rep[Function1[_, c] @unchecked]) =>
+        val f1 = f.asRep[b => c]
+        val iso = contIso.iso
+        implicit val eA = iso.eFrom
+        implicit val eB = iso.eTo
+        implicit val eC = f1.elem.eRange
+        source.asRep[SBroadcast[a]].map(fun { x => f1(iso.to(x)) })
+      case _ =>
+        super.rewriteDef(d)
+    }
+    case view1@ViewSBroadcast(Def(view2@ViewSBroadcast(arr))) =>
+      val compIso = composeIso(view1.innerIso, view2.innerIso)
+      implicit val eAB = compIso.eTo
+      ViewSBroadcast(arr)(SBroadcastIso(compIso))
+
+    case _ => super.rewriteDef(d)
   }
 }

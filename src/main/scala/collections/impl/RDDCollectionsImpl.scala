@@ -13,6 +13,7 @@ import scalan.common.Default
 // Abs -----------------------------------
 trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
   self: SparkDsl with RDDCollectionsDsl =>
+
   // single proxy for each type family
   implicit def proxyIRDDCollection[A](p: Rep[IRDDCollection[A]]): IRDDCollection[A] = {
     proxyOps[IRDDCollection[A]](p)(classTag[IRDDCollection[A]])
@@ -34,8 +35,9 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
     override def getDefaultRep: Rep[To] = ???
   }
 
-  implicit def iRDDCollectionElement[A](implicit eA: Elem[A]) =
-    new IRDDCollectionElem[A, IRDDCollection[A]]()(eA)
+  implicit def iRDDCollectionElement[A](implicit eA: Elem[A]): Elem[IRDDCollection[A]] =
+    new IRDDCollectionElem[A, IRDDCollection[A]] {
+    }
 
   trait IRDDCollectionCompanionElem extends CompanionElem[IRDDCollectionCompanionAbs]
   implicit lazy val IRDDCollectionCompanionElem: IRDDCollectionCompanionElem = new IRDDCollectionCompanionElem {
@@ -72,8 +74,9 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
     override def getDefaultRep: Rep[To] = ???
   }
 
-  implicit def iRDDPairCollectionElement[A, B](implicit eA: Elem[A], eB: Elem[B]) =
-    new IRDDPairCollectionElem[A, B, IRDDPairCollection[A, B]]()(eA, eB)
+  implicit def iRDDPairCollectionElement[A, B](implicit eA: Elem[A], eB: Elem[B]): Elem[IRDDPairCollection[A, B]] =
+    new IRDDPairCollectionElem[A, B, IRDDPairCollection[A, B]] {
+    }
 
   // single proxy for each type family
   implicit def proxyIRDDNestedCollection[A](p: Rep[IRDDNestedCollection[A]]): IRDDNestedCollection[A] = {
@@ -95,8 +98,9 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
     override def getDefaultRep: Rep[To] = ???
   }
 
-  implicit def iRDDNestedCollectionElement[A](implicit eA: Elem[A]) =
-    new IRDDNestedCollectionElem[A, IRDDNestedCollection[A]]()(eA)
+  implicit def iRDDNestedCollectionElement[A](implicit eA: Elem[A]): Elem[IRDDNestedCollection[A]] =
+    new IRDDNestedCollectionElem[A, IRDDNestedCollection[A]] {
+    }
 
   // elem for concrete class
   class RDDCollectionElem[A](val iso: Iso[RDDCollectionData[A], RDDCollection[A]])(implicit eA: Elem[A])
@@ -114,10 +118,7 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
   class RDDCollectionIso[A](implicit eA: Elem[A])
     extends Iso[RDDCollectionData[A], RDDCollection[A]] {
     override def from(p: Rep[RDDCollection[A]]) =
-      unmkRDDCollection(p) match {
-        case Some((rdd)) => rdd
-        case None => !!!
-      }
+      p.rdd
     override def to(p: Rep[SRDD[A]]) = {
       val rdd = p
       RDDCollection(rdd)
@@ -135,7 +136,9 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
 
     def apply[A](rdd: RepRDD[A])(implicit eA: Elem[A]): Rep[RDDCollection[A]] =
       mkRDDCollection(rdd)
-    def unapply[A:Elem](p: Rep[RDDCollection[A]]) = unmkRDDCollection(p)
+  }
+  object RDDCollectionMatcher {
+    def unapply[A](p: Rep[IRDDCollection[A]]) = unmkRDDCollection(p)
   }
   def RDDCollection: Rep[RDDCollectionCompanionAbs]
   implicit def proxyRDDCollectionCompanion(p: Rep[RDDCollectionCompanionAbs]): RDDCollectionCompanionAbs = {
@@ -161,7 +164,7 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
 
   // 6) smart constructor and deconstructor
   def mkRDDCollection[A](rdd: RepRDD[A])(implicit eA: Elem[A]): Rep[RDDCollection[A]]
-  def unmkRDDCollection[A:Elem](p: Rep[RDDCollection[A]]): Option[(Rep[SRDD[A]])]
+  def unmkRDDCollection[A](p: Rep[IRDDCollection[A]]): Option[(Rep[SRDD[A]])]
 
   // elem for concrete class
   class PairRDDCollectionElem[A, B](val iso: Iso[PairRDDCollectionData[A, B], PairRDDCollection[A, B]])(implicit eA: Elem[A], eB: Elem[B])
@@ -179,10 +182,7 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
   class PairRDDCollectionIso[A, B](implicit eA: Elem[A], eB: Elem[B])
     extends Iso[PairRDDCollectionData[A, B], PairRDDCollection[A, B]] {
     override def from(p: Rep[PairRDDCollection[A, B]]) =
-      unmkPairRDDCollection(p) match {
-        case Some((pairRDD)) => pairRDD
-        case None => !!!
-      }
+      p.pairRDD
     override def to(p: Rep[SRDD[(A, B)]]) = {
       val pairRDD = p
       PairRDDCollection(pairRDD)
@@ -201,7 +201,9 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
 
     def apply[A, B](pairRDD: RepRDD[(A, B)])(implicit eA: Elem[A], eB: Elem[B]): Rep[PairRDDCollection[A, B]] =
       mkPairRDDCollection(pairRDD)
-    def unapply[A:Elem, B:Elem](p: Rep[PairRDDCollection[A, B]]) = unmkPairRDDCollection(p)
+  }
+  object PairRDDCollectionMatcher {
+    def unapply[A, B](p: Rep[IRDDPairCollection[A, B]]) = unmkPairRDDCollection(p)
   }
   def PairRDDCollection: Rep[PairRDDCollectionCompanionAbs]
   implicit def proxyPairRDDCollectionCompanion(p: Rep[PairRDDCollectionCompanionAbs]): PairRDDCollectionCompanionAbs = {
@@ -227,7 +229,7 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
 
   // 6) smart constructor and deconstructor
   def mkPairRDDCollection[A, B](pairRDD: RepRDD[(A, B)])(implicit eA: Elem[A], eB: Elem[B]): Rep[PairRDDCollection[A, B]]
-  def unmkPairRDDCollection[A:Elem, B:Elem](p: Rep[PairRDDCollection[A, B]]): Option[(Rep[SRDD[(A, B)]])]
+  def unmkPairRDDCollection[A, B](p: Rep[IRDDPairCollection[A, B]]): Option[(Rep[SRDD[(A, B)]])]
 
   // elem for concrete class
   class RDDNestedCollectionElem[A](val iso: Iso[RDDNestedCollectionData[A], RDDNestedCollection[A]])(implicit eA: Elem[A])
@@ -245,10 +247,7 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
   class RDDNestedCollectionIso[A](implicit eA: Elem[A])
     extends Iso[RDDNestedCollectionData[A], RDDNestedCollection[A]] {
     override def from(p: Rep[RDDNestedCollection[A]]) =
-      unmkRDDNestedCollection(p) match {
-        case Some((values, segments)) => Pair(values, segments)
-        case None => !!!
-      }
+      (p.values, p.segments)
     override def to(p: Rep[(IRDDCollection[A], PairRDDCollection[Int,Int])]) = {
       val Pair(values, segments) = p
       RDDNestedCollection(values, segments)
@@ -267,7 +266,9 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
       isoRDDNestedCollection(eA).to(p)
     def apply[A](values: Rep[IRDDCollection[A]], segments: Rep[PairRDDCollection[Int,Int]])(implicit eA: Elem[A]): Rep[RDDNestedCollection[A]] =
       mkRDDNestedCollection(values, segments)
-    def unapply[A:Elem](p: Rep[RDDNestedCollection[A]]) = unmkRDDNestedCollection(p)
+  }
+  object RDDNestedCollectionMatcher {
+    def unapply[A](p: Rep[IRDDNestedCollection[A]]) = unmkRDDNestedCollection(p)
   }
   def RDDNestedCollection: Rep[RDDNestedCollectionCompanionAbs]
   implicit def proxyRDDNestedCollectionCompanion(p: Rep[RDDNestedCollectionCompanionAbs]): RDDNestedCollectionCompanionAbs = {
@@ -293,7 +294,7 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
 
   // 6) smart constructor and deconstructor
   def mkRDDNestedCollection[A](values: Rep[IRDDCollection[A]], segments: Rep[PairRDDCollection[Int,Int]])(implicit eA: Elem[A]): Rep[RDDNestedCollection[A]]
-  def unmkRDDNestedCollection[A:Elem](p: Rep[RDDNestedCollection[A]]): Option[(Rep[IRDDCollection[A]], Rep[PairRDDCollection[Int,Int]])]
+  def unmkRDDNestedCollection[A](p: Rep[IRDDNestedCollection[A]]): Option[(Rep[IRDDCollection[A]], Rep[PairRDDCollection[Int,Int]])]
 }
 
 // Seq -----------------------------------
@@ -317,8 +318,11 @@ trait RDDCollectionsSeq extends RDDCollectionsDsl with SparkDslSeq {
   def mkRDDCollection[A]
       (rdd: RepRDD[A])(implicit eA: Elem[A]): Rep[RDDCollection[A]] =
       new SeqRDDCollection[A](rdd)
-  def unmkRDDCollection[A:Elem](p: Rep[RDDCollection[A]]) =
-    Some((p.rdd))
+  def unmkRDDCollection[A](p: Rep[IRDDCollection[A]]) = p match {
+    case p: RDDCollection[A] @unchecked =>
+      Some((p.rdd))
+    case _ => None
+  }
 
   case class SeqPairRDDCollection[A, B]
       (override val pairRDD: RepRDD[(A, B)])
@@ -334,8 +338,11 @@ trait RDDCollectionsSeq extends RDDCollectionsDsl with SparkDslSeq {
   def mkPairRDDCollection[A, B]
       (pairRDD: RepRDD[(A, B)])(implicit eA: Elem[A], eB: Elem[B]): Rep[PairRDDCollection[A, B]] =
       new SeqPairRDDCollection[A, B](pairRDD)
-  def unmkPairRDDCollection[A:Elem, B:Elem](p: Rep[PairRDDCollection[A, B]]) =
-    Some((p.pairRDD))
+  def unmkPairRDDCollection[A, B](p: Rep[IRDDPairCollection[A, B]]) = p match {
+    case p: PairRDDCollection[A, B] @unchecked =>
+      Some((p.pairRDD))
+    case _ => None
+  }
 
   case class SeqRDDNestedCollection[A]
       (override val values: Rep[IRDDCollection[A]], override val segments: Rep[PairRDDCollection[Int,Int]])
@@ -351,8 +358,11 @@ trait RDDCollectionsSeq extends RDDCollectionsDsl with SparkDslSeq {
   def mkRDDNestedCollection[A]
       (values: Rep[IRDDCollection[A]], segments: Rep[PairRDDCollection[Int,Int]])(implicit eA: Elem[A]): Rep[RDDNestedCollection[A]] =
       new SeqRDDNestedCollection[A](values, segments)
-  def unmkRDDNestedCollection[A:Elem](p: Rep[RDDNestedCollection[A]]) =
-    Some((p.values, p.segments))
+  def unmkRDDNestedCollection[A](p: Rep[IRDDNestedCollection[A]]) = p match {
+    case p: RDDNestedCollection[A] @unchecked =>
+      Some((p.values, p.segments))
+    case _ => None
+  }
 }
 
 // Exp -----------------------------------
@@ -403,7 +413,7 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
 
     object apply {
       def unapply(d: Def[_]): Option[(Rep[RDDCollection[A]], Rep[Int]) forSome {type A}] = d match {
-        case MethodCall(receiver, method, Seq(i, _*), _) if receiver.elem.isInstanceOf[RDDCollectionElem[_]] && method.getName == "apply"&& method.getAnnotation(classOf[scalan.OverloadId]) == null =>
+        case MethodCall(receiver, method, Seq(i, _*), _) if receiver.elem.isInstanceOf[RDDCollectionElem[_]] && method.getName == "apply" && method.getAnnotation(classOf[scalan.OverloadId]) == null =>
           Some((receiver, i)).asInstanceOf[Option[(Rep[RDDCollection[A]], Rep[Int]) forSome {type A}]]
         case _ => None
       }
@@ -552,8 +562,12 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
   def mkRDDCollection[A]
     (rdd: RepRDD[A])(implicit eA: Elem[A]): Rep[RDDCollection[A]] =
     new ExpRDDCollection[A](rdd)
-  def unmkRDDCollection[A:Elem](p: Rep[RDDCollection[A]]) =
-    Some((p.rdd))
+  def unmkRDDCollection[A](p: Rep[IRDDCollection[A]]) = p.elem.asInstanceOf[Elem[_]] match {
+    case _: RDDCollectionElem[A] @unchecked =>
+      Some((p.asRep[RDDCollection[A]].rdd))
+    case _ =>
+      None
+  }
 
   case class ExpPairRDDCollection[A, B]
       (override val pairRDD: RepRDD[(A, B)])
@@ -619,7 +633,7 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
 
     object apply {
       def unapply(d: Def[_]): Option[(Rep[PairRDDCollection[A, B]], Rep[Int]) forSome {type A; type B}] = d match {
-        case MethodCall(receiver, method, Seq(i, _*), _) if receiver.elem.isInstanceOf[PairRDDCollectionElem[_, _]] && method.getName == "apply"&& method.getAnnotation(classOf[scalan.OverloadId]) == null =>
+        case MethodCall(receiver, method, Seq(i, _*), _) if receiver.elem.isInstanceOf[PairRDDCollectionElem[_, _]] && method.getName == "apply" && method.getAnnotation(classOf[scalan.OverloadId]) == null =>
           Some((receiver, i)).asInstanceOf[Option[(Rep[PairRDDCollection[A, B]], Rep[Int]) forSome {type A; type B}]]
         case _ => None
       }
@@ -768,8 +782,12 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
   def mkPairRDDCollection[A, B]
     (pairRDD: RepRDD[(A, B)])(implicit eA: Elem[A], eB: Elem[B]): Rep[PairRDDCollection[A, B]] =
     new ExpPairRDDCollection[A, B](pairRDD)
-  def unmkPairRDDCollection[A:Elem, B:Elem](p: Rep[PairRDDCollection[A, B]]) =
-    Some((p.pairRDD))
+  def unmkPairRDDCollection[A, B](p: Rep[IRDDPairCollection[A, B]]) = p.elem.asInstanceOf[Elem[_]] match {
+    case _: PairRDDCollectionElem[A, B] @unchecked =>
+      Some((p.asRep[PairRDDCollection[A, B]].pairRDD))
+    case _ =>
+      None
+  }
 
   case class ExpRDDNestedCollection[A]
       (override val values: Rep[IRDDCollection[A]], override val segments: Rep[PairRDDCollection[Int,Int]])
@@ -823,7 +841,7 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
 
     object apply {
       def unapply(d: Def[_]): Option[(Rep[RDDNestedCollection[A]], Rep[Int]) forSome {type A}] = d match {
-        case MethodCall(receiver, method, Seq(i, _*), _) if receiver.elem.isInstanceOf[RDDNestedCollectionElem[_]] && method.getName == "apply"&& method.getAnnotation(classOf[scalan.OverloadId]) == null =>
+        case MethodCall(receiver, method, Seq(i, _*), _) if receiver.elem.isInstanceOf[RDDNestedCollectionElem[_]] && method.getName == "apply" && method.getAnnotation(classOf[scalan.OverloadId]) == null =>
           Some((receiver, i)).asInstanceOf[Option[(Rep[RDDNestedCollection[A]], Rep[Int]) forSome {type A}]]
         case _ => None
       }
@@ -995,8 +1013,12 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
   def mkRDDNestedCollection[A]
     (values: Rep[IRDDCollection[A]], segments: Rep[PairRDDCollection[Int,Int]])(implicit eA: Elem[A]): Rep[RDDNestedCollection[A]] =
     new ExpRDDNestedCollection[A](values, segments)
-  def unmkRDDNestedCollection[A:Elem](p: Rep[RDDNestedCollection[A]]) =
-    Some((p.values, p.segments))
+  def unmkRDDNestedCollection[A](p: Rep[IRDDNestedCollection[A]]) = p.elem.asInstanceOf[Elem[_]] match {
+    case _: RDDNestedCollectionElem[A] @unchecked =>
+      Some((p.asRep[RDDNestedCollection[A]].values, p.asRep[RDDNestedCollection[A]].segments))
+    case _ =>
+      None
+  }
 
   object IRDDCollectionMethods {
     object rdd {

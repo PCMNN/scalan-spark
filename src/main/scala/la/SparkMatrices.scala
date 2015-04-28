@@ -1,5 +1,6 @@
 package la
 
+import scala.annotation.unchecked.uncheckedVariance
 import scalan.OverloadId
 import scalan.common.OverloadHack.{Overloaded1, Overloaded2}
 
@@ -21,7 +22,6 @@ trait SparkMatrices {  self: SparkLADsl =>
     def rddColl  = rddIdxs zip rddVals
     def sc = rddIdxs.rdd.context
     def rows = rddColl.map({arrs: Rep[(Array[Int], Array[T])] => SparseVector(Collection(arrs._1), Collection(arrs._2), numColumns)})
-    def columns: Rep[Collection[AbstractVector[T]]] = ???
     def rmValues: Rep[Collection[T]] = ???
 
     @OverloadId("rows")
@@ -29,6 +29,8 @@ trait SparkMatrices {  self: SparkLADsl =>
     @OverloadId("row")
     def apply(row: Rep[Int]): Vector[T] = ???
     def apply(row: Rep[Int], column: Rep[Int]): Rep[T] = ???
+    def mapBy[R: Elem](f: Rep[AbstractVector[T] => AbstractVector[R] @uncheckedVariance]): Matrix[R] = ???
+    def columns(implicit n: Numeric[T]): Rep[Collection[AbstractVector[T]]] = ???
 
     def transpose(implicit n: Numeric[T]): SparkMatrix[T] = {
       val flatIdxs = rddIdxs.flatMap({ i: Rep[Array[Int]] => Collection(i)}).convertTo[RDDCollection[Int]].rdd
@@ -44,20 +46,23 @@ trait SparkMatrices {  self: SparkLADsl =>
     override def countNonZeroesByColumns(implicit n: Numeric[T]): Vector[Int] = {
       val flatIdxs = rddIdxs.rdd.flatMap({ i: Rep[Array[Int]] => SSeq(i)} )
       val flatVals = rddVals.rdd.flatMap({ i: Rep[Array[T]] => SSeq(i)} )
-      val cMap = rddToPairRddFunctions(flatIdxs zip flatVals).countByKey
-      DenseVector(Collection.indexRange(numColumns).map({k => cMap.applyIfBy(k, fun{ i:Rep[Int] => i}, fun { _: Rep[Unit] => 0}) }) )
+      val cMap = SPairRDDFunctions(flatIdxs zip flatVals).countByKey
+      DenseVector(Collection.indexRange(numColumns).map({k => cMap.applyIfBy(k, fun{ i:Rep[Long] => i.toInt}, fun { _: Rep[Unit] => toRep(0)}) }) )
     }
 
     override def reduceByColumns(implicit m: RepMonoid[T], n: Numeric[T]): Vector[T] = {
       val flatIdxs = rddIdxs.rdd.flatMap({ i: Rep[Array[Int]] => SSeq(i)} )
       val flatVals = rddVals.rdd.flatMap({ i: Rep[Array[T]] => SSeq(i)} )
-      val red = rddToPairRddFunctions(flatIdxs zip flatVals).foldByKey(m.zero)( fun {in: Rep[(T,T)] => m.append(in._1, in._2)} )
+      val red = SPairRDDFunctions(flatIdxs zip flatVals).foldByKey(m.zero)( fun {in: Rep[(T,T)] => m.append(in._1, in._2)} )
       val cMap = mapFromArray(red.collect)
       DenseVector(Collection.indexRange(numColumns).map({k => cMap.applyIfBy(k, fun{ i:Rep[T] => i}, fun { _: Rep[Unit] => m.zero}) }) )
     }
 
     override def *(vector: Vector[T])(implicit n: Numeric[T]): Vector[T] =
       DenseVector(rows.map { r => r.dot(vector) })
+    @OverloadId("matrix")
+    def *(matrix: Matrix[T])(implicit n: Numeric[T], o: Overloaded1): Matrix[T] = ???
+
 
     @OverloadId("matrix")
     def +^^(other: Rep[AbstractMatrix[T]])(implicit n: Numeric[T]): Rep[AbstractMatrix[T]] = ???

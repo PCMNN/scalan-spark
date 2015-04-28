@@ -4,7 +4,7 @@ import scalan._
 import org.apache.spark.rdd.RDD
 import scalan.common.Default
 
-trait RDDs extends Base with BaseTypes { self: SparkDsl =>
+trait RDDs extends Base with TypeWrappers { self: SparkDsl =>
   type RepRDD[A] = Rep[SRDD[A]]
 
   /** The trait contains the basic operations available on all RDDs */
@@ -73,8 +73,10 @@ trait RDDs extends Base with BaseTypes { self: SparkDsl =>
   }
 
   def DefaultOfRDD[A:Elem]: Default[RDD[A]] = {
+    null
+    /*
     val rdd = sparkContext.parallelize(Seq.empty[A])
-    Default.defaultVal(rdd)
+    Default.defaultVal(rdd)*/
   }
 }
 

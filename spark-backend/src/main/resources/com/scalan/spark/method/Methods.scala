@@ -4,6 +4,7 @@ import org.apache.spark.{SparkContext, SparkConf}
 import org.apache.spark.rdd.{PairRDDFunctions, RDD}
 
 import scala.reflect.ClassTag
+import scala.collection.JavaConversions._
 
 object Methods {
 
@@ -22,7 +23,9 @@ object Methods {
     ???
   }
 
-  def countByKey[K,V](prdd: RDD[(K,V)]): Map[K,Int]  = prdd.countByKey
+  def countByKey[K,V](prdd: org.apache.spark.rdd.PairRDDFunctions[K,V]): java.util.HashMap[K,Long]  = new java.util.HashMap(prdd.countByKey)
 
-  def foldByKey[K,V](prdd: RDD[(K,V)])(zeroValue: V)(op: (V, V) => V): RDD[(K,V)] = prdd.foldByKey(zeroValue)(op)
+  def foldByKey[K,V](prdd: org.apache.spark.rdd.PairRDDFunctions[K,V], zeroValue: V, op: ((V, V)) => V): org.apache.spark.rdd.RDD[(K,V)]  = prdd.foldByKey(zeroValue)((p1, p2) => op((p1,p2)))
+
+  //def foldByKey[K,V](prdd: RDD[(K,V)])(zeroValue: V)(op: (V, V) => V): RDD[(K,V)] = prdd.reduceByKey(op)
 }

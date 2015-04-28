@@ -15,12 +15,31 @@ trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {
     val tyPairRDDFunctions = typeOf[PairRDDFunctions[_, _]]
 
     val scalanSpark = new Library("", Array("""  "org.apache.spark" %% "spark-core" % "1.2.0" """)) {
-      val scalanSparkPack = new Pack("scalan.spark.impl") {
-        val famPairRDDFunctionssAbs = new Family('PairRDDFunctionssAbs) {
-          val pairRDDFunctions = new ClassType('SPairRDDFunctionsImpl, TyArg('A)) {
+      val scalanSparkPack = new Pack("scalan.spark") {
+        val famPairRDDFunctionssAbs = new Family('PairRDDFunctionss) {
+          val pairRDDFunctions = new ClassType('SPairRDDFunctions, TyArg('A)) {
             val reduceByKey = Method('reduceByKey, tyPairRDDFunctions)
+            val countByKey = Method('countByKey, tyPairRDDFunctions)
+            val foldByKey = Method('foldByKey, tyPairRDDFunctions)
           }
         }
+        val famRDDsAbs = new Family('RDDsAbs) {
+          val sRDDImpl = new ClassType('SRDDImpl, TyArg('A)) {
+            val fold = Method('fold, tyUnit)
+          }
+        }
+        val famRDDs = new Family('RDDs) {
+          val sRDD = new ClassType('SRDD, TyArg('A)) {
+            val fold = Method('fold, tyUnit)
+          }
+        }
+        val sparkContexts = new Family('SparkContexts) {
+          val sSparkContextCompanion = new ClassType('SSparkContextCompanion) {
+            val apply = Method('apply, typeOf[scalan.spark.impl.SparkConfsAbs#SSparkConfImpl])
+          }
+        }
+      }
+      val scalanSparkPackImpl = new Pack("scalan.spark.impl") {
         val famRDDsAbs = new Family('RDDsAbs) {
           val sRDDImpl = new ClassType('SRDDImpl, TyArg('A)) {
             val fold = Method('fold, tyUnit)
@@ -57,8 +76,16 @@ trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {
   }
 
   new ScalaMappingDSL with SparkScalanTags {
+
+    val basic = new ScalaLib() {
+      val noMethodWrapper = ScalaFunc(Symbol(""))(true)
+      val noMethod = ScalaFunc(Symbol(""))()
+    }
+
     val testMethod = new ScalaLib("", "com.scalan.spark.method.Methods") {
       val reduceByKey = ScalaFunc('reduceByKey)(true)
+      val countByKey = ScalaFunc('countByKey)(true)
+      val foldByKey = ScalaFunc('foldByKey)(true)
       val fold = ScalaFunc('fold)(true)
       val fromList = ScalaFunc('fromList)()
       val newSeq = ScalaFunc('newSeq)()
@@ -98,13 +125,17 @@ trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {
 
       Map(
         scalanSpark.scalanSparkPack.famPairRDDFunctionssAbs.pairRDDFunctions.reduceByKey -> testMethod.reduceByKey,
+        scalanSpark.scalanSparkPack.famPairRDDFunctionssAbs.pairRDDFunctions.countByKey -> testMethod.countByKey,
+        scalanSpark.scalanSparkPack.famPairRDDFunctionssAbs.pairRDDFunctions.foldByKey -> testMethod.foldByKey,
         scalanSpark.scalanSparkPack.famRDDsAbs.sRDDImpl.fold -> testMethod.fold,
+        scalanSpark.scalanSparkPackImpl.famRDDsAbs.sRDDImpl.fold -> testMethod.fold,
         scalanSpark.scalanSparkPack.famRDDs.sRDD.fold -> testMethod.fold,
         scalanSpark.scalanSparkPack.famPairRDDFunctionssAbs.pairRDDFunctions.reduceByKey -> testMethod.reduceByKey,
         scalanComunity.scalanColectionsImp.seqsAbs.sSeqCompanionAbs.empty -> seq.empty,
         scalanComunity.scalanColectionsImp.seqsAbs.sSeqCompanionAbs.fromList -> testMethod.fromList,
         scalanComunity.scalanColectionsImp.seqsAbs.sSeqCompanionAbs.single -> seq.single,
         scalanComunity.scalanColectionsImp.seqsAbs.sSeqCompanionAbs.apply -> testMethod.newSeq,
+        scalanComunity.scalanColectionsImp.seqsAbs.sSeqImpl.wrappedValueOfBaseType -> basic.noMethodWrapper,
         scalanSpark.scalanSparkPack.sparkContexts.sSparkContextCompanion.apply -> commonMethods.sparkContext
       )
     }

@@ -6,7 +6,7 @@ object SparkBoilerplateTool extends BoilerplateTool {
     "RepSparkContext" -> "SSparkContext",
     "RepRDD" -> "SRDD",
     "RepPairRDDFunctions" -> "SPairRDDFunctions",
-    "RepBasePartitioner" -> "SBasePartitioner",
+    "RepBasePartitioner" -> "SPartitioner",
     "RepBroadcast" -> "SBroadcast",
     "Coll" -> "Collection",
     "PairColl" -> "IPairCollection"
@@ -15,12 +15,12 @@ object SparkBoilerplateTool extends BoilerplateTool {
     name = "ScalanSpark",
     srcPath = "src/main/scala/scalan/spark",
     entityFiles = List(
-      //"SparkConf.scala",
-      //"SparkContext.scala",
-      "RDD.scala" //,
-      //"PairRDDFunctions.scala",
-      //"Partitioner.scala",
-      //"Broadcast.scala"
+      /*"SparkConf.scala",
+      "SparkContext.scala",
+      "RDD.scala",
+      "PairRDDFunctions.scala" ,*/
+      "Partitioner.scala"/*,
+      "Broadcast.scala"          */
     ),
     baseContextTrait = "ScalanCommunityDsl",
     seqContextTrait = "ScalanCommunityDslSeq",
@@ -66,7 +66,7 @@ object SparkBoilerplateTool extends BoilerplateTool {
     sparkTypeSynonims ++ laTypeSynonyms
   )
 
-  override def getConfigs(args: Array[String]) = Seq( sparkConfig/*, rddCollConfig, sparkLAConfig*/)
+  override def getConfigs(args: Array[String]) = Seq( sparkConfig /*, rddCollConfig, sparkLAConfig*/)
 
   override def main(args: Array[String]) = super.main(args)
 }
