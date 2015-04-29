@@ -628,6 +628,24 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
 
   override def rewriteDef[T](d: Def[T]) = d match {
     case SRDDMethods.map(xs, Def(l: Lambda[_, _])) if l.isIdentity => xs
+    case SRDDMethods.context(HasViews(source, contIso: SRDDIso[a,b])) =>
+      source.asRep[SRDD[a]].context
+
+    case SRDDMethods.zip(Def(v1:ViewSRDD[a,_]), rdd2: RepRDD[b] @unchecked) =>
+      implicit val eA = v1.source.elem.eItem
+      implicit val eB = rdd2.elem.eItem
+      val iso2 = identityIso(eB)
+      val pIso = SRDDIso(pairIso(v1.innerIso, iso2))
+      val zipped = v1.source zip rdd2
+      ViewSRDD(zipped)(pIso)
+    case SRDDMethods.zip(rdd1: RepRDD[b] @unchecked, Def(v2:ViewSRDD[a,_])) =>
+      implicit val eB = v2.source.elem.eItem
+      implicit val eA = rdd1.elem.eItem
+      val iso1 = identityIso(eA)
+      val pIso = SRDDIso(pairIso(iso1, v2.innerIso))
+      val zipped = rdd1 zip v2.source
+      ViewSRDD(zipped)(pIso)
+
     case SRDDMethods.map(xs, f) => (xs, f) match {
       case (xs: RepRDD[a] @unchecked, LambdaResultHasViews(f, iso: Iso[b, c])) =>
         val f1 = f.asRep[a => c]

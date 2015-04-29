@@ -32,11 +32,17 @@ trait SparkMatrices {  self: SparkLADsl =>
     def mapBy[R: Elem](f: Rep[AbstractVector[T] => AbstractVector[R] @uncheckedVariance]): Matrix[R] = ???
     def columns(implicit n: Numeric[T]): Rep[Collection[AbstractVector[T]]] = ???
 
-    def transpose(implicit n: Numeric[T]): SparkMatrix[T] = {
-      val flatIdxs = rddIdxs.flatMap({ i: Rep[Array[Int]] => Collection(i)}).convertTo[RDDCollection[Int]].rdd
-      val flatVals = rddVals.flatMap({ i: Rep[Array[T]] => Collection(i)} ).convertTo[RDDCollection[T]].rdd
-      val transposed = rddToPairRddFunctions(flatIdxs zip flatVals).combineByKey
-      ???
+    def transpose(implicit n: Numeric[T]): SparkMatrix[T] = { ???
+      //val flatIdxs = rddIdxs.flatMap({ i: Rep[Array[Int]] => Collection(i)}).convertTo[RDDCollection[Int]].rdd
+      //val flatVals = rddVals.flatMap({ i: Rep[Array[T]] => Collection(i)} ).convertTo[RDDCollection[T]].rdd
+      //val transposed = rddToPairRddFunctions(flatIdxs zip flatVals).combineByKey
+      /*val idxs = rddIdxs.rdd
+      val vals = rddVals.rdd
+      val zipped = (idxs zip vals).zipWithIndex.map({in: Rep[((Array[Int], Array[Double]), Long)] =>
+        (in._1._1, (in._2.toInt, in._1._2))
+      })
+
+      ???*/
 
     }
     override def reduceByRows(implicit m: RepMonoid[T]): Vector[T] = {
@@ -76,6 +82,76 @@ trait SparkMatrices {  self: SparkLADsl =>
   }
 
   trait SparkSparseMatrixCompanion extends ConcreteClass1[SparkSparseMatrix] with AbstractMatrixCompanion {
+
+  }
+  abstract class SparkDenseMatrix[T] (val rddVals: Rep[RDDCollection[Array[T]]], val numColumns: Rep[Int])(implicit val elem: Elem[T]) extends SparkAbstractMatrix[T] {
+    def numRows: Rep[Int] = rddVals.length
+    def sc = rddVals.rdd.context
+    def rows = rddVals.map({arr: Rep[Array[T]] => DenseVector(Collection(arr))})
+    def rmValues: Rep[Collection[T]] = ???
+
+    @OverloadId("rows")
+    def apply(iRows: Coll[Int])(implicit o: Overloaded1): SparkMatrix[T] = SparkDenseMatrix(rddVals(iRows).convertTo[RDDCollection[Array[T]]] , numColumns)
+    @OverloadId("row")
+    def apply(row: Rep[Int]): Vector[T] = ???
+    def apply(row: Rep[Int], column: Rep[Int]): Rep[T] = ???
+    def mapBy[R: Elem](f: Rep[AbstractVector[T] => AbstractVector[R] @uncheckedVariance]): Matrix[R] = ???
+    def columns(implicit n: Numeric[T]): Rep[Collection[AbstractVector[T]]] = ???
+
+    def transpose(implicit n: Numeric[T]): SparkMatrix[T] = {  ???
+      /*
+      val flatIdxs = rddIdxs.flatMap({ i: Rep[Array[Int]] => Collection(i)}).convertTo[RDDCollection[Int]].rdd
+      val flatVals = rddVals.flatMap({ i: Rep[Array[T]] => Collection(i)} ).convertTo[RDDCollection[T]].rdd
+      val transposed = rddToPairRddFunctions(flatIdxs zip flatVals).combineByKey
+      ???
+      *?*/
+    }
+    override def reduceByRows(implicit m: RepMonoid[T]): Vector[T] = {
+      DenseVector(rddVals.map({arr => arr.reduce(m)}))
+    }
+
+    override def countNonZeroesByColumns(implicit n: Numeric[T]): Vector[Int] = { ???
+      /*val flatIdxs = rddIdxs.rdd.flatMap({ i: Rep[Array[Int]] => SSeq(i)} )
+      val flatVals = rddVals.rdd.flatMap({ i: Rep[Array[T]] => SSeq(i)} )
+      val cMap = SPairRDDFunctions(flatIdxs zip flatVals).countByKey
+      DenseVector(Collection.indexRange(numColumns).map({k => cMap.applyIfBy(k, fun{ i:Rep[Long] => i.toInt}, fun { _: Rep[Unit] => toRep(0)}) }) )
+      */
+    }
+
+    override def reduceByColumns(implicit m: RepMonoid[T], n: Numeric[T]): Vector[T] = {
+      val newZero = SArray.replicate(numColumns,m.zero)
+      val newFun =  fun {in: Rep[(Array[T],Array[T])] =>
+        (in._1 zip in._2).map{ pair => m.append(pair._1, pair._2)}
+      }
+      val newArr = rddVals.rdd.fold(newZero)( newFun )
+      DenseVector(Collection(newArr))
+    }
+
+    override def *(vector: Vector[T])(implicit n: Numeric[T]): Vector[T] =
+      DenseVector(rows.map { r => r.dot(vector) })
+    @OverloadId("matrix")
+    def *(matrix: Matrix[T])(implicit n: Numeric[T], o: Overloaded1): Matrix[T] = ???
+
+
+    @OverloadId("matrix")
+    def +^^(other: Rep[AbstractMatrix[T]])(implicit n: Numeric[T]): Rep[AbstractMatrix[T]] = {
+      val newRows = (rows zip other.rows).map({vecs: Rep[(AbstractVector[T], AbstractVector[T])] => (vecs._1 +^ vecs._2).items.arr})
+      SparkDenseMatrix(newRows.asRep[RDDCollection[Array[T]]], numColumns)
+    }
+    def *^^(other: Rep[AbstractMatrix[T]])(implicit n: Numeric[T]): Rep[AbstractMatrix[T]] = {
+      val newRows = (rows zip other.rows).map({vecs: Rep[(AbstractVector[T], AbstractVector[T])] => (vecs._1 *^ vecs._2).items.arr})
+      SparkDenseMatrix(newRows.asRep[RDDCollection[Array[T]]], numColumns)
+    }
+
+    def average(implicit f: Fractional[T], m: RepMonoid[T]): DoubleRep = {
+      val items = rows.flatMap(v => v.nonZeroValues)
+      items.reduce.toDouble / items.length.toDouble
+    }
+
+    def companion: Rep[AbstractMatrixCompanion] = SparkDenseMatrix
+  }
+
+  trait SparkDenseMatrixCompanion extends ConcreteClass1[SparkDenseMatrix] with AbstractMatrixCompanion {
 
   }
 }
