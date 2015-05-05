@@ -92,9 +92,9 @@ trait PairRDDFunctionssAbs extends PairRDDFunctionss with ScalanCommunityDsl {
         this.getClass.getMethod("lookup", classOf[AnyRef]),
         List(key.asInstanceOf[AnyRef]))
 
-    def combineByKey: Rep[SRDD[(K, Array[V])]] =
-      methodCallEx[SRDD[(K, Array[V])]](self,
-        this.getClass.getMethod("combineByKey"),
+    def groupByKey: Rep[SRDD[(K, SSeq[V])]] =
+      methodCallEx[SRDD[(K, SSeq[V])]](self,
+        this.getClass.getMethod("groupByKey"),
         List())
 
     def countByKey: Rep[MMap[K,Long]] =
@@ -218,8 +218,8 @@ trait PairRDDFunctionssSeq extends PairRDDFunctionssDsl with ScalanCommunityDslS
     override def lookup(key: Rep[K]): Rep[SSeq[V]] =
       wrappedValueOfBaseType.lookup(key)
 
-    override def combineByKey: Rep[SRDD[(K, Array[V])]] =
-      ??? //wrappedValueOfBaseType.combineByKey
+    override def groupByKey: Rep[SRDD[(K, SSeq[V])]] =
+      ??? //wrappedValueOfBaseType.groupByKey
 
     override def countByKey: Rep[MMap[K,Long]] =
       ??? //wrappedValueOfBaseType.countByKey
@@ -355,9 +355,9 @@ trait PairRDDFunctionssExp extends PairRDDFunctionssDsl with ScalanCommunityDslE
       }
     }
 
-    object combineByKey {
+    object groupByKey {
       def unapply(d: Def[_]): Option[Rep[SPairRDDFunctions[K, V]] forSome {type K; type V}] = d match {
-        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SPairRDDFunctionsElem[_, _, _]] && method.getName == "combineByKey" =>
+        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SPairRDDFunctionsElem[_, _, _]] && method.getName == "groupByKey" =>
           Some(receiver).asInstanceOf[Option[Rep[SPairRDDFunctions[K, V]] forSome {type K; type V}]]
         case _ => None
       }
