@@ -112,6 +112,10 @@ trait PairRDDFunctionssAbs extends PairRDDFunctionss with ScalanCommunityDsl {
         this.getClass.getMethod("join", classOf[AnyRef], classOf[Elem[W]]),
         List(other.asInstanceOf[AnyRef], element[W])) (sRDDElement(PairElem(element[K], PairElem(element[V], element[W]))))
     }
+    def groupWithExt(other: Rep[SRDD[(K, V)]]): Rep[SRDD[(K, SSeq[V])]] =
+      methodCallEx[SRDD[(K, (SSeq[V], SSeq[W]))]](self,
+        this.getClass.getMethod("groupWithExt", classOf[AnyRef], classOf[Elem[W]]),
+        List(other.asInstanceOf[AnyRef], element[W]))
   }
   trait SPairRDDFunctionsImplCompanion
   // elem for concrete class
@@ -229,6 +233,9 @@ trait PairRDDFunctionssSeq extends PairRDDFunctionssDsl with ScalanCommunityDslS
 
     override def join[W:Elem](other: Rep[SRDD[(K, W)]]): Rep[SRDD[(K, (V, W))]] =
       ??? //wrappedValueOfBaseType.join[W](other)
+
+    override def groupWithExt[W:Elem](other: Rep[SRDD[(K, W)]]): Rep[SRDD[(K, (SSeq[V], SSeq[W]))]] =
+      ??? //wrappedValueOfBaseType.groupWithExt[W](other)
   }
   lazy val SPairRDDFunctionsImpl = new SPairRDDFunctionsImplCompanionAbs with UserTypeSeq[SPairRDDFunctionsImplCompanionAbs] {
     lazy val selfType = element[SPairRDDFunctionsImplCompanionAbs]
@@ -394,6 +401,18 @@ trait PairRDDFunctionssExp extends PairRDDFunctionssDsl with ScalanCommunityDslE
     object join {
       def unapply(d: Def[_]): Option[(Rep[SPairRDDFunctions[K, V]], Rep[SRDD[(K, W)]]) forSome {type K; type V; type W}] = d match {
         case MethodCall(receiver, method, Seq(other, _*), _) if receiver.elem.isInstanceOf[SPairRDDFunctionsElem[_, _, _]] && method.getName == "join" =>
+          Some((receiver, other)).asInstanceOf[Option[(Rep[SPairRDDFunctions[K, V]], Rep[SRDD[(K, W)]]) forSome {type K; type V; type W}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[SPairRDDFunctions[K, V]], Rep[SRDD[(K, W)]]) forSome {type K; type V; type W}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object groupWithExt {
+      def unapply(d: Def[_]): Option[(Rep[SPairRDDFunctions[K, V]], Rep[SRDD[(K, W)]]) forSome {type K; type V; type W}] = d match {
+        case MethodCall(receiver, method, Seq(other, _*), _) if receiver.elem.isInstanceOf[SPairRDDFunctionsElem[_, _, _]] && method.getName == "groupWithExt" =>
           Some((receiver, other)).asInstanceOf[Option[(Rep[SPairRDDFunctions[K, V]], Rep[SRDD[(K, W)]]) forSome {type K; type V; type W}]]
         case _ => None
       }
