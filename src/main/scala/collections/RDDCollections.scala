@@ -41,12 +41,16 @@ trait RDDCollections { self: SparkDsl with RDDCollectionsDsl =>
     }
     @OverloadId("many")
     def apply(indices: Coll[Int])(implicit o: Overloaded1): RDDColl[A] = {
-      val irdd: RepPairRDDFunctions[Long, Int] = SRDD.fromArraySC(rdd.context, indices.arr).map(fun {(i: Rep[Int]) => Pair(i.toLong, 0)})
-      val vrdd: RepRDD[(Long, A)] = rdd.zipWithIndex.map({p: Rep[(A,Long)] => Pair(p._2, p._1)})
-
-      val joinedRdd: RepRDD[(Long, (Int, A))] = irdd.join(vrdd)
-      implicit val ppElem = PairElem(element[Long], PairElem(element[Int], elem))
-      RDDCollection( joinedRdd.map(fun {(in: Rep[(Long, (Int, A))]) => in._3}) )
+      //val irdd : RepPairRDDFunctions[Long, Int] = SRDD.fromArraySC(rdd.context, indices.arr).map(fun {(i: Rep[Int]) => Pair(i.toLong, 0)})
+      //val vrdd: RepRDD[(Long, A)] = rdd.zipWithIndex.map({p: Rep[(A,Long)] => Pair(p._2, p._1)})
+      //val joinedRdd: RepRDD[(Long, (Int, A))] = SPairRDDFunctionsImpl(irdd).join(vrdd)
+      //implicit val ppElem = PairElem(element[Long], PairElem(element[Int], elem))
+      //RDDCollection( joinedRdd.map(fun {(in: Rep[(Long, (Int, A))]) => in._3}) )
+      val irdd = SRDD.fromArraySC(rdd.context, indices.arr).map(fun {(i: Rep[Int]) => Pair(i.toLong, 0)})
+      val vrdd: RepPairRDDFunctions[Long, A] = rdd.zipWithIndex.map({p: Rep[(A,Long)] => Pair(p._2, p._1)})
+      val joinedRdd: RepRDD[(Long, (A, Int))] = SPairRDDFunctionsImpl(vrdd).join(irdd)
+      implicit val ppElem = PairElem(element[Long], PairElem(elem, element[Int]))
+      RDDCollection( joinedRdd.map(fun {(in: Rep[(Long, (A, Int))]) => in._2}) )
     }
     def mapBy[B: Elem](f: Rep[A @uncheckedVariance => B]): Coll[B] = RDDCollection(rdd.map(f))
     def reduce(implicit m: RepMonoid[A @uncheckedVariance]): Rep[A] = rdd.fold(m.zero)( fun {in: Rep[(A,A)] => m.append(in._1, in._2)} )
@@ -96,7 +100,7 @@ trait RDDCollections { self: SparkDsl with RDDCollectionsDsl =>
 
       val vrdd: RepRDD[(Long, (A,B))] = pairRDD.zipWithIndex.map(fun({p: Rep[((A,B),Long)] => Pair(p._2, p._1)})(lElem))(ppElem)
 
-      val joinedRdd: RepRDD[(Long, (Int, (A,B)))] = irdd.join(vrdd)
+      val joinedRdd: RepRDD[(Long, (Int, (A,B)))] = SPairRDDFunctionsImpl(irdd).join(vrdd)
 
       val lElem1 = toLazyElem(PairElem(element[Long], PairElem(element[Int], elem)))
       PairRDDCollection( joinedRdd.map(fun {(in: Rep[(Long, (Int, (A,B)))]) => Pair(in._3, in._4)} (lElem1)) )

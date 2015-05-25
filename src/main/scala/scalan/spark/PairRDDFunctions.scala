@@ -30,7 +30,7 @@ trait PairRDDFunctionss extends Base with TypeWrappers { self: SparkDsl =>
     @External def lookup(key: Rep[K]): Rep[SSeq[V]]
 
     /** */
-    @External def combineByKey: Rep[SRDD[(K,Array[V])]]
+    @External def groupByKey: Rep[SRDD[(K,SSeq[V])]]
 
     @External def countByKey: Rep[MMap[K,Long]]
 
@@ -38,6 +38,8 @@ trait PairRDDFunctionss extends Base with TypeWrappers { self: SparkDsl =>
 
     /** Return an RDD containing all pairs of elements with matching keys */
     @External def join[W: Elem](other: Rep[SRDD[(K, W)]]): Rep[SRDD[(K, (V, W))]]
+
+    @External def groupWithExt[W:Elem](other: Rep[SRDD[(K,W)]]): Rep[SRDD[(K, (SSeq[V], SSeq[W]))]]
   }
 
   trait SPairRDDFunctionsCompanion {

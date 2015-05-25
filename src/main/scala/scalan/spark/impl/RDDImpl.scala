@@ -616,10 +616,10 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
   override def unapplyViews[T](s: Exp[T]): Option[Unpacked[T]] = (s match {
     case Def(view: ViewSRDD[_, _]) =>
       Some((view.source, view.iso))
-    case UserTypeSRDD(iso: Iso[a, b]) =>
+    /*case UserTypeSRDD(iso: Iso[a, b]) =>
       val newIso = SRDDIso(iso)
       val repr = reifyObject(UnpackView(s.asRep[SRDD[b]])(newIso))
-      Some((repr, newIso))
+      Some((repr, newIso)) */ // Need uncomment??? A.Filippov
     case _ =>
       super.unapplyViews(s)
   }).asInstanceOf[Option[Unpacked[T]]]
@@ -644,6 +644,12 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
       val iso1 = identityIso(eA)
       val pIso = SRDDIso(pairIso(iso1, v2.innerIso))
       val zipped = rdd1 zip v2.source
+      ViewSRDD(zipped)(pIso)
+    case SRDDMethods.zipWithIndex(Def(v1:ViewSRDD[a,_])) =>
+      implicit val eA = v1.source.elem.eItem
+      val iso2 = identityIso(element[Long])
+      val pIso = SRDDIso(pairIso(v1.innerIso, iso2))
+      val zipped = v1.source.zipWithIndex
       ViewSRDD(zipped)(pIso)
 
     case SRDDMethods.map(xs, f) => (xs, f) match {
@@ -703,9 +709,25 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
       val iso = view.innerIso
       ViewArray(view.source.collect)(ArrayIso(iso))
     }
+    // TODO: Move to ScalantLite
+    case SSeqCompanionMethods.apply(HasViews(source, arrIso: ArrayIso[a,b])) => {
+      val iso = arrIso.iso
+      implicit val eA = iso.eFrom
+      ViewSSeq(SSeq(source.asRep[Array[a]]))(SSeqIso(iso))
+    }
 
     case view1@ViewSRDD(Def(view2@ViewSRDD(arr))) =>
-      val compIso = composeIso(view1.innerIso, view2.innerIso)
+      //val compIso = composeIso(view1.innerIso, view2.innerIso)
+      val iso1 = view1.innerIso
+      val iso2 = view2.innerIso
+
+      val compIso = if (iso1.isInstanceOf[PairIso[_,_,_,_]] && iso2.isInstanceOf[PairIso[_,_,_,_]]) {
+        val i1 = iso1.asInstanceOf[PairIso[Any,Any,Any,Any]]
+        val i2 = iso2.asInstanceOf[PairIso[Any,Any, Any, Any]]
+        PairIso(composeIso(i1.iso1, i2.iso1), composeIso(i1.iso2, i2.iso2)).asInstanceOf[Iso[Any,Any]]
+      }
+      else composeIso(iso1, iso2)
+
       implicit val eAB = compIso.eTo
       ViewSRDD(arr)(SRDDIso(compIso))
 

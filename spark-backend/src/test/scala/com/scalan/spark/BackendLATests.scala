@@ -143,6 +143,15 @@ class BackendLATests extends BaseTests with BeforeAndAfterAll with ItTestsUtil {
       val mR: Dataset1 = SparkSparseMatrix(RDDCollection(rddIndexes), RDDCollection(rddValues), nItems)
       mR.reduceByColumns.items.arr
     }
+
+    lazy val transposeFun = fun {in: Rep[(RDD[Array[Int]], (RDD[Array[Double]],Int))] =>
+      val Tuple(idxs, vals, nItems) = in
+      val rddIndexes = SRDDImpl(idxs)
+      val rddValues = SRDDImpl(vals)
+      val mR: Dataset1 = SparkSparseMatrix(RDDCollection(rddIndexes), RDDCollection(rddValues), nItems)
+      val transp = mR.transpose.asRep[SparkSparseMatrix[Double]]
+      transp.rows.arr.map({vec => vec.nonZeroItems.arr})
+    }
   }
 
   def generationConfig(cmpl: SparkScalanCompiler, pack : String = "gen", command: String = null, getOutput: Boolean = false) =
@@ -170,6 +179,7 @@ class BackendLATests extends BaseTests with BeforeAndAfterAll with ItTestsUtil {
     val compiled4 = compileSource(testCompiler)(testCompiler.reduceByColumnsFun, "reduceByColumns", generationConfig(testCompiler, "reduceByColumns", "package"))
     val compiled5 = compileSource(testCompiler)(testCompiler.trainBL, "trainBL", generationConfig(testCompiler, "trainBL", "package"))
     val compiled6 = compileSource(testCompiler)(testCompiler.trainAndTestBL, "trainAndTestBL", generationConfig(testCompiler, "trainAndTestBL", "package"))
+    val compiled7 = compileSource(testCompiler)(testCompiler.transposeFun, "transposeFun", generationConfig(testCompiler, "transposeFun", "package"))
 
   }
 

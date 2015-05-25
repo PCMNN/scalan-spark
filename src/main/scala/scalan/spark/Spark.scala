@@ -47,8 +47,19 @@ with BroadcastsDslExp {
           val newCall = unwrapMethodCall(mc, wrapper.wrappedValueOfBaseType, eRes)
           iso.to(newCall)
       }
-    case Def(mc @ NewObject(clazz, args, neverInvoke)) if hasViewArg(args) =>
-      unwrapNewObj(clazz, args, neverInvoke, mc.selfType)
-
+    case Def(mc @ MethodCall(Def(wrapper: ExpSPairRDDFunctionsImpl[_,_]), m, args, neverInvoke)) if !isValueAccessor(m) =>
+      val resultElem = mc.selfType
+      val wrapperIso = getIsoByElem(resultElem)
+      wrapperIso match {
+        case iso: Iso[base,ext] =>
+          val eRes = iso.eFrom
+          val newCall = unwrapMethodCall(mc, wrapper.wrappedValueOfBaseType, eRes)
+          iso.to(newCall)
+      }
+    case Def(nobj @ NewObject(clazz, args, neverInvoke)) if hasViewArg(args) =>
+      unwrapNewObj(clazz, args, neverInvoke, nobj.selfType)
+    /*case Def(mc @ MethodCall(reciever,m, args, neverInvoke)) if (!isValueAccessor(m) && hasViewArg(args)) =>
+      val newCall = mkMethodCall(reciever, m, unwrapSyms(args), true, mc.selfType)
+      newCall*/
   })
 }

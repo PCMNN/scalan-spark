@@ -345,6 +345,12 @@ trait SparkContextsExp extends SparkContextsDsl with ScalanCommunityDslExp {
           val newCall = unwrapMethodCall(mc, wrapper.wrappedValueOfBaseType, eRes)
           iso.to(newCall)
       }
+    case SSparkContextMethods.makeRDD(sc, HasViews(source, seqIso: SSeqIso[a,b]), numPartitions) => {
+      val iso = seqIso.iso
+      implicit val eA = iso.eFrom
+      ViewSRDD(sc.makeRDD(source.asRep[SSeq[a]], numPartitions))(SRDDIso(iso))
+    }
+
     /*case mc@MethodCall(Def(wrapper: SSeqCompanionAbs), m, args, neverInvoke) if !isValueAccessor(m) =>
       val resultElem = mc.selfType
       val wrapperIso = getIsoByElem(resultElem)

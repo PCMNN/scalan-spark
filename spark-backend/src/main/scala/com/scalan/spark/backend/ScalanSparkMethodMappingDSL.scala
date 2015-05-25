@@ -1,6 +1,6 @@
 package com.scalan.spark.backend
 
-import org.apache.spark.rdd.PairRDDFunctions
+import org.apache.spark.rdd.{RDD, PairRDDFunctions}
 
 import scalan.compilation.language._
 
@@ -11,26 +11,29 @@ trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {
     import scala.reflect.runtime.universe.typeOf
 
     val tyUnit = typeOf[Unit]
-
+    val tyRDD = typeOf[RDD[_]]
     val tyPairRDDFunctions = typeOf[PairRDDFunctions[_, _]]
 
-    val scalanSpark = new Library("", Array("""  "org.apache.spark" %% "spark-core" % "1.2.0" """)) {
+    val scalanSpark = new Library("", Array( """  "org.apache.spark" %% "spark-core" % "1.2.0" """)) {
       val scalanSparkPack = new Pack("scalan.spark") {
         val famPairRDDFunctionssAbs = new Family('PairRDDFunctionss) {
           val pairRDDFunctions = new ClassType('SPairRDDFunctions, TyArg('A)) {
             val reduceByKey = Method('reduceByKey, tyPairRDDFunctions)
             val countByKey = Method('countByKey, tyPairRDDFunctions)
             val foldByKey = Method('foldByKey, tyPairRDDFunctions)
+            val wrappedValueOfBaseType = Method('wrappedValueOfBaseType, typeOf[scalan.Elems#Element[_]])
           }
         }
         val famRDDsAbs = new Family('RDDsAbs) {
           val sRDDImpl = new ClassType('SRDDImpl, TyArg('A)) {
             val fold = Method('fold, tyUnit)
+            val zip = Method('zip, tyRDD)
           }
         }
         val famRDDs = new Family('RDDs) {
           val sRDD = new ClassType('SRDD, TyArg('A)) {
             val fold = Method('fold, tyUnit)
+            val zip = Method('zip, tyRDD)
           }
         }
         val sparkContexts = new Family('SparkContexts) {
@@ -43,6 +46,17 @@ trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {
         val famRDDsAbs = new Family('RDDsAbs) {
           val sRDDImpl = new ClassType('SRDDImpl, TyArg('A)) {
             val fold = Method('fold, tyUnit)
+            val zip = Method('zip, tyRDD)
+          }
+        }
+        val famPairRDDFunctionssAbs = new Family('PairRDDFunctionssAbs) {
+          val pairRDDFunctions = new ClassType('SPairRDDFunctionsImpl, TyArg('A)) {
+            val reduceByKey = Method('reduceByKey, tyPairRDDFunctions)
+            val countByKey = Method('countByKey, tyPairRDDFunctions)
+            val foldByKey = Method('foldByKey, tyPairRDDFunctions)
+            val groupByKey = Method('groupByKey, tyPairRDDFunctions)
+            val groupWithExt = Method('groupWithExt, tyPairRDDFunctions)
+            val wrappedValueOfBaseType = Method('wrappedValueOfBaseType, typeOf[scalan.Elems#Element[_]])
           }
         }
         val famRDDs = new Family('RDDs) {
@@ -72,6 +86,13 @@ trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {
           }
         }
       }
+      val scalanCollections = new Pack("scalan.collections") {
+          val seqsFam = new Family('Seqs) {
+            val sSeq = new ClassType('SSeq, TyArg('A)) {
+              val map = Method('map, typeOf[Seq[_]])
+            }
+          }
+      }
     }
   }
 
@@ -86,9 +107,13 @@ trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {
       val reduceByKey = ScalaFunc('reduceByKey)(true)
       val countByKey = ScalaFunc('countByKey)(true)
       val foldByKey = ScalaFunc('foldByKey)(true)
+      val groupByKey = ScalaFunc('groupByKey)(true)
       val fold = ScalaFunc('fold)(true)
+      val zipSafe = ScalaFunc('zipSafe)(true)
       val fromList = ScalaFunc('fromList)()
       val newSeq = ScalaFunc('newSeq)()
+      val seqMap = ScalaFunc('seqMap)(true)
+      val groupWithExt = ScalaFunc('groupWithExt)(true)
     }
     val seq = new ScalaLib(pack = "scala.collection") {
       val empty = ScalaFunc(Symbol("Seq.empty"))()
@@ -129,14 +154,20 @@ trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {
         scalanSpark.scalanSparkPack.famPairRDDFunctionssAbs.pairRDDFunctions.foldByKey -> testMethod.foldByKey,
         scalanSpark.scalanSparkPack.famRDDsAbs.sRDDImpl.fold -> testMethod.fold,
         scalanSpark.scalanSparkPackImpl.famRDDsAbs.sRDDImpl.fold -> testMethod.fold,
+        scalanSpark.scalanSparkPack.famRDDsAbs.sRDDImpl.zip -> testMethod.zipSafe,
+        scalanSpark.scalanSparkPackImpl.famRDDsAbs.sRDDImpl.zip -> testMethod.zipSafe,
+        scalanSpark.scalanSparkPack.famPairRDDFunctionssAbs.pairRDDFunctions.wrappedValueOfBaseType -> basic.noMethodWrapper,
+        scalanSpark.scalanSparkPackImpl.famPairRDDFunctionssAbs.pairRDDFunctions.groupWithExt -> testMethod.groupWithExt,
+        scalanSpark.scalanSparkPackImpl.famPairRDDFunctionssAbs.pairRDDFunctions.groupByKey -> testMethod.groupByKey,
         scalanSpark.scalanSparkPack.famRDDs.sRDD.fold -> testMethod.fold,
+        scalanSpark.scalanSparkPack.famRDDs.sRDD.zip -> testMethod.zipSafe,
         scalanSpark.scalanSparkPack.famPairRDDFunctionssAbs.pairRDDFunctions.reduceByKey -> testMethod.reduceByKey,
         scalanComunity.scalanColectionsImp.seqsAbs.sSeqCompanionAbs.empty -> seq.empty,
         scalanComunity.scalanColectionsImp.seqsAbs.sSeqCompanionAbs.fromList -> testMethod.fromList,
         scalanComunity.scalanColectionsImp.seqsAbs.sSeqCompanionAbs.single -> seq.single,
         scalanComunity.scalanColectionsImp.seqsAbs.sSeqCompanionAbs.apply -> testMethod.newSeq,
         scalanComunity.scalanColectionsImp.seqsAbs.sSeqImpl.wrappedValueOfBaseType -> basic.noMethodWrapper,
-        scalanSpark.scalanSparkPack.sparkContexts.sSparkContextCompanion.apply -> commonMethods.sparkContext
+        scalanComunity.scalanCollections.seqsFam.sSeq.map -> testMethod.seqMap
       )
     }
 
