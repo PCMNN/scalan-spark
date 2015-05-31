@@ -52,9 +52,13 @@ trait RDDsAbs extends RDDs with ScalanCommunityDsl {
       implicit val tagA = eA.tag
       weakTypeTag[SRDD[A]].asInstanceOf[WeakTypeTag[To]]
     }
-    override def convert(x: Rep[Reifiable[_]]) = convertSRDD(x.asRep[SRDD[A]])
+    override def convert(x: Rep[Reifiable[_]]) = {
+      val conv = fun {x: Rep[SRDD[A]] =>  convertSRDD(x) }
+      tryConvert(element[SRDD[A]], this, x, conv)
+    }
+
     def convertSRDD(x : Rep[SRDD[A]]): Rep[To] = {
-      //assert(x.selfType1.isInstanceOf[SRDDElem[_,_]])
+      assert(x.selfType1 match { case _: SRDDElem[_,_] => true case _ => false })
       x.asRep[To]
     }
     override def getDefaultRep: Rep[To] = ???
@@ -121,6 +125,11 @@ trait RDDsAbs extends RDDs with ScalanCommunityDsl {
         this.getClass.getMethod("zip", classOf[AnyRef], classOf[Elem[B]]),
         List(other.asInstanceOf[AnyRef], element[B]))
 
+    def zipSafe[B:Elem](other: Rep[SRDD[B]]): Rep[SRDD[(A, B)]] =
+      methodCallEx[SRDD[(A, B)]](self,
+        this.getClass.getMethod("zipSafe", classOf[AnyRef], classOf[Elem[B]]),
+        List(other.asInstanceOf[AnyRef], element[B]))
+
     def zipWithIndex: Rep[SRDD[(A, Long)]] =
       methodCallEx[SRDD[(A, Long)]](self,
         this.getClass.getMethod("zipWithIndex"),
@@ -167,7 +176,7 @@ trait RDDsAbs extends RDDs with ScalanCommunityDsl {
 
   // 3) Iso for concrete class
   class SRDDImplIso[A](implicit eA: Elem[A])
-    extends Iso[SRDDImplData[A], SRDDImpl[A]] {
+    extends Iso[SRDDImplData[A], SRDDImpl[A]]()((implicitly[Elem[RDD[A]]])) {
     override def from(p: Rep[SRDDImpl[A]]) =
       p.wrappedValueOfBaseType
     override def to(p: Rep[RDD[A]]) = {
@@ -262,6 +271,9 @@ trait RDDsSeq extends RDDsDsl with ScalanCommunityDslSeq {
 
     override def zip[B:Elem](other: Rep[SRDD[B]]): Rep[SRDD[(A, B)]] =
       SRDDImpl(wrappedValueOfBaseType.zip[B](other))
+
+    override def zipSafe[B:Elem](other: Rep[SRDD[B]]): Rep[SRDD[(A, B)]] =
+      ??? //SRDDImpl(wrappedValueOfBaseType.zipSafe[B](other))
 
     override def zipWithIndex: Rep[SRDD[(A, Long)]] =
       SRDDImpl(wrappedValueOfBaseType.zipWithIndex)
@@ -457,6 +469,18 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
     object zip {
       def unapply(d: Def[_]): Option[(Rep[SRDD[A]], Rep[SRDD[B]]) forSome {type A; type B}] = d match {
         case MethodCall(receiver, method, Seq(other, _*), _) if receiver.elem.isInstanceOf[SRDDElem[_, _]] && method.getName == "zip" =>
+          Some((receiver, other)).asInstanceOf[Option[(Rep[SRDD[A]], Rep[SRDD[B]]) forSome {type A; type B}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[SRDD[A]], Rep[SRDD[B]]) forSome {type A; type B}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object zipSafe {
+      def unapply(d: Def[_]): Option[(Rep[SRDD[A]], Rep[SRDD[B]]) forSome {type A; type B}] = d match {
+        case MethodCall(receiver, method, Seq(other, _*), _) if receiver.elem.isInstanceOf[SRDDElem[_, _]] && method.getName == "zipSafe" =>
           Some((receiver, other)).asInstanceOf[Option[(Rep[SRDD[A]], Rep[SRDD[B]]) forSome {type A; type B}]]
         case _ => None
       }
@@ -709,6 +733,11 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
       val iso = view.innerIso
       ViewArray(view.source.collect)(ArrayIso(iso))
     }
+
+    case SRDDMethods.cache(HasViews(source, rddIso: SRDDIso[a, b])) => {
+      ViewSRDD(source.asRep[SRDD[a]].cache)(rddIso)
+    }
+
     // TODO: Move to ScalantLite
     case SSeqCompanionMethods.apply(HasViews(source, arrIso: ArrayIso[a,b])) => {
       val iso = arrIso.iso
