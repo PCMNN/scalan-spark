@@ -140,6 +140,11 @@ trait RDDsAbs extends RDDs with ScalanCommunityDsl {
         this.getClass.getMethod("cache"),
         List())
 
+    def partitionBy(partitioner: Rep[SPartitioner]): Rep[SRDD[A]] =
+      methodCallEx[SRDD[A]](self,
+        this.getClass.getMethod("partitionBy", classOf[AnyRef]),
+        List(partitioner.asInstanceOf[AnyRef]))
+
     def first: Rep[A] =
       methodCallEx[A](self,
         this.getClass.getMethod("first"),
@@ -280,6 +285,9 @@ trait RDDsSeq extends RDDsDsl with ScalanCommunityDslSeq {
 
     override def cache: Rep[SRDD[A]] =
       SRDDImpl(wrappedValueOfBaseType.cache)
+
+    override def partitionBy(partitioner: Rep[SPartitioner]): Rep[SRDD[A]] =
+      SRDDImpl(wrappedValueOfBaseType.partitionBy(partitioner))
 
     override def first: Rep[A] =
       wrappedValueOfBaseType.first
@@ -509,6 +517,18 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
         case _ => None
       }
       def unapply(exp: Exp[_]): Option[Rep[SRDD[A]] forSome {type A}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object partitionBy {
+      def unapply(d: Def[_]): Option[(Rep[SRDD[A]], Rep[SPartitioner]) forSome {type A}] = d match {
+        case MethodCall(receiver, method, Seq(partitioner, _*), _) if receiver.elem.isInstanceOf[SRDDElem[_, _]] && method.getName == "partitionBy" =>
+          Some((receiver, partitioner)).asInstanceOf[Option[(Rep[SRDD[A]], Rep[SPartitioner]) forSome {type A}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[SRDD[A]], Rep[SPartitioner]) forSome {type A}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
