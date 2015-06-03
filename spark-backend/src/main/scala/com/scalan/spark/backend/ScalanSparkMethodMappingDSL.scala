@@ -27,13 +27,13 @@ trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {
         val famRDDsAbs = new Family('RDDsAbs) {
           val sRDDImpl = new ClassType('SRDDImpl, TyArg('A)) {
             val fold = Method('fold, tyUnit)
-            val zip = Method('zip, tyRDD)
+            val zipSafe = Method('zipSafe, tyRDD)
           }
         }
         val famRDDs = new Family('RDDs) {
           val sRDD = new ClassType('SRDD, TyArg('A)) {
             val fold = Method('fold, tyUnit)
-            val zip = Method('zip, tyRDD)
+            val zipSafe = Method('zipSafe, tyRDD)
           }
         }
         val sparkContexts = new Family('SparkContexts) {
@@ -46,7 +46,16 @@ trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {
         val famRDDsAbs = new Family('RDDsAbs) {
           val sRDDImpl = new ClassType('SRDDImpl, TyArg('A)) {
             val fold = Method('fold, tyUnit)
-            val zip = Method('zip, tyRDD)
+            val zipSafe = Method('zipSafe, tyRDD)
+            val partitionBy = Method('partitionBy, tyRDD)
+          }
+        }
+        val famPartitionersAbs = new Family('PartitionersAbs) {
+          val sPartitionerCompanionAbs = new ClassType('SPartitionerCompanionAbs) {
+            val defaultPartitioner = Method('defaultPartitioner, typeOf[org.apache.spark.Partitioner])
+          }
+          val sPartitionerImpl = new ClassType('SPartitionerImpl, TyArg('A)) {
+            val wrappedValueOfBaseType = Method('wrappedValueOfBaseType, typeOf[org.apache.spark.Partitioner])
           }
         }
         val famPairRDDFunctionssAbs = new Family('PairRDDFunctionssAbs) {
@@ -114,6 +123,8 @@ trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {
       val newSeq = ScalaFunc('newSeq)()
       val seqMap = ScalaFunc('seqMap)(true)
       val groupWithExt = ScalaFunc('groupWithExt)(true)
+      val defaultPartitioner = ScalaFunc('defaultPartitioner)()
+      val partitionBy = ScalaFunc('partitionBy)(true)
     }
     val seq = new ScalaLib(pack = "scala.collection") {
       val empty = ScalaFunc(Symbol("Seq.empty"))()
@@ -154,14 +165,17 @@ trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {
         scalanSpark.scalanSparkPack.famPairRDDFunctionssAbs.pairRDDFunctions.foldByKey -> testMethod.foldByKey,
         scalanSpark.scalanSparkPack.famRDDsAbs.sRDDImpl.fold -> testMethod.fold,
         scalanSpark.scalanSparkPackImpl.famRDDsAbs.sRDDImpl.fold -> testMethod.fold,
-        scalanSpark.scalanSparkPack.famRDDsAbs.sRDDImpl.zip -> testMethod.zipSafe,
-        scalanSpark.scalanSparkPackImpl.famRDDsAbs.sRDDImpl.zip -> testMethod.zipSafe,
+        scalanSpark.scalanSparkPackImpl.famRDDsAbs.sRDDImpl.partitionBy -> testMethod.partitionBy,
+        scalanSpark.scalanSparkPack.famRDDsAbs.sRDDImpl.zipSafe -> testMethod.zipSafe,
+        scalanSpark.scalanSparkPackImpl.famRDDsAbs.sRDDImpl.zipSafe -> testMethod.zipSafe,
         scalanSpark.scalanSparkPack.famPairRDDFunctionssAbs.pairRDDFunctions.wrappedValueOfBaseType -> basic.noMethodWrapper,
         scalanSpark.scalanSparkPackImpl.famPairRDDFunctionssAbs.pairRDDFunctions.groupWithExt -> testMethod.groupWithExt,
         scalanSpark.scalanSparkPackImpl.famPairRDDFunctionssAbs.pairRDDFunctions.groupByKey -> testMethod.groupByKey,
         scalanSpark.scalanSparkPack.famRDDs.sRDD.fold -> testMethod.fold,
-        scalanSpark.scalanSparkPack.famRDDs.sRDD.zip -> testMethod.zipSafe,
+        scalanSpark.scalanSparkPack.famRDDs.sRDD.zipSafe -> testMethod.zipSafe,
         scalanSpark.scalanSparkPack.famPairRDDFunctionssAbs.pairRDDFunctions.reduceByKey -> testMethod.reduceByKey,
+        scalanSpark.scalanSparkPackImpl.famPartitionersAbs.sPartitionerCompanionAbs.defaultPartitioner -> testMethod.defaultPartitioner,
+        scalanSpark.scalanSparkPackImpl.famPartitionersAbs.sPartitionerImpl.wrappedValueOfBaseType -> basic.noMethodWrapper,
         scalanComunity.scalanColectionsImp.seqsAbs.sSeqCompanionAbs.empty -> seq.empty,
         scalanComunity.scalanColectionsImp.seqsAbs.sSeqCompanionAbs.fromList -> testMethod.fromList,
         scalanComunity.scalanColectionsImp.seqsAbs.sSeqCompanionAbs.single -> seq.single,

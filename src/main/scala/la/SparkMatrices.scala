@@ -20,7 +20,7 @@ trait SparkMatrices {  self: SparkLADsl =>
   abstract class SparkSparseMatrix[T] (val rddIdxs: Rep[RDDCollection[Array[Int]]], val rddVals: Rep[RDDCollection[Array[T]]], val numColumns: Rep[Int])(implicit val elem: Elem[T]) extends SparkAbstractMatrix[T] {
     def numRows: Rep[Int] = rddIdxs.length
     def rddColl  = rddIdxs zip rddVals
-    def sc = rddIdxs.rdd.context
+    def sc: Rep[SSparkContext] = rddIdxs.rdd.context
     def rows = rddColl.map({arrs: Rep[(Array[Int], Array[T])] => SparseVector(Collection(arrs._1), Collection(arrs._2), numColumns)})
     def rmValues: Rep[Collection[T]] = ???
 
@@ -113,9 +113,17 @@ trait SparkMatrices {  self: SparkLADsl =>
     override def reduceByColumns(implicit m: RepMonoid[T], n: Numeric[T]): Vector[T] = {
       val flatIdxs = rddIdxs.rdd.flatMap({ i: Rep[Array[Int]] => SSeq(i)} )
       val flatVals = rddVals.rdd.flatMap({ i: Rep[Array[T]] => SSeq(i)} )
-      val red = SPairRDDFunctions(flatIdxs zip flatVals).foldByKey(m.zero)( fun {in: Rep[(T,T)] => m.append(in._1, in._2)} )
-      val cMap = mapFromArray(red.collect)
-      DenseVector(Collection.indexRange(numColumns).map({k => cMap.applyIfBy(k, fun{ i:Rep[T] => i}, fun { _: Rep[Unit] => m.zero}) }) )
+      val red: Rep[SRDD[(Int,Int)]] = /*SPairRDDFunctions*/(flatIdxs zip flatVals).foldByKey(m.zero)( fun {in: Rep[(T,T)] => m.append(in._1, in._2)} )
+      //val cMap = mapFromArray(red.collect)
+      //DenseVector(Collection.indexRange(numColumns).map({k => cMap.applyIfBy(k, fun{ i:Rep[T] => i}, fun { _: Rep[Unit] => m.zero}) }) )
+
+      val cols: Rep[SRDD[Int]] = (sc.makeRDD(SSeq(SArray.rangeFrom0(numColumns)), sc.defaultParallelism)).partitionBy(SPartitioner.defaultPartitioner(sc.defaultParallelism))
+      val empty: Rep[Int] = -1 //SSeq.empty[(Int,T)]
+      val eCols: Rep[SPairRDDFunctionsImpl[Int, Int]] =  SPairRDDFunctionsImpl(SPairRDDFunctions(cols.map (fun{c => (c, empty)})))
+      val r: Rep[SRDD[(Int,(SSeq[Int],SSeq[Int]))]] = eCols.groupWithExt(red)
+
+      val resVals: Rep[RDDCollection[Int]] = RDDCollection(r.map(fun{ in: Rep[Array[(Long,Double)]] => in.map{ i => i._2}}))
+
     }
 
     override def *(vector: Vector[T])(implicit n: Numeric[T]): Vector[T] =

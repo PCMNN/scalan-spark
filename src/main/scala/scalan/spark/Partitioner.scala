@@ -10,7 +10,9 @@ trait Partitioners extends Base with TypeWrappers { self: SparkDsl =>
   trait SPartitioner extends TypeWrapper[Partitioner,SPartitioner] {
     def wrappedValueOfBaseType: Rep[Partitioner]
   }
-  trait SPartitionerCompanion
+  trait SPartitionerCompanion {
+    @External def defaultPartitioner(numPartitions: Rep[Int]): Rep[SPartitioner]
+  }
   //implicit def unwrapValueOfSPartitioner(w: Rep[SPartitioner]): Rep[Partitioner] = w.wrappedValueOfBaseType
 
   /*

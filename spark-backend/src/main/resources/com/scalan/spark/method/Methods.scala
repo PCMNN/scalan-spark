@@ -36,4 +36,25 @@ object Methods {
     val joined = (new PairRDDFunctions(irdd1)).leftOuterJoin(irdd2)
     joined.map { case (i, (v1, v2Opt)) => (v1, v2Opt.getOrElse(throw new SparkException ("Zipped RDDs should have same length!"))) }
   }
+  def repartition[A : ClassTag](rdd: RDD[A]) = {
+    val withIdxs: PairRDDFunctions[Long,A] = new PairRDDFunctions[Long, A] (rdd.zipWithIndex.map { case(v,k) => (k,v)})
+    withIdxs.partitionBy(new org.apache.spark.HashPartitioner(rdd.context.defaultParallelism)).map {_._2}
+  }
+
+  def defaultPartitioner(numSlices: Int) = new org.apache.spark.HashPartitioner(numSlices)
+
+  def partitionBy[A: ClassTag](rdd: RDD[A], partitioner: org.apache.spark.Partitioner) = {
+    val withIdxs: PairRDDFunctions[Long,A] = new PairRDDFunctions[Long, A] (rdd.zipWithIndex.map { case(v,k) => (k,v)})
+    withIdxs.partitionBy(partitioner).map {_._2}
+  }
+
+  def partLens[A](rdd: RDD[A]): Array[Int] = { rdd.mapPartitions(iter => Array(iter.size).iterator, true)}.collect
+  def printZipParts0[A,B](rdd1: RDD[A], rdd2:RDD[B], message: String) = println(message + " : first - " + partLens(rdd1).mkString(",") + " , second - " + partLens(rdd2).mkString(","))
+  def printZipParts[A,B](rdd1: RDD[A], rdd2:RDD[B], res: RDD[(A,B)], message: String) = {
+    try {
+      println(message + " : first - " + partLens(rdd1).mkString(",") + " , second - " + partLens(rdd2).mkString(",") + " , result - " + partLens(res).mkString(" ,"))
+    } catch {
+      case _ => printZipParts0(rdd1, rdd2, message + " - Error when zipping rdds: ")
+    }
+  }
 }

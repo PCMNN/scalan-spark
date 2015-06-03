@@ -140,6 +140,11 @@ trait RDDsAbs extends RDDs with ScalanCommunityDsl {
         this.getClass.getMethod("cache"),
         List())
 
+    def unpersist(blocking: Rep[Boolean]): Rep[SRDD[A]] =
+      methodCallEx[SRDD[A]](self,
+        this.getClass.getMethod("unpersist", classOf[AnyRef]),
+        List(blocking.asInstanceOf[AnyRef]))
+
     def partitionBy(partitioner: Rep[SPartitioner]): Rep[SRDD[A]] =
       methodCallEx[SRDD[A]](self,
         this.getClass.getMethod("partitionBy", classOf[AnyRef]),
@@ -285,6 +290,9 @@ trait RDDsSeq extends RDDsDsl with ScalanCommunityDslSeq {
 
     override def cache: Rep[SRDD[A]] =
       SRDDImpl(wrappedValueOfBaseType.cache)
+
+    override def unpersist(blocking: Rep[Boolean]): Rep[SRDD[A]] =
+      SRDDImpl(wrappedValueOfBaseType.unpersist(blocking))
 
     override def partitionBy(partitioner: Rep[SPartitioner]): Rep[SRDD[A]] =
       SRDDImpl(wrappedValueOfBaseType.partitionBy(partitioner))
@@ -517,6 +525,18 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
         case _ => None
       }
       def unapply(exp: Exp[_]): Option[Rep[SRDD[A]] forSome {type A}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object unpersist {
+      def unapply(d: Def[_]): Option[(Rep[SRDD[A]], Rep[Boolean]) forSome {type A}] = d match {
+        case MethodCall(receiver, method, Seq(blocking, _*), _) if receiver.elem.isInstanceOf[SRDDElem[_, _]] && method.getName == "unpersist" =>
+          Some((receiver, blocking)).asInstanceOf[Option[(Rep[SRDD[A]], Rep[Boolean]) forSome {type A}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[SRDD[A]], Rep[Boolean]) forSome {type A}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }

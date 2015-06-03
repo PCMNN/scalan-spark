@@ -13,7 +13,7 @@ trait RDDs extends Base with TypeWrappers { self: SparkDsl =>
     implicit def eA: Elem[A]
     def wrappedValueOfBaseType: Rep[RDD[A]]
 
-                                /** Transformations **/
+    /** Transformations **/
 
     /** Applies a function to all elements of this RDD end returns new RDD **/
     @External def map[B: Elem](f: Rep[A => B]): Rep[SRDD[B]]
@@ -39,13 +39,21 @@ trait RDDs extends Base with TypeWrappers { self: SparkDsl =>
 
     @External def zip[B:Elem](other: Rep[SRDD[B]]): Rep[SRDD[(A,B)]]
 
+    @External def zipSafe[B:Elem](other: Rep[SRDD[B]]): Rep[SRDD[(A,B)]]
+
     /** Zips this RDD with its element indices. */
     @External def zipWithIndex(): Rep[SRDD[(A, Long)]]
 
     /** Persists RDD's values across operations after the first time it is computed.  */
     @External def cache: Rep[SRDD[A]]
 
-                                 /** Actions **/
+    /** Mark the RDD as non-persistent, and remove all blocks for it from memory and disk. */
+    @External def unpersist( blocking: Rep[Boolean] = toRep(true)): Rep[SRDD[A]]
+
+    /** Repartition RDD accoring to given partitioner. RDD's indexes serves as keys. */
+    @External def partitionBy(partitioner: Rep[SPartitioner] = SPartitioner.defaultPartitioner(context.defaultParallelism)): Rep[SRDD[A]]
+
+    /** Actions **/
 
     /** Returns the first element in this RDD. */
     @External def first: Rep[A]
