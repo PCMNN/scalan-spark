@@ -145,11 +145,6 @@ trait RDDsAbs extends RDDs with ScalanCommunityDsl {
         this.getClass.getMethod("unpersist", classOf[AnyRef]),
         List(blocking.asInstanceOf[AnyRef]))
 
-    def partitionBy(partitioner: Rep[SPartitioner]): Rep[SRDD[A]] =
-      methodCallEx[SRDD[A]](self,
-        this.getClass.getMethod("partitionBy", classOf[AnyRef]),
-        List(partitioner.asInstanceOf[AnyRef]))
-
     def first: Rep[A] =
       methodCallEx[A](self,
         this.getClass.getMethod("first"),
@@ -293,9 +288,6 @@ trait RDDsSeq extends RDDsDsl with ScalanCommunityDslSeq {
 
     override def unpersist(blocking: Rep[Boolean]): Rep[SRDD[A]] =
       SRDDImpl(wrappedValueOfBaseType.unpersist(blocking))
-
-    override def partitionBy(partitioner: Rep[SPartitioner]): Rep[SRDD[A]] =
-      SRDDImpl(wrappedValueOfBaseType.partitionBy(partitioner))
 
     override def first: Rep[A] =
       wrappedValueOfBaseType.first
@@ -542,18 +534,6 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
       }
     }
 
-    object partitionBy {
-      def unapply(d: Def[_]): Option[(Rep[SRDD[A]], Rep[SPartitioner]) forSome {type A}] = d match {
-        case MethodCall(receiver, method, Seq(partitioner, _*), _) if receiver.elem.isInstanceOf[SRDDElem[_, _]] && method.getName == "partitionBy" =>
-          Some((receiver, partitioner)).asInstanceOf[Option[(Rep[SRDD[A]], Rep[SPartitioner]) forSome {type A}]]
-        case _ => None
-      }
-      def unapply(exp: Exp[_]): Option[(Rep[SRDD[A]], Rep[SPartitioner]) forSome {type A}] = exp match {
-        case Def(d) => unapply(d)
-        case _ => None
-      }
-    }
-
     object first {
       def unapply(d: Def[_]): Option[Rep[SRDD[A]] forSome {type A}] = d match {
         case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SRDDElem[_, _]] && method.getName == "first" =>
@@ -784,6 +764,22 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
       implicit val eA = iso.eFrom
       ViewSSeq(SSeq(source.asRep[Array[a]]))(SSeqIso(iso))
     }
+    case v1@PairView(Def(v2@PairView(source))) => {
+      val i1 = v1.iso.asInstanceOf[PairIso[Any,Any,Any,Any]]
+      val i2 = v2.iso.asInstanceOf[PairIso[Any,Any,Any,Any]]
+      val pIso1 = composeIso(i1.iso1,i2.iso1)
+      val pIso2 = composeIso(i1.iso2, i2.iso2)
+      PairView(source)(pIso1, pIso2)
+    }
+    case IfThenElse(cond, HasViews(source1, iso1: Iso[a,b]), HasViews(source2, iso2)) if ((iso1.eTo == iso2.eTo) && (iso1.eFrom == iso2.eFrom)) =>
+    {
+      val unviewed = IF(cond) THEN (source1) ELSE (source2)
+      iso1.to(unviewed.asRep[a])
+    }
+    /*case Tup(Def(Tup(Def(IfThenElse(c1, t1, e1)), sec1)), Def(Tup(Def(IfThenElse(c2, t2, e2)), sec2))) if c1 == c2 => {
+      val ifFused = IF (c1) THEN { Pair(t1, t2) } ELSE { Pair(e1, e2) }
+      Pair(Pair(ifFused._1, sec1), Pair(ifFused._2,sec2))
+    } */
 
     case view1@ViewSRDD(Def(view2@ViewSRDD(arr))) =>
       //val compIso = composeIso(view1.innerIso, view2.innerIso)
@@ -799,6 +795,7 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
 
       implicit val eAB = compIso.eTo
       ViewSRDD(arr)(SRDDIso(compIso))
+
 
     case _ => super.rewriteDef(d)
   }

@@ -46,8 +46,8 @@ trait PairRDDFunctionss extends Base with TypeWrappers { self: SparkDsl =>
     @Constructor def apply[K: Elem, V: Elem](rdd: Rep[SRDD[(K, V)]]): Rep[SPairRDDFunctions[K, V]]
   }
 
-  implicit def rddToPairRddFunctions[K: Elem, V: Elem](rdd: Rep[SRDD[(K, V)]]): Rep[SPairRDDFunctions[K, V]] = {
-    SPairRDDFunctions(rdd)
+  implicit def rddToPairRddFunctions[K: Elem, V: Elem](rdd: Rep[SRDD[(K, V)]]): Rep[SPairRDDFunctionsImpl[K, V]] = {
+    SPairRDDFunctionsImpl(SPairRDDFunctions(rdd))
   }
 
   def DefaultOfPairRDDFunctions[K:Elem, V:Elem]: Default[PairRDDFunctions[K,V]] = {

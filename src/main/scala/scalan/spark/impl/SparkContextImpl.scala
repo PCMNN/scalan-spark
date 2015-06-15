@@ -350,6 +350,10 @@ trait SparkContextsExp extends SparkContextsDsl with ScalanCommunityDslExp {
       implicit val eA = iso.eFrom
       ViewSRDD(sc.makeRDD(source.asRep[SSeq[a]], numPartitions))(SRDDIso(iso))
     }
+    case SSparkContextMethods.broadcast(sc, HasViews(source, iso: Iso[a,b])) => {
+      implicit val eA = iso.eFrom
+      ViewSBroadcast(sc.broadcast(source.asRep[a]))(SBroadcastIso(iso))
+    }
 
     /*case mc@MethodCall(Def(wrapper: SSeqCompanionAbs), m, args, neverInvoke) if !isValueAccessor(m) =>
       val resultElem = mc.selfType

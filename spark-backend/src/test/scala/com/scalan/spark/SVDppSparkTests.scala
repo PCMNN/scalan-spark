@@ -53,15 +53,20 @@ class SVDppSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil 
     def replicate[T: Elem](len: IntRep, v: Rep[T]): Coll[T] = Collection.replicate[T](len, v)
     def ReplicatedVector(len: IntRep, v: DoubleRep): Rep[DenseVector[Double]] = DenseVector(replicate(len, v))
     def zeroVector(sc: Rep[SSparkContext], len: IntRep): Rep[DenseVector[Double]] = {
-      val rdd = sc.makeRDD(SSeq(SArray.replicate(len, 0.0)), sc.defaultParallelism).partitionBy(SPartitioner.defaultPartitioner(sc.defaultParallelism))
-      DenseVector(RDDCollection(rdd))
+      val arr = SArray.replicate(len, 0.0)
+      val arrIdxs = SArray.rangeFrom0(len).map { i:Rep[Int] => i.toLong}
+      val rdd: Rep[SRDD[(Long, Double)]] = rddToPairRddFunctions(sc.makeRDD(SSeq(arrIdxs zip arr), sc.defaultParallelism)).partitionBy(SPartitioner.defaultPartitioner(sc.defaultParallelism))
+      DenseVector(RDDCollection(rdd.map(fun{in => in._2})))
       //DenseVector(Collection.replicate(len, 0.0))
     }
 
     def RandomMatrix(sc: Rep[SSparkContext], numRows: IntRep, numColumns: IntRep, mean: DoubleRep, stddev: DoubleRep): Rep[SparkDenseMatrix[Double]] = {
       //val vals = SArray.replicate(numRows, SArray.replicate(numColumns, 0.0))
-      val rowIndRdd = sc.makeRDD(SSeq(SArray.replicate(numRows, 0)), sc.defaultParallelism).partitionBy(SPartitioner.defaultPartitioner(sc.defaultParallelism))
-      val rddVals = rowIndRdd.map { i:Rep[Int] => /*SArray.replicate(numColumns, zero) }*/ array_randomGaussian(mean, stddev, SArray.replicate(numColumns, zero)) }
+      val arr = SArray.replicate(numRows, 0)
+      val arrIdxs = SArray.rangeFrom0(numRows).map { i: Rep[Int] => i.toLong}
+      val rowIndRdd = rddToPairRddFunctions(sc.makeRDD(SSeq(arrIdxs zip arr), sc.defaultParallelism)).partitionBy(SPartitioner.defaultPartitioner(sc.defaultParallelism))
+
+      val rddVals = rowIndRdd.map { i:Rep[(Long,Int)] => /*SArray.replicate(numColumns, zero) }*/ array_randomGaussian(mean, stddev, SArray.replicate(numColumns, zero)) }
       SparkDenseMatrix(RDDCollection(rddVals), numColumns)
     }
 
@@ -210,7 +215,7 @@ class SVDppSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil 
       val numColumns = matr.numColumns
 
       //val rs: Rep[SRDD[Int]] = sc.makeRDD(SSeq(SArray.rangeFrom0(numRows)))
-      val cols: Rep[SRDD[Int]] = (sc.makeRDD(SSeq(SArray.rangeFrom0(numColumns)), sc.defaultParallelism)).partitionBy(SPartitioner.defaultPartitioner(sc.defaultParallelism))
+      val cols: Rep[SRDD[Int]] = sc.makeRDD(SSeq(SArray.rangeFrom0(numColumns)), sc.defaultParallelism)
 
       //val flatValsWithRows: Rep[SRDD[(Int, Double)]] = (rs zip vals).flatMap( fun { rv: Rep[(Int, Array[Double])] => SSeq(rv._2.map { v: Rep[Double] => (rv._1,v)}) } )
       val flatValsWithRows: Rep[SRDD[(Long, Double)]] = vals.zipWithIndex.flatMap( fun { rv: Rep[(Array[Double], Long)] => SSeq(rv._1.map { v: Rep[Double] => (rv._2,v)}) } )
@@ -220,7 +225,7 @@ class SVDppSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil 
       //type SIT = SSeq[(Int,Double)]
 
       val empty: Rep[Int] = -1 //SSeq.empty[(Int,T)]
-      val eCols: Rep[SPairRDDFunctionsImpl[Int, Int]] =  SPairRDDFunctionsImpl(SPairRDDFunctions(cols.map (fun{c => (c, empty)})))
+      val eCols: Rep[SPairRDDFunctionsImpl[Int, Int]] =  rddToPairRddFunctions(rddToPairRddFunctions(cols.map (fun{c => (c, empty)})).partitionBy(SPartitioner.defaultPartitioner(sc.defaultParallelism)))
 
 
       val r = eCols.groupWithExt(zippedFlat)
@@ -243,12 +248,12 @@ class SVDppSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil 
       val sc: Rep[SSparkContext] = matr.sc
       val numColumns = matr.numColumns
 
-      val cols: Rep[SRDD[Int]] = (sc.makeRDD(SSeq(SArray.rangeFrom0(numColumns)), sc.defaultParallelism)).partitionBy(SPartitioner.defaultPartitioner(sc.defaultParallelism))
+      val cols: Rep[SRDD[Int]] = sc.makeRDD(SSeq(SArray.rangeFrom0(numColumns)), sc.defaultParallelism)
 
       val flatIdxsWithRows: Rep[SRDD[(Int, Int)]] = idxs.zipWithIndex.flatMap( fun { rv: Rep[(Array[Int], Long)] => SSeq(rv._1.map { v: Rep[Int] => Pair(v,rv._2.toInt)}) } )
 
       val empty: Rep[Boolean] = false //SSeq.empty[(Int,T)]
-      val eCols: Rep[SPairRDDFunctionsImpl[Int, Boolean]] =  SPairRDDFunctionsImpl(SPairRDDFunctions(cols.map (fun{c => (c, empty)})))
+      val eCols: Rep[SPairRDDFunctionsImpl[Int, Boolean]] =  rddToPairRddFunctions(rddToPairRddFunctions(cols.map (fun{c => (c, empty)})).partitionBy(SPartitioner.defaultPartitioner(sc.defaultParallelism)))
 
       val r: Rep[SRDD[(Int, (SSeq[Boolean], SSeq[Int]))]] = eCols.groupWithExt(flatIdxsWithRows)
 

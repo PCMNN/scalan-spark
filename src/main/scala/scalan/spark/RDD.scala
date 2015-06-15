@@ -50,9 +50,6 @@ trait RDDs extends Base with TypeWrappers { self: SparkDsl =>
     /** Mark the RDD as non-persistent, and remove all blocks for it from memory and disk. */
     @External def unpersist( blocking: Rep[Boolean] = toRep(true)): Rep[SRDD[A]]
 
-    /** Repartition RDD accoring to given partitioner. RDD's indexes serves as keys. */
-    @External def partitionBy(partitioner: Rep[SPartitioner] = SPartitioner.defaultPartitioner(context.defaultParallelism)): Rep[SRDD[A]]
-
     /** Actions **/
 
     /** Returns the first element in this RDD. */

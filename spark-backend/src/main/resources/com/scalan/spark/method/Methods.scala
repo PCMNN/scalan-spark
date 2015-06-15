@@ -27,8 +27,11 @@ object Methods {
 
   def foldByKey[K,V](prdd: org.apache.spark.rdd.PairRDDFunctions[K,V], zeroValue: V, op: ((V, V)) => V): org.apache.spark.rdd.RDD[(K,V)]  = prdd.foldByKey(zeroValue)((p1, p2) => op((p1,p2)))
 
-  def groupWithExt[K,V, W](prdd1: org.apache.spark.rdd.PairRDDFunctions[K,V], prdd2: RDD[(K,W)]) : RDD[(K, (Seq[V], Seq[W]))] = {
-    prdd1.groupWith(prdd2).map({ in => (in._1, (in._2._1.toSeq, in._2._2.toSeq))})
+  def groupWithExt[K:Ordering:ClassTag,V, W](prdd1: org.apache.spark.rdd.PairRDDFunctions[K,V], prdd2: RDD[(K,W)]) : RDD[(K, (Seq[V], Seq[W]))] = {
+    val groupped = prdd1.groupWith(prdd2)
+    val sorted = (new org.apache.spark.rdd.OrderedRDDFunctions[K, (Iterable[V], Iterable[W]), (K, (Iterable[V], Iterable[W]))](groupped)).repartitionAndSortWithinPartitions(
+      defaultPartitioner(prdd2.context.defaultParallelism))
+    sorted.map({ in => (in._1, (in._2._1.toSeq, in._2._2.toSeq))})
   }
   def zipSafe[A:ClassTag, B:ClassTag](rdd1: RDD[A], rdd2: RDD[B]): RDD[(A,B)] = {
     val irdd1 = rdd1.zipWithIndex.map { case (v,i) => i->v}

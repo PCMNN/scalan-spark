@@ -3,6 +3,7 @@ package scalan.spark
 import scala.reflect.ClassTag
 import scalan._
 import scalan.spark.collections.{RDDCollectionsDslExp, RDDCollectionsDslSeq, RDDCollectionsDsl}
+import scalan.spark.staged.Transformations
 
 trait SparkDsl extends ScalanCommunityDsl
 with SparkContextsDsl
@@ -27,39 +28,5 @@ with SparkConfsDslExp
 with RDDsDslExp
 with PairRDDFunctionssDslExp
 with PartitionersDslExp
-with BroadcastsDslExp {
-  def hasViewArg(args: List[AnyRef]): Boolean = {
-    var res = false
-    args.map {
-      case obj if !obj.isInstanceOf[Rep[_]] => obj
-      case HasViews(s, iso) => {res = true; s}
-      case s => s
-    }
-    res
-  }
-  val wrappersCleaner = new PartialRewriter({
-    case Def(mc @ MethodCall(Def(wrapper: ExpSRDDImpl[_]), m, args, neverInvoke)) if !isValueAccessor(m) =>
-      val resultElem = mc.selfType
-      val wrapperIso = getIsoByElem(resultElem)
-      wrapperIso match {
-        case iso: Iso[base,ext] =>
-          val eRes = iso.eFrom
-          val newCall = unwrapMethodCall(mc, wrapper.wrappedValueOfBaseType, eRes)
-          iso.to(newCall)
-      }
-    case Def(mc @ MethodCall(Def(wrapper: ExpSPairRDDFunctionsImpl[_,_]), m, args, neverInvoke)) if !isValueAccessor(m) =>
-      val resultElem = mc.selfType
-      val wrapperIso = getIsoByElem(resultElem)
-      wrapperIso match {
-        case iso: Iso[base,ext] =>
-          val eRes = iso.eFrom
-          val newCall = unwrapMethodCall(mc, wrapper.wrappedValueOfBaseType, eRes)
-          iso.to(newCall)
-      }
-    case Def(nobj @ NewObject(clazz, args, neverInvoke)) if hasViewArg(args) =>
-      unwrapNewObj(clazz, args, neverInvoke, nobj.selfType)
-    /*case Def(mc @ MethodCall(reciever,m, args, neverInvoke)) if (!isValueAccessor(m) && hasViewArg(args)) =>
-      val newCall = mkMethodCall(reciever, m, unwrapSyms(args), true, mc.selfType)
-      newCall*/
-  })
-}
+with BroadcastsDslExp
+with Transformations

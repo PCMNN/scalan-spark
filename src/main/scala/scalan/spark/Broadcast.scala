@@ -27,10 +27,12 @@ trait Broadcasts extends Base with TypeWrappers { self: SparkDsl =>
   }
 
   def DefaultOfBroadcast[A :Elem]: Default[Broadcast[A]] = {
-    val eA = element[A]
+    null
+    /*val eA = element[A]
     implicit val ctA = eA.classTag
     val defaultA: A = ctA.newArray(1)(0)
     Default.defaultVal(sparkContext.broadcast(defaultA))
+    */
   }
 }
 
