@@ -49,7 +49,10 @@ object run {
 
   private def exec(tuple: (ParametersPaired, (RDD[(Long, Array[Int])], (RDD[(Long, Array[Double])], (Int, Double))))) = {
     try {
+      val from = scala.compat.Platform.currentTime
       new SVDppSpark_Train_new()(tuple)
+      val to = scala.compat.Platform.currentTime
+      println(s"SVDppSpark_Train_new().apply(tuple) spend ${(to-from)/1000.0} ms")
     }
     finally stop()
   }
@@ -73,7 +76,7 @@ object run {
     val lengthItems: Array[Int] = new Array[Int](maxUsers)
     for (line1 <- ifs.getLines()) {
       val line = line1.trim()
-      val tokens = line.split("::")
+      val tokens = line.split("\t")
       val user = tokens(0).toInt - 1
       if ((user >= 0) && (user < maxUsers)) lengthItems(user) = lengthItems(user) + 1
     }
@@ -88,7 +91,7 @@ object run {
     val ifs2 = Source.fromFile(rawDataFile)
     for (line1 <- ifs2.getLines()) {
       val line = line1.trim()
-      val tokens = line.split("::")
+      val tokens = line.split("\t")
       val i = tokens(0).toInt - 1
       val j = tokens(1).toInt - 1
       val r = tokens(2).toDouble
