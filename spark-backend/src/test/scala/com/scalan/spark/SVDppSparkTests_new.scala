@@ -126,12 +126,12 @@ class SVDppSparkTests_new extends BaseTests with BeforeAndAfterAll with ItTestsU
       //val rmseNew = calculateRMSESpark(mE)
 
       val Tuple(iteration, rmse, flagRunning, stepDecrease0) = meta
-      val rmseNew = rmse //calculateRMSESpark(mE)
+      val rmseNew = calculateRMSESpark(mE)
       val stepDecrease = coeffDecrease * stepDecrease0
 
-      val stateNew = { /*IF (rmseNew > rmse) THEN {
+      val stateNew = IF (rmseNew > rmse) THEN {
         Pair(model0, Tuple(iteration, rmse, flagFailure1, stepDecrease))
-      } ELSE {*/
+      } ELSE {
         val bl = Tuple(vBu0, vBi0)
         val svd = Tuple(mP0, mQ0)
         val svdpp = Tuple(mP0, mQ0, mY0)
@@ -160,9 +160,9 @@ class SVDppSparkTests_new extends BaseTests with BeforeAndAfterAll with ItTestsU
         val parameters = IF (iteration >= maxIterations) THEN {
           Tuple(iteration, rmseNew, flagOverMaxIter, stepDecrease)
         } ELSE {
-          /*IF (rmse - rmseNew < convergeLimit) THEN {
+          IF (rmse - rmseNew < convergeLimit) THEN {
             Tuple(iteration, rmseNew, flagConverged, stepDecrease)
-          } ELSE */{
+          } ELSE {
             Tuple(iteration + oneInt, rmseNew, flagRunning, stepDecrease)
           }
         }
@@ -639,10 +639,8 @@ class SVDppSparkTests_new extends BaseTests with BeforeAndAfterAll with ItTestsU
       val stateFinal = from(start).until(convergedSpark)(stepSpark(closure, cs0, cs0T, mu))
       //val Tuple(res1, res2,res3, res4, res5) = stateFinal
       val Pair(model, metaNew) = stateFinal
-      val mE = errorMatrixSpark(mR, mR, mu)(stateFinal._1)
-      val rmseNew = calculateRMSESpark(mE)
       val Tuple(iteration, rmse, flag, stepDecrease) = metaNew
-      (model, Tuple(iteration, rmseNew, flag, stepDecrease))
+      (model, Tuple(iteration, rmse, flag, stepDecrease))
     }
 
     def SVDppSpark_Train = fun { in: Rep[(ParametersPaired, (RDD[(Long,Array[Int])], (RDD[(Long,Array[Double])],
@@ -695,13 +693,16 @@ class SVDppSparkTests_new extends BaseTests with BeforeAndAfterAll with ItTestsU
     val compiled1 = compileSource(testCompiler)(testCompiler.SVDppSpark_errorMatrix, "SVDppSpark_errorMatrix_new", generationConfig(testCompiler, "SVDppSpark_errorMatrix_new", "package"))
   } */
 
+  class TestClass extends SparkScalanCompiler with SparkLADslExp with SVDppSpark with CFDslExp {
+    //self =>
+    val sparkContext = globalSparkContext
+    val sSparkContext = null
+    val conf = null
+    val repSparkContext = null
+  }
+
   test("SVDppSpark_Train_new Code Gen") {
-    val testCompiler = new SparkScalanCompiler with SparkLADslExp with SVDppSpark with CFDslExp {
-      self =>
-      val sparkContext = globalSparkContext
-      val sSparkContext = null
-      val conf = null
-      val repSparkContext = null
+    val testCompiler = new TestClass {//SparkScalanCompiler with SparkLADslExp with SVDppSpark with CFDslExp {
     }
     val compiled1 = compileSource(testCompiler)(testCompiler.SVDppSpark_Train, "SVDppSpark_Train_new", generationConfig(testCompiler, "SVDppSpark_Train_new", "package"))
   }

@@ -11,7 +11,7 @@ trait SparkScalanCompiler extends SparkDslExp with ScalanSparkMethodMappingDSL w
     val AllWrappersCleaner =
       constantPass(new GraphTransformPass("clean_wrappers", DefaultMirror, wrappersCleaner))
     val CacheAndFusion = (graph: PGraph) => new GraphTransformPass("cacheAndFusion", DefaultMirror /*new RDDCacheAndFusionMirror(graph)*/, fusionRewriter)
-    Seq(AllUnpackEnabler, AllInvokeEnabler, CacheAndFusion, AllWrappersCleaner)
+    Seq(AllUnpackEnabler, AllInvokeEnabler, /*CacheAndFusion,*/ AllWrappersCleaner)
   }
 }
 

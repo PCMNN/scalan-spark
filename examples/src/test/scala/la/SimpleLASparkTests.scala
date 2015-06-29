@@ -33,14 +33,16 @@ trait SimpleLASparkTests extends MLDsl with SparkLADsl with ExampleSVDpp {
 
   lazy val ddmvm = fun { p: Rep[(SRDD[Array[Double]], Array[Double])] =>
     val Pair(m, v) = p
-    val matrix: Matrix[Double] = RowMajorDirectMatrix(RDDCollection(m.map { r: Arr[Double] => DenseVector(Collection(r)) }))
+    val matrix: Matrix[Double] = CompoundMatrix(RDDCollection(m.map { r: Arr[Double] => DenseVector(Collection(r)) }), v.length)
     val vector: Vector[Double] = DenseVector(Collection(v))
     (matrix * vector).items.arr
   }
 
   lazy val sdmvm = fun { p: Rep[(SRDD[(Array[Int], Array[Double])], (Int, Array[Double]))] =>
     val Tuple(m, numCols, v) = p
-    val matrix: Matrix[Double] = SparkSparseMatrix(RDDCollection(m), numCols)
+    val idxs = m.map(fun{in => in._1})
+    val vals = m.map(fun{in => in._2})
+    val matrix: Matrix[Double] = SparkSparseMatrix(RDDCollection(idxs), RDDCollection(vals), numCols)
     val vector: Vector[Double] = DenseVector(Collection(v))
     (matrix * vector).items.arr
   }
@@ -50,9 +52,9 @@ trait SimpleLASparkTests extends MLDsl with SparkLADsl with ExampleSVDpp {
       (Int, Double))))))] =>
     val Tuple(parametersPaired, arrFlat, segsArr, arrTFlat, segsTArr, nItems, stddev) = in
     val nColl: NColl[(Int, Double)] = NestedCollection(Collection(arrFlat), CollectionOfPairs(segsArr))
-    val mR: Dataset1 = RowMajorSparseMatrix.fromNColl(nColl, nItems)
+    val mR: Dataset1 = CompoundMatrix.fromNColl(nColl, nItems)
     val nCollT: NColl[(Int, Double)] = NestedCollection(Collection(arrTFlat), CollectionOfPairs(segsTArr))
-    val mT: Dataset1 = RowMajorSparseMatrix.fromNColl(nCollT, nItems)
+    val mT: Dataset1 = CompoundMatrix.fromNColl(nCollT, nItems)
     val params = ParametersSVDpp.init(parametersPaired)
     val data = DatasetCF(mR, mR)
     val closure1 = Tuple(parametersPaired, mR, mR)
@@ -68,13 +70,13 @@ trait SimpleLASparkTests extends MLDsl with SparkLADsl with ExampleSVDpp {
     val vals = arrs.map { r: Arr[(Int,Double)] => r.map{_._2}}
 
     val rows = (idxs zip vals).map{ r: Rep[(Array[Int], Array[Double])] => SparseVector(Collection(r._1), Collection(r._2), nItems)}
-    val matrix: Matrix[Double] = RowMajorSparseMatrix(RDDCollection(rows), nItems)
+    val matrix: Matrix[Double] = CompoundMatrix(RDDCollection(rows), nItems)
     calculateRMSE(matrix)
   }
 
   lazy val flatMapDomain = fun  { in: Rep[SRDD[Array[Array[Double]]]] =>
     val rows = RDDCollection(in).flatMap { r: Rep[Array[Array[Double]]] => Collection(r.map { r1: Rep[Array[Double]] => DenseVector(Collection(r1)) }) }
-    val matrix: Matrix[Double] = RowMajorDirectMatrix(rows)
+    val matrix: Matrix[Double] = CompoundMatrix(rows, 0) //todo get num of columns
     calculateRMSE(matrix)
   }
 }
