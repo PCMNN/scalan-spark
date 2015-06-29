@@ -27,7 +27,7 @@ object ScalanStartRootBuild extends Build {
 
   val buildSettings = Seq(
     organization := "com.huawei.scalan",
-    scalaVersion := "2.10.4",
+    scalaVersion := "2.11.2",
     scalacOptions ++= Seq(
       "-unchecked", "-deprecation",
       "-feature",
@@ -65,7 +65,7 @@ object ScalanStartRootBuild extends Build {
 
   def liteProject(name: String) = ProjectRef(file("../scalan-lite"), name)
 
-  def liteDependency(name: String) = "com.huawei.scalan" %% name % "0.2.8-SNAPSHOT"
+  def liteDependency(name: String) = "com.huawei.scalan" %% name % "0.2.9.fixes-for-SVD.0"
 
   lazy val metaDeps = liteDependency("meta")
   lazy val sparkmeta = Project(
@@ -73,9 +73,9 @@ object ScalanStartRootBuild extends Build {
     base = file("meta")).addTestConfigsAndCommonSettings.
     settings(libraryDependencies ++= Seq(metaDeps))
 
-  lazy val core = liteDependency("core")
-  lazy val common = liteDependency("common")
-  lazy val community = liteDependency("community-edition")
+  lazy val core = liteDependency("scalan-core")
+  lazy val common = liteDependency("scalan-common")
+  lazy val community = liteDependency("scalan-community-edition")
   lazy val ml = "com.huawei.scalan" %% "scalan-ml" % "0.3.0.factories_on_companions.0"
 
   lazy val start = Project(
@@ -85,8 +85,7 @@ object ScalanStartRootBuild extends Build {
       core,
       core % "test" classifier "tests",
       common,
-      common % "test" classifier "tests",
-      community
+      common % "test" classifier "tests"
       )
     )
   lazy val examples = Project("scalan-spark-examples", file("examples")).
@@ -97,9 +96,9 @@ object ScalanStartRootBuild extends Build {
       )
     )
 
-  val virtScala = Option(System.getenv("SCALA_VIRTUALIZED_VERSION")).getOrElse("2.10.2")
+  val virtScala = Option(System.getenv("SCALA_VIRTUALIZED_VERSION")).getOrElse("2.11.2")
 
-  lazy val backend = liteDependency("lms-backend")
+  lazy val backend = liteDependency("scalan-lms-backend")
   lazy val sparkBackend = Project("spark-backend",file("spark-backend")).dependsOn(start.allConfigDependency).
     settings(libraryDependencies ++= Seq(backend,
       ml,
