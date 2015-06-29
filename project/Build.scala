@@ -76,7 +76,7 @@ object ScalanStartRootBuild extends Build {
   lazy val core = liteDependency("core")
   lazy val common = liteDependency("common")
   lazy val community = liteDependency("community-edition")
-  lazy val ml = "com.huawei.scalan" %% "scalan-ml" % "0.3.0"
+  lazy val ml = "com.huawei.scalan" %% "scalan-ml" % "0.3.0.factories_on_companions.0"
 
   lazy val start = Project(
     id = "scalan-spark",
