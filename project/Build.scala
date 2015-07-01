@@ -67,7 +67,7 @@ object ScalanStartRootBuild extends Build {
 
   def liteDependency(name: String) = "com.huawei.scalan" %% name % "0.2.9.fixes-for-SVD.0"
 
-  lazy val metaDeps = liteDependency("meta")
+  lazy val metaDeps = liteDependency("scalan-meta")
   lazy val sparkmeta = Project(
     id = "spark-meta",
     base = file("meta")).addTestConfigsAndCommonSettings.
@@ -75,8 +75,8 @@ object ScalanStartRootBuild extends Build {
 
   lazy val core = liteDependency("scalan-core")
   lazy val common = liteDependency("scalan-common")
-  lazy val community = liteDependency("scalan-community-edition")
-  lazy val ml = "com.huawei.scalan" %% "scalan-ml" % "0.3.0.factories_on_companions.0"
+  lazy val library = liteDependency("scalan-library")
+  lazy val ml = "com.huawei.scalan" %% "scalan-ml" % "0.3.0.master-for-fixes-forSVD.0"
 
   lazy val start = Project(
     id = "scalan-spark",
@@ -85,7 +85,8 @@ object ScalanStartRootBuild extends Build {
       core,
       core % "test" classifier "tests",
       common,
-      common % "test" classifier "tests"
+      common % "test" classifier "tests",
+      library
       )
     )
   lazy val examples = Project("scalan-spark-examples", file("examples")).

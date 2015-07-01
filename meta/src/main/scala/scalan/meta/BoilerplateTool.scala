@@ -11,6 +11,7 @@ object SparkBoilerplateTool extends BoilerplateTool {
     "Coll" -> "Collection",
     "PairColl" -> "IPairCollection"
   )
+
   lazy val sparkConfig = CodegenConfig(
     name = "ScalanSpark",
     srcPath = "src/main/scala/scalan/spark",
@@ -29,7 +30,7 @@ object SparkBoilerplateTool extends BoilerplateTool {
       "scala.reflect._",
       "scala.reflect.runtime.universe._",
       "scalan.common.Default"),
-    sparkTypeSynonims
+    entityTypeSynonyms = sparkTypeSynonims
   )
 
   lazy val rddCollConfig = CodegenConfig(
@@ -45,7 +46,7 @@ object SparkBoilerplateTool extends BoilerplateTool {
       "scala.reflect._",
       "scala.reflect.runtime.universe._",
       "scalan.common.Default"),
-    sparkTypeSynonims
+    entityTypeSynonyms = sparkTypeSynonims
   )
 
   lazy val sparkLAConfig = CodegenConfig(
@@ -63,7 +64,7 @@ object SparkBoilerplateTool extends BoilerplateTool {
       "scalan.common.Default",
       "scalan.spark._"
     ),
-    sparkTypeSynonims ++ laTypeSynonyms
+    entityTypeSynonyms = sparkTypeSynonims ++ laTypeSynonyms
   )
 
   override def getConfigs(args: Array[String]) = Seq( sparkConfig /*, rddCollConfig, sparkLAConfig*/)
