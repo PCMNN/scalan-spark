@@ -8,7 +8,6 @@ import scalan.common.OverloadHack.Overloaded1
 import scalan.spark.{SparkDslExp, SparkDslSeq, SparkDsl}
 import scala.reflect._
 import scala.reflect.runtime.universe._
-import scalan.common.Default
 
 // Abs -----------------------------------
 trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
@@ -16,35 +15,34 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
 
   // single proxy for each type family
   implicit def proxyIRDDCollection[A](p: Rep[IRDDCollection[A]]): IRDDCollection[A] = {
-    proxyOps[IRDDCollection[A]](p)(classTag[IRDDCollection[A]])
+    proxyOps[IRDDCollection[A]](p)(scala.reflect.classTag[IRDDCollection[A]])
   }
 
   // familyElem
   class IRDDCollectionElem[A, To <: IRDDCollection[A]](implicit val eA: Elem[A])
     extends CollectionElem[A, To] {
     override def isEntityType = true
-    override def tag = {
+    override lazy val tag = {
       implicit val tagA = eA.tag
       weakTypeTag[IRDDCollection[A]].asInstanceOf[WeakTypeTag[To]]
     }
     override def convert(x: Rep[Reifiable[_]]) = {
-      val conv = fun {x: Rep[IRDDCollection[A]] =>  convertIRDDCollection(x) }
+      implicit val eTo: Elem[To] = this
+      val conv = fun {x: Rep[IRDDCollection[A]] => convertIRDDCollection(x) }
       tryConvert(element[IRDDCollection[A]], this, x, conv)
     }
 
     def convertIRDDCollection(x : Rep[IRDDCollection[A]]): Rep[To] = {
-      assert(x.selfType1 match { case _: IRDDCollectionElem[_,_] => true case _ => false })
+      assert(x.selfType1 match { case _: IRDDCollectionElem[_, _] => true; case _ => false })
       x.asRep[To]
     }
     override def getDefaultRep: Rep[To] = ???
   }
 
   implicit def iRDDCollectionElement[A](implicit eA: Elem[A]): Elem[IRDDCollection[A]] =
-    new IRDDCollectionElem[A, IRDDCollection[A]] {
-    }
+    new IRDDCollectionElem[A, IRDDCollection[A]]
 
-  trait IRDDCollectionCompanionElem extends CompanionElem[IRDDCollectionCompanionAbs]
-  implicit lazy val IRDDCollectionCompanionElem: IRDDCollectionCompanionElem = new IRDDCollectionCompanionElem {
+  implicit case object IRDDCollectionCompanionElem extends CompanionElem[IRDDCollectionCompanionAbs] {
     lazy val tag = weakTypeTag[IRDDCollectionCompanionAbs]
     protected def getDefaultRep = IRDDCollection
   }
@@ -59,60 +57,60 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
 
   // single proxy for each type family
   implicit def proxyIRDDPairCollection[A, B](p: Rep[IRDDPairCollection[A, B]]): IRDDPairCollection[A, B] = {
-    proxyOps[IRDDPairCollection[A, B]](p)(classTag[IRDDPairCollection[A, B]])
+    proxyOps[IRDDPairCollection[A, B]](p)(scala.reflect.classTag[IRDDPairCollection[A, B]])
   }
   // familyElem
-  class IRDDPairCollectionElem[A, B, To <: IRDDPairCollection[A, B]](implicit override val eA: Elem[A], override val eB: Elem[B])
-    extends IPairCollectionElem[A, B, To] {
+  class IRDDPairCollectionElem[A, B, To <: IRDDPairCollection[A, B]](implicit val eA: Elem[A], val eB: Elem[B])
+    extends PairCollectionElem[A, B, To] {
     override def isEntityType = true
-    override def tag = {
+    override lazy val tag = {
       implicit val tagA = eA.tag
       implicit val tagB = eB.tag
       weakTypeTag[IRDDPairCollection[A, B]].asInstanceOf[WeakTypeTag[To]]
     }
     override def convert(x: Rep[Reifiable[_]]) = {
-      val conv = fun {x: Rep[IRDDPairCollection[A, B]] =>  convertIRDDPairCollection(x) }
+      implicit val eTo: Elem[To] = this
+      val conv = fun {x: Rep[IRDDPairCollection[A, B]] => convertIRDDPairCollection(x) }
       tryConvert(element[IRDDPairCollection[A, B]], this, x, conv)
     }
 
     def convertIRDDPairCollection(x : Rep[IRDDPairCollection[A, B]]): Rep[To] = {
-      assert(x.selfType1 match { case _: IRDDPairCollectionElem[_,_,_] => true case _ => false })
+      assert(x.selfType1 match { case _: IRDDPairCollectionElem[_, _, _] => true; case _ => false })
       x.asRep[To]
     }
     override def getDefaultRep: Rep[To] = ???
   }
 
   implicit def iRDDPairCollectionElement[A, B](implicit eA: Elem[A], eB: Elem[B]): Elem[IRDDPairCollection[A, B]] =
-    new IRDDPairCollectionElem[A, B, IRDDPairCollection[A, B]] {
-    }
+    new IRDDPairCollectionElem[A, B, IRDDPairCollection[A, B]]
 
   // single proxy for each type family
   implicit def proxyIRDDNestedCollection[A](p: Rep[IRDDNestedCollection[A]]): IRDDNestedCollection[A] = {
-    proxyOps[IRDDNestedCollection[A]](p)(classTag[IRDDNestedCollection[A]])
+    proxyOps[IRDDNestedCollection[A]](p)(scala.reflect.classTag[IRDDNestedCollection[A]])
   }
   // familyElem
-  class IRDDNestedCollectionElem[A, To <: IRDDNestedCollection[A]](implicit override val eA: Elem[A])
-    extends INestedCollectionElem[A, To] {
+  class IRDDNestedCollectionElem[A, To <: IRDDNestedCollection[A]](implicit val eA: Elem[A])
+    extends NestedCollectionElem[A, To] {
     override def isEntityType = true
-    override def tag = {
+    override lazy val tag = {
       implicit val tagA = eA.tag
       weakTypeTag[IRDDNestedCollection[A]].asInstanceOf[WeakTypeTag[To]]
     }
     override def convert(x: Rep[Reifiable[_]]) = {
-      val conv = fun {x: Rep[IRDDNestedCollection[A]] =>  convertIRDDNestedCollection(x) }
+      implicit val eTo: Elem[To] = this
+      val conv = fun {x: Rep[IRDDNestedCollection[A]] => convertIRDDNestedCollection(x) }
       tryConvert(element[IRDDNestedCollection[A]], this, x, conv)
     }
 
     def convertIRDDNestedCollection(x : Rep[IRDDNestedCollection[A]]): Rep[To] = {
-      assert(x.selfType1 match { case _: IRDDNestedCollectionElem[_,_] => true case _ => false })
+      assert(x.selfType1 match { case _: IRDDNestedCollectionElem[_, _] => true; case _ => false })
       x.asRep[To]
     }
     override def getDefaultRep: Rep[To] = ???
   }
 
   implicit def iRDDNestedCollectionElement[A](implicit eA: Elem[A]): Elem[IRDDNestedCollection[A]] =
-    new IRDDNestedCollectionElem[A, IRDDNestedCollection[A]] {
-    }
+    new IRDDNestedCollectionElem[A, IRDDNestedCollection[A]]
 
   // elem for concrete class
   class RDDCollectionElem[A](val iso: Iso[RDDCollectionData[A], RDDCollection[A]])(implicit eA: Elem[A])
@@ -120,7 +118,10 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
     with ConcreteElem[RDDCollectionData[A], RDDCollection[A]] {
     override def convertIRDDCollection(x: Rep[IRDDCollection[A]]) = RDDCollection(x.rdd)
     override def getDefaultRep = super[ConcreteElem].getDefaultRep
-    override lazy val tag = super[ConcreteElem].tag
+    override lazy val tag = {
+      implicit val tagA = eA.tag
+      weakTypeTag[RDDCollection[A]]
+    }
   }
 
   // state representation type
@@ -128,18 +129,14 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
 
   // 3) Iso for concrete class
   class RDDCollectionIso[A](implicit eA: Elem[A])
-    extends Iso[RDDCollectionData[A], RDDCollection[A]]()((implicitly[Elem[SRDD[A]]])) {
+    extends Iso[RDDCollectionData[A], RDDCollection[A]] {
     override def from(p: Rep[RDDCollection[A]]) =
       p.rdd
     override def to(p: Rep[SRDD[A]]) = {
       val rdd = p
       RDDCollection(rdd)
     }
-    lazy val tag = {
-      implicit val tagA = eA.tag
-      weakTypeTag[RDDCollection[A]]
-    }
-    lazy val defaultRepTo = Default.defaultVal[Rep[RDDCollection[A]]](RDDCollection(element[SRDD[A]].defaultRepValue))
+    lazy val defaultRepTo: Rep[RDDCollection[A]] = RDDCollection(element[SRDD[A]].defaultRepValue)
     lazy val eTo = new RDDCollectionElem[A](this)
   }
   // 4) constructor and deconstructor
@@ -157,11 +154,10 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
     proxyOps[RDDCollectionCompanionAbs](p)
   }
 
-  class RDDCollectionCompanionElem extends CompanionElem[RDDCollectionCompanionAbs] {
+  implicit case object RDDCollectionCompanionElem extends CompanionElem[RDDCollectionCompanionAbs] {
     lazy val tag = weakTypeTag[RDDCollectionCompanionAbs]
     protected def getDefaultRep = RDDCollection
   }
-  implicit lazy val RDDCollectionCompanionElem: RDDCollectionCompanionElem = new RDDCollectionCompanionElem
 
   implicit def proxyRDDCollection[A](p: Rep[RDDCollection[A]]): RDDCollection[A] =
     proxyOps[RDDCollection[A]](p)
@@ -185,7 +181,10 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
     override def convertIRDDCollection(x: Rep[IRDDCollection[A]]) = // Converter is not generated by meta
 !!!("Cannot convert from IRDDCollection to RDDIndexedCollection: missing fields List(indexedRdd)")
     override def getDefaultRep = super[ConcreteElem].getDefaultRep
-    override lazy val tag = super[ConcreteElem].tag
+    override lazy val tag = {
+      implicit val tagA = eA.tag
+      weakTypeTag[RDDIndexedCollection[A]]
+    }
   }
 
   // state representation type
@@ -193,18 +192,14 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
 
   // 3) Iso for concrete class
   class RDDIndexedCollectionIso[A](implicit eA: Elem[A])
-    extends Iso[RDDIndexedCollectionData[A], RDDIndexedCollection[A]]()((implicitly[Elem[SRDD[(Long, A)]]])) {
+    extends Iso[RDDIndexedCollectionData[A], RDDIndexedCollection[A]] {
     override def from(p: Rep[RDDIndexedCollection[A]]) =
       p.indexedRdd
     override def to(p: Rep[SRDD[(Long, A)]]) = {
       val indexedRdd = p
       RDDIndexedCollection(indexedRdd)
     }
-    lazy val tag = {
-      implicit val tagA = eA.tag
-      weakTypeTag[RDDIndexedCollection[A]]
-    }
-    lazy val defaultRepTo = Default.defaultVal[Rep[RDDIndexedCollection[A]]](RDDIndexedCollection(element[SRDD[(Long, A)]].defaultRepValue))
+    lazy val defaultRepTo: Rep[RDDIndexedCollection[A]] = RDDIndexedCollection(element[SRDD[(Long, A)]].defaultRepValue)
     lazy val eTo = new RDDIndexedCollectionElem[A](this)
   }
   // 4) constructor and deconstructor
@@ -222,11 +217,10 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
     proxyOps[RDDIndexedCollectionCompanionAbs](p)
   }
 
-  class RDDIndexedCollectionCompanionElem extends CompanionElem[RDDIndexedCollectionCompanionAbs] {
+  implicit case object RDDIndexedCollectionCompanionElem extends CompanionElem[RDDIndexedCollectionCompanionAbs] {
     lazy val tag = weakTypeTag[RDDIndexedCollectionCompanionAbs]
     protected def getDefaultRep = RDDIndexedCollection
   }
-  implicit lazy val RDDIndexedCollectionCompanionElem: RDDIndexedCollectionCompanionElem = new RDDIndexedCollectionCompanionElem
 
   implicit def proxyRDDIndexedCollection[A](p: Rep[RDDIndexedCollection[A]]): RDDIndexedCollection[A] =
     proxyOps[RDDIndexedCollection[A]](p)
@@ -249,7 +243,11 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
     with ConcreteElem[PairRDDCollectionData[A, B], PairRDDCollection[A, B]] {
     override def convertIRDDPairCollection(x: Rep[IRDDPairCollection[A, B]]) = PairRDDCollection(x.pairRDD)
     override def getDefaultRep = super[ConcreteElem].getDefaultRep
-    override lazy val tag = super[ConcreteElem].tag
+    override lazy val tag = {
+      implicit val tagA = eA.tag
+      implicit val tagB = eB.tag
+      weakTypeTag[PairRDDCollection[A, B]]
+    }
   }
 
   // state representation type
@@ -257,19 +255,14 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
 
   // 3) Iso for concrete class
   class PairRDDCollectionIso[A, B](implicit eA: Elem[A], eB: Elem[B])
-    extends Iso[PairRDDCollectionData[A, B], PairRDDCollection[A, B]]()((implicitly[Elem[SRDD[(A, B)]]])) {
+    extends Iso[PairRDDCollectionData[A, B], PairRDDCollection[A, B]] {
     override def from(p: Rep[PairRDDCollection[A, B]]) =
       p.pairRDD
     override def to(p: Rep[SRDD[(A, B)]]) = {
       val pairRDD = p
       PairRDDCollection(pairRDD)
     }
-    lazy val tag = {
-      implicit val tagA = eA.tag
-      implicit val tagB = eB.tag
-      weakTypeTag[PairRDDCollection[A, B]]
-    }
-    lazy val defaultRepTo = Default.defaultVal[Rep[PairRDDCollection[A, B]]](PairRDDCollection(element[SRDD[(A, B)]].defaultRepValue))
+    lazy val defaultRepTo: Rep[PairRDDCollection[A, B]] = PairRDDCollection(element[SRDD[(A, B)]].defaultRepValue)
     lazy val eTo = new PairRDDCollectionElem[A, B](this)
   }
   // 4) constructor and deconstructor
@@ -287,11 +280,10 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
     proxyOps[PairRDDCollectionCompanionAbs](p)
   }
 
-  class PairRDDCollectionCompanionElem extends CompanionElem[PairRDDCollectionCompanionAbs] {
+  implicit case object PairRDDCollectionCompanionElem extends CompanionElem[PairRDDCollectionCompanionAbs] {
     lazy val tag = weakTypeTag[PairRDDCollectionCompanionAbs]
     protected def getDefaultRep = PairRDDCollection
   }
-  implicit lazy val PairRDDCollectionCompanionElem: PairRDDCollectionCompanionElem = new PairRDDCollectionCompanionElem
 
   implicit def proxyPairRDDCollection[A, B](p: Rep[PairRDDCollection[A, B]]): PairRDDCollection[A, B] =
     proxyOps[PairRDDCollection[A, B]](p)
@@ -315,7 +307,11 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
     override def convertIRDDPairCollection(x: Rep[IRDDPairCollection[A, B]]) = // Converter is not generated by meta
 !!!("Cannot convert from IRDDPairCollection to PairRDDIndexedCollection: missing fields List(indices)")
     override def getDefaultRep = super[ConcreteElem].getDefaultRep
-    override lazy val tag = super[ConcreteElem].tag
+    override lazy val tag = {
+      implicit val tagA = eA.tag
+      implicit val tagB = eB.tag
+      weakTypeTag[PairRDDIndexedCollection[A, B]]
+    }
   }
 
   // state representation type
@@ -330,12 +326,7 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
       val Pair(indices, pairRDD) = p
       PairRDDIndexedCollection(indices, pairRDD)
     }
-    lazy val tag = {
-      implicit val tagA = eA.tag
-      implicit val tagB = eB.tag
-      weakTypeTag[PairRDDIndexedCollection[A, B]]
-    }
-    lazy val defaultRepTo = Default.defaultVal[Rep[PairRDDIndexedCollection[A, B]]](PairRDDIndexedCollection(element[SRDD[Long]].defaultRepValue, element[SRDD[(A, B)]].defaultRepValue))
+    lazy val defaultRepTo: Rep[PairRDDIndexedCollection[A, B]] = PairRDDIndexedCollection(element[SRDD[Long]].defaultRepValue, element[SRDD[(A, B)]].defaultRepValue)
     lazy val eTo = new PairRDDIndexedCollectionElem[A, B](this)
   }
   // 4) constructor and deconstructor
@@ -354,11 +345,10 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
     proxyOps[PairRDDIndexedCollectionCompanionAbs](p)
   }
 
-  class PairRDDIndexedCollectionCompanionElem extends CompanionElem[PairRDDIndexedCollectionCompanionAbs] {
+  implicit case object PairRDDIndexedCollectionCompanionElem extends CompanionElem[PairRDDIndexedCollectionCompanionAbs] {
     lazy val tag = weakTypeTag[PairRDDIndexedCollectionCompanionAbs]
     protected def getDefaultRep = PairRDDIndexedCollection
   }
-  implicit lazy val PairRDDIndexedCollectionCompanionElem: PairRDDIndexedCollectionCompanionElem = new PairRDDIndexedCollectionCompanionElem
 
   implicit def proxyPairRDDIndexedCollection[A, B](p: Rep[PairRDDIndexedCollection[A, B]]): PairRDDIndexedCollection[A, B] =
     proxyOps[PairRDDIndexedCollection[A, B]](p)
@@ -381,7 +371,10 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
     with ConcreteElem[RDDNestedCollectionData[A], RDDNestedCollection[A]] {
     override def convertIRDDNestedCollection(x: Rep[IRDDNestedCollection[A]]) = RDDNestedCollection(x.values, x.segments)
     override def getDefaultRep = super[ConcreteElem].getDefaultRep
-    override lazy val tag = super[ConcreteElem].tag
+    override lazy val tag = {
+      implicit val tagA = eA.tag
+      weakTypeTag[RDDNestedCollection[A]]
+    }
   }
 
   // state representation type
@@ -396,11 +389,7 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
       val Pair(values, segments) = p
       RDDNestedCollection(values, segments)
     }
-    lazy val tag = {
-      implicit val tagA = eA.tag
-      weakTypeTag[RDDNestedCollection[A]]
-    }
-    lazy val defaultRepTo = Default.defaultVal[Rep[RDDNestedCollection[A]]](RDDNestedCollection(element[IRDDCollection[A]].defaultRepValue, element[PairRDDCollection[Int,Int]].defaultRepValue))
+    lazy val defaultRepTo: Rep[RDDNestedCollection[A]] = RDDNestedCollection(element[IRDDCollection[A]].defaultRepValue, element[PairRDDCollection[Int,Int]].defaultRepValue)
     lazy val eTo = new RDDNestedCollectionElem[A](this)
   }
   // 4) constructor and deconstructor
@@ -419,11 +408,10 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
     proxyOps[RDDNestedCollectionCompanionAbs](p)
   }
 
-  class RDDNestedCollectionCompanionElem extends CompanionElem[RDDNestedCollectionCompanionAbs] {
+  implicit case object RDDNestedCollectionCompanionElem extends CompanionElem[RDDNestedCollectionCompanionAbs] {
     lazy val tag = weakTypeTag[RDDNestedCollectionCompanionAbs]
     protected def getDefaultRep = RDDNestedCollection
   }
-  implicit lazy val RDDNestedCollectionCompanionElem: RDDNestedCollectionCompanionElem = new RDDNestedCollectionCompanionElem
 
   implicit def proxyRDDNestedCollection[A](p: Rep[RDDNestedCollection[A]]): RDDNestedCollection[A] =
     proxyOps[RDDNestedCollection[A]](p)
@@ -644,24 +632,24 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
     }
 
     object mapBy {
-      def unapply(d: Def[_]): Option[(Rep[RDDCollection[A]], Rep[A => B]) forSome {type A; type B}] = d match {
+      def unapply(d: Def[_]): Option[(Rep[RDDCollection[A]], Rep[A @uncheckedVariance => B]) forSome {type A; type B}] = d match {
         case MethodCall(receiver, method, Seq(f, _*), _) if receiver.elem.isInstanceOf[RDDCollectionElem[_]] && method.getName == "mapBy" =>
-          Some((receiver, f)).asInstanceOf[Option[(Rep[RDDCollection[A]], Rep[A => B]) forSome {type A; type B}]]
+          Some((receiver, f)).asInstanceOf[Option[(Rep[RDDCollection[A]], Rep[A @uncheckedVariance => B]) forSome {type A; type B}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[(Rep[RDDCollection[A]], Rep[A => B]) forSome {type A; type B}] = exp match {
+      def unapply(exp: Exp[_]): Option[(Rep[RDDCollection[A]], Rep[A @uncheckedVariance => B]) forSome {type A; type B}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
     }
 
     object reduce {
-      def unapply(d: Def[_]): Option[(Rep[RDDCollection[A]], RepMonoid[A]) forSome {type A}] = d match {
+      def unapply(d: Def[_]): Option[(Rep[RDDCollection[A]], RepMonoid[A @uncheckedVariance]) forSome {type A}] = d match {
         case MethodCall(receiver, method, Seq(m, _*), _) if receiver.elem.isInstanceOf[RDDCollectionElem[_]] && method.getName == "reduce" =>
-          Some((receiver, m)).asInstanceOf[Option[(Rep[RDDCollection[A]], RepMonoid[A]) forSome {type A}]]
+          Some((receiver, m)).asInstanceOf[Option[(Rep[RDDCollection[A]], RepMonoid[A @uncheckedVariance]) forSome {type A}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[(Rep[RDDCollection[A]], RepMonoid[A]) forSome {type A}] = exp match {
+      def unapply(exp: Exp[_]): Option[(Rep[RDDCollection[A]], RepMonoid[A @uncheckedVariance]) forSome {type A}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
@@ -704,36 +692,36 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
     }
 
     object filterBy {
-      def unapply(d: Def[_]): Option[(Rep[RDDCollection[A]], Rep[A => Boolean]) forSome {type A}] = d match {
+      def unapply(d: Def[_]): Option[(Rep[RDDCollection[A]], Rep[A @uncheckedVariance => Boolean]) forSome {type A}] = d match {
         case MethodCall(receiver, method, Seq(f, _*), _) if receiver.elem.isInstanceOf[RDDCollectionElem[_]] && method.getName == "filterBy" =>
-          Some((receiver, f)).asInstanceOf[Option[(Rep[RDDCollection[A]], Rep[A => Boolean]) forSome {type A}]]
+          Some((receiver, f)).asInstanceOf[Option[(Rep[RDDCollection[A]], Rep[A @uncheckedVariance => Boolean]) forSome {type A}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[(Rep[RDDCollection[A]], Rep[A => Boolean]) forSome {type A}] = exp match {
+      def unapply(exp: Exp[_]): Option[(Rep[RDDCollection[A]], Rep[A @uncheckedVariance => Boolean]) forSome {type A}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
     }
 
     object flatMapBy {
-      def unapply(d: Def[_]): Option[(Rep[RDDCollection[A]], Rep[A => Collection[B]]) forSome {type A; type B}] = d match {
+      def unapply(d: Def[_]): Option[(Rep[RDDCollection[A]], Rep[A @uncheckedVariance => Collection[B]]) forSome {type A; type B}] = d match {
         case MethodCall(receiver, method, Seq(f, _*), _) if receiver.elem.isInstanceOf[RDDCollectionElem[_]] && method.getName == "flatMapBy" =>
-          Some((receiver, f)).asInstanceOf[Option[(Rep[RDDCollection[A]], Rep[A => Collection[B]]) forSome {type A; type B}]]
+          Some((receiver, f)).asInstanceOf[Option[(Rep[RDDCollection[A]], Rep[A @uncheckedVariance => Collection[B]]) forSome {type A; type B}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[(Rep[RDDCollection[A]], Rep[A => Collection[B]]) forSome {type A; type B}] = exp match {
+      def unapply(exp: Exp[_]): Option[(Rep[RDDCollection[A]], Rep[A @uncheckedVariance => Collection[B]]) forSome {type A; type B}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
     }
 
     object append {
-      def unapply(d: Def[_]): Option[(Rep[RDDCollection[A]], Rep[A]) forSome {type A}] = d match {
+      def unapply(d: Def[_]): Option[(Rep[RDDCollection[A]], Rep[A @uncheckedVariance]) forSome {type A}] = d match {
         case MethodCall(receiver, method, Seq(value, _*), _) if receiver.elem.isInstanceOf[RDDCollectionElem[_]] && method.getName == "append" =>
-          Some((receiver, value)).asInstanceOf[Option[(Rep[RDDCollection[A]], Rep[A]) forSome {type A}]]
+          Some((receiver, value)).asInstanceOf[Option[(Rep[RDDCollection[A]], Rep[A @uncheckedVariance]) forSome {type A}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[(Rep[RDDCollection[A]], Rep[A]) forSome {type A}] = exp match {
+      def unapply(exp: Exp[_]): Option[(Rep[RDDCollection[A]], Rep[A @uncheckedVariance]) forSome {type A}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
@@ -864,24 +852,24 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
     }
 
     object mapBy {
-      def unapply(d: Def[_]): Option[(Rep[RDDIndexedCollection[A]], Rep[A => B]) forSome {type A; type B}] = d match {
+      def unapply(d: Def[_]): Option[(Rep[RDDIndexedCollection[A]], Rep[A @uncheckedVariance => B]) forSome {type A; type B}] = d match {
         case MethodCall(receiver, method, Seq(f, _*), _) if receiver.elem.isInstanceOf[RDDIndexedCollectionElem[_]] && method.getName == "mapBy" =>
-          Some((receiver, f)).asInstanceOf[Option[(Rep[RDDIndexedCollection[A]], Rep[A => B]) forSome {type A; type B}]]
+          Some((receiver, f)).asInstanceOf[Option[(Rep[RDDIndexedCollection[A]], Rep[A @uncheckedVariance => B]) forSome {type A; type B}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[(Rep[RDDIndexedCollection[A]], Rep[A => B]) forSome {type A; type B}] = exp match {
+      def unapply(exp: Exp[_]): Option[(Rep[RDDIndexedCollection[A]], Rep[A @uncheckedVariance => B]) forSome {type A; type B}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
     }
 
     object reduce {
-      def unapply(d: Def[_]): Option[(Rep[RDDIndexedCollection[A]], RepMonoid[A]) forSome {type A}] = d match {
+      def unapply(d: Def[_]): Option[(Rep[RDDIndexedCollection[A]], RepMonoid[A @uncheckedVariance]) forSome {type A}] = d match {
         case MethodCall(receiver, method, Seq(m, _*), _) if receiver.elem.isInstanceOf[RDDIndexedCollectionElem[_]] && method.getName == "reduce" =>
-          Some((receiver, m)).asInstanceOf[Option[(Rep[RDDIndexedCollection[A]], RepMonoid[A]) forSome {type A}]]
+          Some((receiver, m)).asInstanceOf[Option[(Rep[RDDIndexedCollection[A]], RepMonoid[A @uncheckedVariance]) forSome {type A}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[(Rep[RDDIndexedCollection[A]], RepMonoid[A]) forSome {type A}] = exp match {
+      def unapply(exp: Exp[_]): Option[(Rep[RDDIndexedCollection[A]], RepMonoid[A @uncheckedVariance]) forSome {type A}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
@@ -924,36 +912,36 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
     }
 
     object filterBy {
-      def unapply(d: Def[_]): Option[(Rep[RDDIndexedCollection[A]], Rep[A => Boolean]) forSome {type A}] = d match {
+      def unapply(d: Def[_]): Option[(Rep[RDDIndexedCollection[A]], Rep[A @uncheckedVariance => Boolean]) forSome {type A}] = d match {
         case MethodCall(receiver, method, Seq(f, _*), _) if receiver.elem.isInstanceOf[RDDIndexedCollectionElem[_]] && method.getName == "filterBy" =>
-          Some((receiver, f)).asInstanceOf[Option[(Rep[RDDIndexedCollection[A]], Rep[A => Boolean]) forSome {type A}]]
+          Some((receiver, f)).asInstanceOf[Option[(Rep[RDDIndexedCollection[A]], Rep[A @uncheckedVariance => Boolean]) forSome {type A}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[(Rep[RDDIndexedCollection[A]], Rep[A => Boolean]) forSome {type A}] = exp match {
+      def unapply(exp: Exp[_]): Option[(Rep[RDDIndexedCollection[A]], Rep[A @uncheckedVariance => Boolean]) forSome {type A}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
     }
 
     object flatMapBy {
-      def unapply(d: Def[_]): Option[(Rep[RDDIndexedCollection[A]], Rep[A => Collection[B]]) forSome {type A; type B}] = d match {
+      def unapply(d: Def[_]): Option[(Rep[RDDIndexedCollection[A]], Rep[A @uncheckedVariance => Collection[B]]) forSome {type A; type B}] = d match {
         case MethodCall(receiver, method, Seq(f, _*), _) if receiver.elem.isInstanceOf[RDDIndexedCollectionElem[_]] && method.getName == "flatMapBy" =>
-          Some((receiver, f)).asInstanceOf[Option[(Rep[RDDIndexedCollection[A]], Rep[A => Collection[B]]) forSome {type A; type B}]]
+          Some((receiver, f)).asInstanceOf[Option[(Rep[RDDIndexedCollection[A]], Rep[A @uncheckedVariance => Collection[B]]) forSome {type A; type B}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[(Rep[RDDIndexedCollection[A]], Rep[A => Collection[B]]) forSome {type A; type B}] = exp match {
+      def unapply(exp: Exp[_]): Option[(Rep[RDDIndexedCollection[A]], Rep[A @uncheckedVariance => Collection[B]]) forSome {type A; type B}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
     }
 
     object append {
-      def unapply(d: Def[_]): Option[(Rep[RDDIndexedCollection[A]], Rep[A]) forSome {type A}] = d match {
+      def unapply(d: Def[_]): Option[(Rep[RDDIndexedCollection[A]], Rep[A @uncheckedVariance]) forSome {type A}] = d match {
         case MethodCall(receiver, method, Seq(value, _*), _) if receiver.elem.isInstanceOf[RDDIndexedCollectionElem[_]] && method.getName == "append" =>
-          Some((receiver, value)).asInstanceOf[Option[(Rep[RDDIndexedCollection[A]], Rep[A]) forSome {type A}]]
+          Some((receiver, value)).asInstanceOf[Option[(Rep[RDDIndexedCollection[A]], Rep[A @uncheckedVariance]) forSome {type A}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[(Rep[RDDIndexedCollection[A]], Rep[A]) forSome {type A}] = exp match {
+      def unapply(exp: Exp[_]): Option[(Rep[RDDIndexedCollection[A]], Rep[A @uncheckedVariance]) forSome {type A}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
@@ -1084,24 +1072,24 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
     }
 
     object mapBy {
-      def unapply(d: Def[_]): Option[(Rep[PairRDDCollection[A, B]], Rep[((A, B)) => C]) forSome {type A; type B; type C}] = d match {
+      def unapply(d: Def[_]): Option[(Rep[PairRDDCollection[A, B]], Rep[(A, B) @uncheckedVariance => C]) forSome {type A; type B; type C}] = d match {
         case MethodCall(receiver, method, Seq(f, _*), _) if receiver.elem.isInstanceOf[PairRDDCollectionElem[_, _]] && method.getName == "mapBy" =>
-          Some((receiver, f)).asInstanceOf[Option[(Rep[PairRDDCollection[A, B]], Rep[((A, B)) => C]) forSome {type A; type B; type C}]]
+          Some((receiver, f)).asInstanceOf[Option[(Rep[PairRDDCollection[A, B]], Rep[(A, B) @uncheckedVariance => C]) forSome {type A; type B; type C}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[(Rep[PairRDDCollection[A, B]], Rep[((A, B)) => C]) forSome {type A; type B; type C}] = exp match {
+      def unapply(exp: Exp[_]): Option[(Rep[PairRDDCollection[A, B]], Rep[(A, B) @uncheckedVariance => C]) forSome {type A; type B; type C}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
     }
 
     object reduce {
-      def unapply(d: Def[_]): Option[(Rep[PairRDDCollection[A, B]], RepMonoid[(A, B)]) forSome {type A; type B}] = d match {
+      def unapply(d: Def[_]): Option[(Rep[PairRDDCollection[A, B]], RepMonoid[(A, B) @uncheckedVariance]) forSome {type A; type B}] = d match {
         case MethodCall(receiver, method, Seq(m, _*), _) if receiver.elem.isInstanceOf[PairRDDCollectionElem[_, _]] && method.getName == "reduce" =>
-          Some((receiver, m)).asInstanceOf[Option[(Rep[PairRDDCollection[A, B]], RepMonoid[(A, B)]) forSome {type A; type B}]]
+          Some((receiver, m)).asInstanceOf[Option[(Rep[PairRDDCollection[A, B]], RepMonoid[(A, B) @uncheckedVariance]) forSome {type A; type B}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[(Rep[PairRDDCollection[A, B]], RepMonoid[(A, B)]) forSome {type A; type B}] = exp match {
+      def unapply(exp: Exp[_]): Option[(Rep[PairRDDCollection[A, B]], RepMonoid[(A, B) @uncheckedVariance]) forSome {type A; type B}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
@@ -1144,36 +1132,36 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
     }
 
     object filterBy {
-      def unapply(d: Def[_]): Option[(Rep[PairRDDCollection[A, B]], Rep[((A, B)) => Boolean]) forSome {type A; type B}] = d match {
+      def unapply(d: Def[_]): Option[(Rep[PairRDDCollection[A, B]], Rep[(A, B) @uncheckedVariance => Boolean]) forSome {type A; type B}] = d match {
         case MethodCall(receiver, method, Seq(f, _*), _) if receiver.elem.isInstanceOf[PairRDDCollectionElem[_, _]] && method.getName == "filterBy" =>
-          Some((receiver, f)).asInstanceOf[Option[(Rep[PairRDDCollection[A, B]], Rep[((A, B)) => Boolean]) forSome {type A; type B}]]
+          Some((receiver, f)).asInstanceOf[Option[(Rep[PairRDDCollection[A, B]], Rep[(A, B) @uncheckedVariance => Boolean]) forSome {type A; type B}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[(Rep[PairRDDCollection[A, B]], Rep[((A, B)) => Boolean]) forSome {type A; type B}] = exp match {
+      def unapply(exp: Exp[_]): Option[(Rep[PairRDDCollection[A, B]], Rep[(A, B) @uncheckedVariance => Boolean]) forSome {type A; type B}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
     }
 
     object flatMapBy {
-      def unapply(d: Def[_]): Option[(Rep[PairRDDCollection[A, B]], Rep[((A, B)) => Collection[C]]) forSome {type A; type B; type C}] = d match {
+      def unapply(d: Def[_]): Option[(Rep[PairRDDCollection[A, B]], Rep[(A, B) @uncheckedVariance => Collection[C]]) forSome {type A; type B; type C}] = d match {
         case MethodCall(receiver, method, Seq(f, _*), _) if receiver.elem.isInstanceOf[PairRDDCollectionElem[_, _]] && method.getName == "flatMapBy" =>
-          Some((receiver, f)).asInstanceOf[Option[(Rep[PairRDDCollection[A, B]], Rep[((A, B)) => Collection[C]]) forSome {type A; type B; type C}]]
+          Some((receiver, f)).asInstanceOf[Option[(Rep[PairRDDCollection[A, B]], Rep[(A, B) @uncheckedVariance => Collection[C]]) forSome {type A; type B; type C}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[(Rep[PairRDDCollection[A, B]], Rep[((A, B)) => Collection[C]]) forSome {type A; type B; type C}] = exp match {
+      def unapply(exp: Exp[_]): Option[(Rep[PairRDDCollection[A, B]], Rep[(A, B) @uncheckedVariance => Collection[C]]) forSome {type A; type B; type C}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
     }
 
     object append {
-      def unapply(d: Def[_]): Option[(Rep[PairRDDCollection[A, B]], Rep[(A, B)]) forSome {type A; type B}] = d match {
+      def unapply(d: Def[_]): Option[(Rep[PairRDDCollection[A, B]], Rep[(A, B) @uncheckedVariance]) forSome {type A; type B}] = d match {
         case MethodCall(receiver, method, Seq(value, _*), _) if receiver.elem.isInstanceOf[PairRDDCollectionElem[_, _]] && method.getName == "append" =>
-          Some((receiver, value)).asInstanceOf[Option[(Rep[PairRDDCollection[A, B]], Rep[(A, B)]) forSome {type A; type B}]]
+          Some((receiver, value)).asInstanceOf[Option[(Rep[PairRDDCollection[A, B]], Rep[(A, B) @uncheckedVariance]) forSome {type A; type B}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[(Rep[PairRDDCollection[A, B]], Rep[(A, B)]) forSome {type A; type B}] = exp match {
+      def unapply(exp: Exp[_]): Option[(Rep[PairRDDCollection[A, B]], Rep[(A, B) @uncheckedVariance]) forSome {type A; type B}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
@@ -1293,8 +1281,8 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
 
     object apply_many {
       def unapply(d: Def[_]): Option[(Rep[PairRDDIndexedCollection[A, B]], Coll[Int]) forSome {type A; type B}] = d match {
-        case MethodCall(receiver, method, Seq(indices, _*), _) if receiver.elem.isInstanceOf[PairRDDIndexedCollectionElem[_, _]] && method.getName == "apply" && { val ann = method.getAnnotation(classOf[scalan.OverloadId]); ann != null && ann.value == "many" } =>
-          Some((receiver, indices)).asInstanceOf[Option[(Rep[PairRDDIndexedCollection[A, B]], Coll[Int]) forSome {type A; type B}]]
+        case MethodCall(receiver, method, Seq(idxs, _*), _) if receiver.elem.isInstanceOf[PairRDDIndexedCollectionElem[_, _]] && method.getName == "apply" && { val ann = method.getAnnotation(classOf[scalan.OverloadId]); ann != null && ann.value == "many" } =>
+          Some((receiver, idxs)).asInstanceOf[Option[(Rep[PairRDDIndexedCollection[A, B]], Coll[Int]) forSome {type A; type B}]]
         case _ => None
       }
       def unapply(exp: Exp[_]): Option[(Rep[PairRDDIndexedCollection[A, B]], Coll[Int]) forSome {type A; type B}] = exp match {
@@ -1304,24 +1292,24 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
     }
 
     object mapBy {
-      def unapply(d: Def[_]): Option[(Rep[PairRDDIndexedCollection[A, B]], Rep[((A, B)) => C]) forSome {type A; type B; type C}] = d match {
+      def unapply(d: Def[_]): Option[(Rep[PairRDDIndexedCollection[A, B]], Rep[(A, B) @uncheckedVariance => C]) forSome {type A; type B; type C}] = d match {
         case MethodCall(receiver, method, Seq(f, _*), _) if receiver.elem.isInstanceOf[PairRDDIndexedCollectionElem[_, _]] && method.getName == "mapBy" =>
-          Some((receiver, f)).asInstanceOf[Option[(Rep[PairRDDIndexedCollection[A, B]], Rep[((A, B)) => C]) forSome {type A; type B; type C}]]
+          Some((receiver, f)).asInstanceOf[Option[(Rep[PairRDDIndexedCollection[A, B]], Rep[(A, B) @uncheckedVariance => C]) forSome {type A; type B; type C}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[(Rep[PairRDDIndexedCollection[A, B]], Rep[((A, B)) => C]) forSome {type A; type B; type C}] = exp match {
+      def unapply(exp: Exp[_]): Option[(Rep[PairRDDIndexedCollection[A, B]], Rep[(A, B) @uncheckedVariance => C]) forSome {type A; type B; type C}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
     }
 
     object reduce {
-      def unapply(d: Def[_]): Option[(Rep[PairRDDIndexedCollection[A, B]], RepMonoid[(A, B)]) forSome {type A; type B}] = d match {
+      def unapply(d: Def[_]): Option[(Rep[PairRDDIndexedCollection[A, B]], RepMonoid[(A, B) @uncheckedVariance]) forSome {type A; type B}] = d match {
         case MethodCall(receiver, method, Seq(m, _*), _) if receiver.elem.isInstanceOf[PairRDDIndexedCollectionElem[_, _]] && method.getName == "reduce" =>
-          Some((receiver, m)).asInstanceOf[Option[(Rep[PairRDDIndexedCollection[A, B]], RepMonoid[(A, B)]) forSome {type A; type B}]]
+          Some((receiver, m)).asInstanceOf[Option[(Rep[PairRDDIndexedCollection[A, B]], RepMonoid[(A, B) @uncheckedVariance]) forSome {type A; type B}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[(Rep[PairRDDIndexedCollection[A, B]], RepMonoid[(A, B)]) forSome {type A; type B}] = exp match {
+      def unapply(exp: Exp[_]): Option[(Rep[PairRDDIndexedCollection[A, B]], RepMonoid[(A, B) @uncheckedVariance]) forSome {type A; type B}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
@@ -1364,36 +1352,36 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
     }
 
     object filterBy {
-      def unapply(d: Def[_]): Option[(Rep[PairRDDIndexedCollection[A, B]], Rep[((A, B)) => Boolean]) forSome {type A; type B}] = d match {
+      def unapply(d: Def[_]): Option[(Rep[PairRDDIndexedCollection[A, B]], Rep[(A, B) @uncheckedVariance => Boolean]) forSome {type A; type B}] = d match {
         case MethodCall(receiver, method, Seq(f, _*), _) if receiver.elem.isInstanceOf[PairRDDIndexedCollectionElem[_, _]] && method.getName == "filterBy" =>
-          Some((receiver, f)).asInstanceOf[Option[(Rep[PairRDDIndexedCollection[A, B]], Rep[((A, B)) => Boolean]) forSome {type A; type B}]]
+          Some((receiver, f)).asInstanceOf[Option[(Rep[PairRDDIndexedCollection[A, B]], Rep[(A, B) @uncheckedVariance => Boolean]) forSome {type A; type B}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[(Rep[PairRDDIndexedCollection[A, B]], Rep[((A, B)) => Boolean]) forSome {type A; type B}] = exp match {
+      def unapply(exp: Exp[_]): Option[(Rep[PairRDDIndexedCollection[A, B]], Rep[(A, B) @uncheckedVariance => Boolean]) forSome {type A; type B}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
     }
 
     object flatMapBy {
-      def unapply(d: Def[_]): Option[(Rep[PairRDDIndexedCollection[A, B]], Rep[((A, B)) => Collection[C]]) forSome {type A; type B; type C}] = d match {
+      def unapply(d: Def[_]): Option[(Rep[PairRDDIndexedCollection[A, B]], Rep[(A, B) @uncheckedVariance => Collection[C]]) forSome {type A; type B; type C}] = d match {
         case MethodCall(receiver, method, Seq(f, _*), _) if receiver.elem.isInstanceOf[PairRDDIndexedCollectionElem[_, _]] && method.getName == "flatMapBy" =>
-          Some((receiver, f)).asInstanceOf[Option[(Rep[PairRDDIndexedCollection[A, B]], Rep[((A, B)) => Collection[C]]) forSome {type A; type B; type C}]]
+          Some((receiver, f)).asInstanceOf[Option[(Rep[PairRDDIndexedCollection[A, B]], Rep[(A, B) @uncheckedVariance => Collection[C]]) forSome {type A; type B; type C}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[(Rep[PairRDDIndexedCollection[A, B]], Rep[((A, B)) => Collection[C]]) forSome {type A; type B; type C}] = exp match {
+      def unapply(exp: Exp[_]): Option[(Rep[PairRDDIndexedCollection[A, B]], Rep[(A, B) @uncheckedVariance => Collection[C]]) forSome {type A; type B; type C}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
     }
 
     object append {
-      def unapply(d: Def[_]): Option[(Rep[PairRDDIndexedCollection[A, B]], Rep[(A, B)]) forSome {type A; type B}] = d match {
+      def unapply(d: Def[_]): Option[(Rep[PairRDDIndexedCollection[A, B]], Rep[(A, B) @uncheckedVariance]) forSome {type A; type B}] = d match {
         case MethodCall(receiver, method, Seq(value, _*), _) if receiver.elem.isInstanceOf[PairRDDIndexedCollectionElem[_, _]] && method.getName == "append" =>
-          Some((receiver, value)).asInstanceOf[Option[(Rep[PairRDDIndexedCollection[A, B]], Rep[(A, B)]) forSome {type A; type B}]]
+          Some((receiver, value)).asInstanceOf[Option[(Rep[PairRDDIndexedCollection[A, B]], Rep[(A, B) @uncheckedVariance]) forSome {type A; type B}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[(Rep[PairRDDIndexedCollection[A, B]], Rep[(A, B)]) forSome {type A; type B}] = exp match {
+      def unapply(exp: Exp[_]): Option[(Rep[PairRDDIndexedCollection[A, B]], Rep[(A, B) @uncheckedVariance]) forSome {type A; type B}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
@@ -1524,24 +1512,24 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
     }
 
     object mapBy {
-      def unapply(d: Def[_]): Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A] => B]) forSome {type A; type B}] = d match {
+      def unapply(d: Def[_]): Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A @uncheckedVariance] => B @uncheckedVariance]) forSome {type A; type B}] = d match {
         case MethodCall(receiver, method, Seq(f, _*), _) if receiver.elem.isInstanceOf[RDDNestedCollectionElem[_]] && method.getName == "mapBy" =>
-          Some((receiver, f)).asInstanceOf[Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A] => B]) forSome {type A; type B}]]
+          Some((receiver, f)).asInstanceOf[Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A @uncheckedVariance] => B @uncheckedVariance]) forSome {type A; type B}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A] => B]) forSome {type A; type B}] = exp match {
+      def unapply(exp: Exp[_]): Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A @uncheckedVariance] => B @uncheckedVariance]) forSome {type A; type B}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
     }
 
     object reduce {
-      def unapply(d: Def[_]): Option[(Rep[RDDNestedCollection[A]], RepMonoid[Collection[A]]) forSome {type A}] = d match {
+      def unapply(d: Def[_]): Option[(Rep[RDDNestedCollection[A]], RepMonoid[Collection[A @uncheckedVariance]]) forSome {type A}] = d match {
         case MethodCall(receiver, method, Seq(m, _*), _) if receiver.elem.isInstanceOf[RDDNestedCollectionElem[_]] && method.getName == "reduce" =>
-          Some((receiver, m)).asInstanceOf[Option[(Rep[RDDNestedCollection[A]], RepMonoid[Collection[A]]) forSome {type A}]]
+          Some((receiver, m)).asInstanceOf[Option[(Rep[RDDNestedCollection[A]], RepMonoid[Collection[A @uncheckedVariance]]) forSome {type A}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[(Rep[RDDNestedCollection[A]], RepMonoid[Collection[A]]) forSome {type A}] = exp match {
+      def unapply(exp: Exp[_]): Option[(Rep[RDDNestedCollection[A]], RepMonoid[Collection[A @uncheckedVariance]]) forSome {type A}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
@@ -1584,36 +1572,36 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
     }
 
     object filterBy {
-      def unapply(d: Def[_]): Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A] => Boolean]) forSome {type A}] = d match {
+      def unapply(d: Def[_]): Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A @uncheckedVariance] => Boolean]) forSome {type A}] = d match {
         case MethodCall(receiver, method, Seq(f, _*), _) if receiver.elem.isInstanceOf[RDDNestedCollectionElem[_]] && method.getName == "filterBy" =>
-          Some((receiver, f)).asInstanceOf[Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A] => Boolean]) forSome {type A}]]
+          Some((receiver, f)).asInstanceOf[Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A @uncheckedVariance] => Boolean]) forSome {type A}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A] => Boolean]) forSome {type A}] = exp match {
+      def unapply(exp: Exp[_]): Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A @uncheckedVariance] => Boolean]) forSome {type A}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
     }
 
     object flatMapBy {
-      def unapply(d: Def[_]): Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A] => Collection[B]]) forSome {type A; type B}] = d match {
+      def unapply(d: Def[_]): Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A @uncheckedVariance] => Collection[B]]) forSome {type A; type B}] = d match {
         case MethodCall(receiver, method, Seq(f, _*), _) if receiver.elem.isInstanceOf[RDDNestedCollectionElem[_]] && method.getName == "flatMapBy" =>
-          Some((receiver, f)).asInstanceOf[Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A] => Collection[B]]) forSome {type A; type B}]]
+          Some((receiver, f)).asInstanceOf[Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A @uncheckedVariance] => Collection[B]]) forSome {type A; type B}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A] => Collection[B]]) forSome {type A; type B}] = exp match {
+      def unapply(exp: Exp[_]): Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A @uncheckedVariance] => Collection[B]]) forSome {type A; type B}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
     }
 
     object append {
-      def unapply(d: Def[_]): Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A]]) forSome {type A}] = d match {
+      def unapply(d: Def[_]): Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A @uncheckedVariance]]) forSome {type A}] = d match {
         case MethodCall(receiver, method, Seq(value, _*), _) if receiver.elem.isInstanceOf[RDDNestedCollectionElem[_]] && method.getName == "append" =>
-          Some((receiver, value)).asInstanceOf[Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A]]) forSome {type A}]]
+          Some((receiver, value)).asInstanceOf[Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A @uncheckedVariance]]) forSome {type A}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A]]) forSome {type A}] = exp match {
+      def unapply(exp: Exp[_]): Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A @uncheckedVariance]]) forSome {type A}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
@@ -1623,7 +1611,7 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
   object RDDNestedCollectionCompanionMethods {
     object createRDDNestedCollection {
       def unapply(d: Def[_]): Option[(Rep[RDDCollection[A]], Rep[PairRDDCollection[Int,Int]]) forSome {type A}] = d match {
-        case MethodCall(receiver, method, Seq(vals, segments, _*), _) if receiver.elem.isInstanceOf[RDDNestedCollectionCompanionElem] && method.getName == "createRDDNestedCollection" =>
+        case MethodCall(receiver, method, Seq(vals, segments, _*), _) if receiver.elem == RDDNestedCollectionCompanionElem && method.getName == "createRDDNestedCollection" =>
           Some((vals, segments)).asInstanceOf[Option[(Rep[RDDCollection[A]], Rep[PairRDDCollection[Int,Int]]) forSome {type A}]]
         case _ => None
       }
