@@ -54,11 +54,12 @@ trait SparkMatrices {  self: SparkLADsl =>
 
       val r = eCols.groupWithExt(zippedFlat)
 
+      val arrEl = element[Array[(Int,T)]] //ScalaArrayElem(element[T])
       val el: LElem[(Int,(SSeq[Int], SSeq[(Int,T)]))] = toLazyElem(PairElem(element[Int], PairElem(element[SSeq[Int]], element[SSeq[(Int,T)]])))
       val result = r.map(fun{in: Rep[(Int, (SSeq[Int], SSeq[(Int,T)]))] =>
         val Pair(_,Pair(_,seq)) = in
         seq.toArray
-      }(el))
+      }(el, arrEl))
 
       /*val r: Rep[SRDD[(Int, (SSeq[SSeq[(Int, T)]], SSeq[SSeq[(Int,T)]]))]] = SPairRDDFunctions(eCols).groupWithExt(transp)
 
@@ -172,11 +173,12 @@ trait SparkMatrices {  self: SparkLADsl =>
 
       val r = eCols.groupWithExt(zippedFlat)
 
+      val arrEl = element[Array[(Int,T)]] //ScalaArrayElem(element[T])
       val el: LElem[(Int,(SSeq[Int], SSeq[(Int,T)]))] = toLazyElem(PairElem(element[Int], PairElem(element[SSeq[Int]], element[SSeq[(Int,T)]])))
       val result = r.map(fun{in: Rep[(Int, (SSeq[Int], SSeq[(Int,T)]))] =>
         val Pair(_,Pair(_,seq)) = in
         seq.toArray
-      }(el))
+      }(el, arrEl))
 
       val resIdxs: Rep[RDDCollection[Array[Int]]] = RDDCollection(result.map(fun{ in: Rep[Array[(Int,T)]] => in.map{ i => i._1}}))
       val resVals: Rep[RDDCollection[Array[T]]] = RDDCollection(result.map(fun{ in: Rep[Array[(Int,T)]] => in.map{ i => i._2}}))
