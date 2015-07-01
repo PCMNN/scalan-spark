@@ -6,7 +6,6 @@ import scalan.common.Default
 import org.apache.spark.SparkConf
 import scala.reflect._
 import scala.reflect.runtime.universe._
-import scalan.common.Default
 
 // Abs -----------------------------------
 trait SparkConfsAbs extends SparkConfs with ScalanCommunityDsl {
@@ -14,7 +13,7 @@ trait SparkConfsAbs extends SparkConfs with ScalanCommunityDsl {
 
   // single proxy for each type family
   implicit def proxySSparkConf(p: Rep[SSparkConf]): SSparkConf = {
-    proxyOps[SSparkConf](p)(classTag[SSparkConf])
+    proxyOps[SSparkConf](p)(scala.reflect.classTag[SSparkConf])
   }
 
   // TypeWrapper proxy
@@ -29,12 +28,17 @@ trait SparkConfsAbs extends SparkConfs with ScalanCommunityDsl {
   abstract class SSparkConfElem[To <: SSparkConf]
     extends WrapperElem[SparkConf, To] {
     override def isEntityType = true
-    override def tag = {
+    override lazy val tag = {
       weakTypeTag[SSparkConf].asInstanceOf[WeakTypeTag[To]]
     }
-    override def convert(x: Rep[Reifiable[_]]) = convertSSparkConf(x.asRep[SSparkConf])
+    override def convert(x: Rep[Reifiable[_]]) = {
+      implicit val eTo: Elem[To] = this
+      val conv = fun {x: Rep[SSparkConf] => convertSSparkConf(x) }
+      tryConvert(element[SSparkConf], this, x, conv)
+    }
+
     def convertSSparkConf(x : Rep[SSparkConf]): Rep[To] = {
-      //assert(x.selfType1.isInstanceOf[SSparkConfElem[_]])
+      assert(x.selfType1 match { case _: SSparkConfElem[_] => true; case _ => false })
       x.asRep[To]
     }
     override def getDefaultRep: Rep[To] = ???
@@ -45,17 +49,13 @@ trait SparkConfsAbs extends SparkConfs with ScalanCommunityDsl {
       lazy val eTo = element[SSparkConfImpl]
     }
 
-  trait SSparkConfCompanionElem extends CompanionElem[SSparkConfCompanionAbs]
-  implicit lazy val SSparkConfCompanionElem: SSparkConfCompanionElem = new SSparkConfCompanionElem {
+  implicit case object SSparkConfCompanionElem extends CompanionElem[SSparkConfCompanionAbs] {
     lazy val tag = weakTypeTag[SSparkConfCompanionAbs]
     protected def getDefaultRep = SSparkConf
   }
 
   abstract class SSparkConfCompanionAbs extends CompanionBase[SSparkConfCompanionAbs] with SSparkConfCompanion {
     override def toString = "SSparkConf"
-
-    def apply: Rep[SSparkConf] =
-      newObjEx(classOf[SSparkConf], List())
   }
   def SSparkConf: Rep[SSparkConfCompanionAbs]
   implicit def proxySSparkConfCompanion(p: Rep[SSparkConfCompanion]): SSparkConfCompanion = {
@@ -87,7 +87,9 @@ trait SparkConfsAbs extends SparkConfs with ScalanCommunityDsl {
     lazy val eTo = this
     override def convertSSparkConf(x: Rep[SSparkConf]) = SSparkConfImpl(x.wrappedValueOfBaseType)
     override def getDefaultRep = super[ConcreteElem].getDefaultRep
-    override lazy val tag = super[ConcreteElem].tag
+    override lazy val tag = {
+      weakTypeTag[SSparkConfImpl]
+    }
   }
 
   // state representation type
@@ -102,10 +104,7 @@ trait SparkConfsAbs extends SparkConfs with ScalanCommunityDsl {
       val wrappedValueOfBaseType = p
       SSparkConfImpl(wrappedValueOfBaseType)
     }
-    lazy val tag = {
-      weakTypeTag[SSparkConfImpl]
-    }
-    lazy val defaultRepTo = Default.defaultVal[Rep[SSparkConfImpl]](SSparkConfImpl(DefaultOfSparkConf.value))
+    lazy val defaultRepTo: Rep[SSparkConfImpl] = SSparkConfImpl(DefaultOfSparkConf.value)
     lazy val eTo = new SSparkConfImplElem(this)
   }
   // 4) constructor and deconstructor
@@ -123,11 +122,10 @@ trait SparkConfsAbs extends SparkConfs with ScalanCommunityDsl {
     proxyOps[SSparkConfImplCompanionAbs](p)
   }
 
-  class SSparkConfImplCompanionElem extends CompanionElem[SSparkConfImplCompanionAbs] {
+  implicit case object SSparkConfImplCompanionElem extends CompanionElem[SSparkConfImplCompanionAbs] {
     lazy val tag = weakTypeTag[SSparkConfImplCompanionAbs]
     protected def getDefaultRep = SSparkConfImpl
   }
-  implicit lazy val SSparkConfImplCompanionElem: SSparkConfImplCompanionElem = new SSparkConfImplCompanionElem
 
   implicit def proxySSparkConfImpl(p: Rep[SSparkConfImpl]): SSparkConfImpl =
     proxyOps[SSparkConfImpl](p)
@@ -198,6 +196,9 @@ trait SparkConfsExp extends SparkConfsDsl with ScalanCommunityDslExp {
   lazy val SSparkConf: Rep[SSparkConfCompanionAbs] = new SSparkConfCompanionAbs with UserTypeDef[SSparkConfCompanionAbs] {
     lazy val selfType = element[SSparkConfCompanionAbs]
     override def mirror(t: Transformer) = this
+
+    def apply: Rep[SSparkConf] =
+      newObjEx(classOf[SSparkConf], List())
   }
 
   implicit lazy val sparkConfElement: Elem[SparkConf] = new ExpBaseElemEx[SparkConf, SSparkConf](element[SSparkConf])(weakTypeTag[SparkConf], DefaultOfSparkConf)
@@ -281,7 +282,7 @@ trait SparkConfsExp extends SparkConfsDsl with ScalanCommunityDslExp {
   object SSparkConfCompanionMethods {
     object apply {
       def unapply(d: Def[_]): Option[Unit] = d match {
-        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SSparkConfCompanionElem] && method.getName == "apply" =>
+        case MethodCall(receiver, method, _, _) if receiver.elem == SSparkConfCompanionElem && method.getName == "apply" =>
           Some(()).asInstanceOf[Option[Unit]]
         case _ => None
       }

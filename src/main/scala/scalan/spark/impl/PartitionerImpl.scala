@@ -6,7 +6,6 @@ import scalan.common.Default
 import org.apache.spark.{HashPartitioner, Partitioner}
 import scala.reflect._
 import scala.reflect.runtime.universe._
-import scalan.common.Default
 
 // Abs -----------------------------------
 trait PartitionersAbs extends Partitioners with ScalanCommunityDsl {
@@ -14,7 +13,7 @@ trait PartitionersAbs extends Partitioners with ScalanCommunityDsl {
 
   // single proxy for each type family
   implicit def proxySPartitioner(p: Rep[SPartitioner]): SPartitioner = {
-    proxyOps[SPartitioner](p)(classTag[SPartitioner])
+    proxyOps[SPartitioner](p)(scala.reflect.classTag[SPartitioner])
   }
 
   // TypeWrapper proxy
@@ -29,16 +28,17 @@ trait PartitionersAbs extends Partitioners with ScalanCommunityDsl {
   abstract class SPartitionerElem[To <: SPartitioner]
     extends WrapperElem[Partitioner, To] {
     override def isEntityType = true
-    override def tag = {
+    override lazy val tag = {
       weakTypeTag[SPartitioner].asInstanceOf[WeakTypeTag[To]]
     }
     override def convert(x: Rep[Reifiable[_]]) = {
-      val conv = fun {x: Rep[SPartitioner] =>  convertSPartitioner(x) }
+      implicit val eTo: Elem[To] = this
+      val conv = fun {x: Rep[SPartitioner] => convertSPartitioner(x) }
       tryConvert(element[SPartitioner], this, x, conv)
     }
 
     def convertSPartitioner(x : Rep[SPartitioner]): Rep[To] = {
-      assert(x.selfType1 match { case _: SPartitionerElem[_] => true case _ => false })
+      assert(x.selfType1 match { case _: SPartitionerElem[_] => true; case _ => false })
       x.asRep[To]
     }
     override def getDefaultRep: Rep[To] = ???
@@ -49,19 +49,13 @@ trait PartitionersAbs extends Partitioners with ScalanCommunityDsl {
       lazy val eTo = element[SPartitionerImpl]
     }
 
-  trait SPartitionerCompanionElem extends CompanionElem[SPartitionerCompanionAbs]
-  implicit lazy val SPartitionerCompanionElem: SPartitionerCompanionElem = new SPartitionerCompanionElem {
+  implicit case object SPartitionerCompanionElem extends CompanionElem[SPartitionerCompanionAbs] {
     lazy val tag = weakTypeTag[SPartitionerCompanionAbs]
     protected def getDefaultRep = SPartitioner
   }
 
   abstract class SPartitionerCompanionAbs extends CompanionBase[SPartitionerCompanionAbs] with SPartitionerCompanion {
     override def toString = "SPartitioner"
-
-    def defaultPartitioner(numPartitions: Rep[Int]): Rep[SPartitioner] =
-      methodCallEx[SPartitioner](self,
-        this.getClass.getMethod("defaultPartitioner", classOf[AnyRef]),
-        List(numPartitions.asInstanceOf[AnyRef]))
   }
   def SPartitioner: Rep[SPartitionerCompanionAbs]
   implicit def proxySPartitionerCompanion(p: Rep[SPartitionerCompanion]): SPartitionerCompanion = {
@@ -79,7 +73,9 @@ trait PartitionersAbs extends Partitioners with ScalanCommunityDsl {
     lazy val eTo = this
     override def convertSPartitioner(x: Rep[SPartitioner]) = SPartitionerImpl(x.wrappedValueOfBaseType)
     override def getDefaultRep = super[ConcreteElem].getDefaultRep
-    override lazy val tag = super[ConcreteElem].tag
+    override lazy val tag = {
+      weakTypeTag[SPartitionerImpl]
+    }
   }
 
   // state representation type
@@ -87,17 +83,14 @@ trait PartitionersAbs extends Partitioners with ScalanCommunityDsl {
 
   // 3) Iso for concrete class
   class SPartitionerImplIso
-    extends Iso[SPartitionerImplData, SPartitionerImpl]()((implicitly[Elem[Partitioner]])) {
+    extends Iso[SPartitionerImplData, SPartitionerImpl] {
     override def from(p: Rep[SPartitionerImpl]) =
       p.wrappedValueOfBaseType
     override def to(p: Rep[Partitioner]) = {
       val wrappedValueOfBaseType = p
       SPartitionerImpl(wrappedValueOfBaseType)
     }
-    lazy val tag = {
-      weakTypeTag[SPartitionerImpl]
-    }
-    lazy val defaultRepTo = Default.defaultVal[Rep[SPartitionerImpl]](SPartitionerImpl(DefaultOfPartitioner.value))
+    lazy val defaultRepTo: Rep[SPartitionerImpl] = SPartitionerImpl(DefaultOfPartitioner.value)
     lazy val eTo = new SPartitionerImplElem(this)
   }
   // 4) constructor and deconstructor
@@ -115,11 +108,10 @@ trait PartitionersAbs extends Partitioners with ScalanCommunityDsl {
     proxyOps[SPartitionerImplCompanionAbs](p)
   }
 
-  class SPartitionerImplCompanionElem extends CompanionElem[SPartitionerImplCompanionAbs] {
+  implicit case object SPartitionerImplCompanionElem extends CompanionElem[SPartitionerImplCompanionAbs] {
     lazy val tag = weakTypeTag[SPartitionerImplCompanionAbs]
     protected def getDefaultRep = SPartitionerImpl
   }
-  implicit lazy val SPartitionerImplCompanionElem: SPartitionerImplCompanionElem = new SPartitionerImplCompanionElem
 
   implicit def proxySPartitionerImpl(p: Rep[SPartitionerImpl]): SPartitionerImpl =
     proxyOps[SPartitionerImpl](p)
@@ -143,7 +135,7 @@ trait PartitionersSeq extends PartitionersDsl with ScalanCommunityDslSeq {
   lazy val SPartitioner: Rep[SPartitionerCompanionAbs] = new SPartitionerCompanionAbs with UserTypeSeq[SPartitionerCompanionAbs] {
     lazy val selfType = element[SPartitionerCompanionAbs]
     override def defaultPartitioner(numPartitions: Rep[Int]): Rep[SPartitioner] =
-      ??? //SPartitionerImpl(Partitioner.defaultPartitioner(numPartitions))
+      SPartitionerImpl(Partitioner.defaultPartitioner(numPartitions))
   }
 
     // override proxy if we deal with TypeWrapper
@@ -181,6 +173,11 @@ trait PartitionersExp extends PartitionersDsl with ScalanCommunityDslExp {
   lazy val SPartitioner: Rep[SPartitionerCompanionAbs] = new SPartitionerCompanionAbs with UserTypeDef[SPartitionerCompanionAbs] {
     lazy val selfType = element[SPartitionerCompanionAbs]
     override def mirror(t: Transformer) = this
+
+    def defaultPartitioner(numPartitions: Rep[Int]): Rep[SPartitioner] =
+      methodCallEx[SPartitioner](self,
+        this.getClass.getMethod("defaultPartitioner", classOf[AnyRef]),
+        List(numPartitions.asInstanceOf[AnyRef]))
   }
 
   implicit lazy val partitionerElement: Elem[Partitioner] = new ExpBaseElemEx[Partitioner, SPartitioner](element[SPartitioner])(weakTypeTag[Partitioner], DefaultOfPartitioner)
@@ -228,7 +225,7 @@ trait PartitionersExp extends PartitionersDsl with ScalanCommunityDslExp {
   object SPartitionerCompanionMethods {
     object defaultPartitioner {
       def unapply(d: Def[_]): Option[Rep[Int]] = d match {
-        case MethodCall(receiver, method, Seq(numPartitions, _*), _) if receiver.elem.isInstanceOf[SPartitionerCompanionElem] && method.getName == "defaultPartitioner" =>
+        case MethodCall(receiver, method, Seq(numPartitions, _*), _) if receiver.elem == SPartitionerCompanionElem && method.getName == "defaultPartitioner" =>
           Some(numPartitions).asInstanceOf[Option[Rep[Int]]]
         case _ => None
       }

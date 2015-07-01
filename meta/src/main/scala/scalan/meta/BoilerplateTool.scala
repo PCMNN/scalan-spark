@@ -16,9 +16,28 @@ object SparkBoilerplateTool extends BoilerplateTool {
     name = "ScalanSpark",
     srcPath = "src/main/scala/scalan/spark",
     entityFiles = List(
-      /*"SparkConf.scala",
+      "SparkConf.scala",
       "SparkContext.scala",
-      "RDD.scala",*/
+      "Partitioner.scala",
+      "Broadcast.scala"
+    ),
+    baseContextTrait = "ScalanCommunityDsl",
+    seqContextTrait = "ScalanCommunityDslSeq",
+    stagedContextTrait = "ScalanCommunityDslExp",
+    extraImports = List(
+      "scala.reflect._",
+      "scala.reflect.runtime.universe._",
+      "scalan.common.Default"),
+    entityTypeSynonyms = sparkTypeSynonims
+  )
+
+  lazy val sparkRDDConfig = CodegenConfig(
+    name = "ScalanSpark",
+    srcPath = "src/main/scala/scalan/spark",
+    entityFiles = List(
+      /*"SparkConf.scala",
+      "SparkContext.scala",*/
+      "RDD.scala",
       "PairRDDFunctions.scala" /*,
       "Partitioner.scala",
       "Broadcast.scala"          */
@@ -71,9 +90,10 @@ object SparkBoilerplateTool extends BoilerplateTool {
 
   override val configsMap = /*super.configsMap ++ */ Map(
     "spark" -> List(sparkConfig),
+    "sparkRDD" -> List(sparkRDDConfig),
     "sparkLA" -> List(sparkLAConfig),
     "rddColl" -> List(rddCollConfig),
-    "all" -> List(sparkConfig, rddCollConfig, sparkLAConfig)
+    "all" -> List(sparkConfig, sparkRDDConfig, rddCollConfig, sparkLAConfig)
   )
 
 

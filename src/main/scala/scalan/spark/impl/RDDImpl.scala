@@ -6,7 +6,6 @@ import org.apache.spark.rdd.RDD
 import scalan.common.Default
 import scala.reflect._
 import scala.reflect.runtime.universe._
-import scalan.common.Default
 
 // Abs -----------------------------------
 trait RDDsAbs extends RDDs with ScalanCommunityDsl {
@@ -14,7 +13,7 @@ trait RDDsAbs extends RDDs with ScalanCommunityDsl {
 
   // single proxy for each type family
   implicit def proxySRDD[A](p: Rep[SRDD[A]]): SRDD[A] = {
-    proxyOps[SRDD[A]](p)(classTag[SRDD[A]])
+    proxyOps[SRDD[A]](p)(scala.reflect.classTag[SRDD[A]])
   }
 
   // TypeWrapper proxy
@@ -41,24 +40,25 @@ trait RDDsAbs extends RDDs with ScalanCommunityDsl {
     implicit val eB = iso.eTo
     def from(x: Rep[SRDD[B]]) = x.map(iso.from _)
     def to(x: Rep[SRDD[A]]) = x.map(iso.to _)
-    lazy val defaultRepTo = Default.defaultVal(SRDD.empty[B])
+    lazy val defaultRepTo = SRDD.empty[B]
   }
 
   // familyElem
   abstract class SRDDElem[A, To <: SRDD[A]](implicit val eA: Elem[A])
     extends WrapperElem1[A, To, RDD, SRDD]()(eA, container[RDD], container[SRDD]) {
     override def isEntityType = true
-    override def tag = {
+    override lazy val tag = {
       implicit val tagA = eA.tag
       weakTypeTag[SRDD[A]].asInstanceOf[WeakTypeTag[To]]
     }
     override def convert(x: Rep[Reifiable[_]]) = {
-      val conv = fun {x: Rep[SRDD[A]] =>  convertSRDD(x) }
+      implicit val eTo: Elem[To] = this
+      val conv = fun {x: Rep[SRDD[A]] => convertSRDD(x) }
       tryConvert(element[SRDD[A]], this, x, conv)
     }
 
     def convertSRDD(x : Rep[SRDD[A]]): Rep[To] = {
-      assert(x.selfType1 match { case _: SRDDElem[_,_] => true case _ => false })
+      assert(x.selfType1 match { case _: SRDDElem[_, _] => true; case _ => false })
       x.asRep[To]
     }
     override def getDefaultRep: Rep[To] = ???
@@ -69,8 +69,7 @@ trait RDDsAbs extends RDDs with ScalanCommunityDsl {
       lazy val eTo = element[SRDDImpl[A]]
     }
 
-  trait SRDDCompanionElem extends CompanionElem[SRDDCompanionAbs]
-  implicit lazy val SRDDCompanionElem: SRDDCompanionElem = new SRDDCompanionElem {
+  implicit case object SRDDCompanionElem extends CompanionElem[SRDDCompanionAbs] {
     lazy val tag = weakTypeTag[SRDDCompanionAbs]
     protected def getDefaultRep = SRDD
   }
@@ -173,7 +172,10 @@ trait RDDsAbs extends RDDs with ScalanCommunityDsl {
     lazy val eTo = this
     override def convertSRDD(x: Rep[SRDD[A]]) = SRDDImpl(x.wrappedValueOfBaseType)
     override def getDefaultRep = super[ConcreteElem1].getDefaultRep
-    override lazy val tag = super[ConcreteElem1].tag
+    override lazy val tag = {
+      implicit val tagA = eA.tag
+      weakTypeTag[SRDDImpl[A]]
+    }
   }
 
   // state representation type
@@ -181,18 +183,14 @@ trait RDDsAbs extends RDDs with ScalanCommunityDsl {
 
   // 3) Iso for concrete class
   class SRDDImplIso[A](implicit eA: Elem[A])
-    extends Iso[SRDDImplData[A], SRDDImpl[A]]()((implicitly[Elem[RDD[A]]])) {
+    extends Iso[SRDDImplData[A], SRDDImpl[A]] {
     override def from(p: Rep[SRDDImpl[A]]) =
       p.wrappedValueOfBaseType
     override def to(p: Rep[RDD[A]]) = {
       val wrappedValueOfBaseType = p
       SRDDImpl(wrappedValueOfBaseType)
     }
-    lazy val tag = {
-      implicit val tagA = eA.tag
-      weakTypeTag[SRDDImpl[A]]
-    }
-    lazy val defaultRepTo = Default.defaultVal[Rep[SRDDImpl[A]]](SRDDImpl(DefaultOfRDD[A].value))
+    lazy val defaultRepTo: Rep[SRDDImpl[A]] = SRDDImpl(DefaultOfRDD[A].value)
     lazy val eTo = new SRDDImplElem[A](this)
   }
   // 4) constructor and deconstructor
@@ -210,11 +208,10 @@ trait RDDsAbs extends RDDs with ScalanCommunityDsl {
     proxyOps[SRDDImplCompanionAbs](p)
   }
 
-  class SRDDImplCompanionElem extends CompanionElem[SRDDImplCompanionAbs] {
+  implicit case object SRDDImplCompanionElem extends CompanionElem[SRDDImplCompanionAbs] {
     lazy val tag = weakTypeTag[SRDDImplCompanionAbs]
     protected def getDefaultRep = SRDDImpl
   }
-  implicit lazy val SRDDImplCompanionElem: SRDDImplCompanionElem = new SRDDImplCompanionElem
 
   implicit def proxySRDDImpl[A](p: Rep[SRDDImpl[A]]): SRDDImpl[A] =
     proxyOps[SRDDImpl[A]](p)
@@ -260,7 +257,7 @@ trait RDDsSeq extends RDDsDsl with ScalanCommunityDslSeq {
       SRDDImpl(wrappedValueOfBaseType.filter(f))
 
     override def flatMap[B:Elem](f: Rep[A => SSeq[B]]): Rep[SRDD[B]] =
-      SRDDImpl(wrappedValueOfBaseType.flatMap[B](in => f(in).wrappedValueOfBaseType))
+      SRDDImpl(wrappedValueOfBaseType.flatMap[B](f))
 
     override def union(other: Rep[SRDD[A]]): Rep[SRDD[A]] =
       SRDDImpl(wrappedValueOfBaseType.union(other))
@@ -278,7 +275,7 @@ trait RDDsSeq extends RDDsDsl with ScalanCommunityDslSeq {
       SRDDImpl(wrappedValueOfBaseType.zip[B](other))
 
     override def zipSafe[B:Elem](other: Rep[SRDD[B]]): Rep[SRDD[(A, B)]] =
-      ??? //SRDDImpl(wrappedValueOfBaseType.zipSafe[B](other))
+      SRDDImpl(wrappedValueOfBaseType.zipSafe[B](other))
 
     override def zipWithIndex: Rep[SRDD[(A, Long)]] =
       SRDDImpl(wrappedValueOfBaseType.zipWithIndex)
@@ -586,7 +583,7 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
   object SRDDCompanionMethods {
     object apply {
       def unapply(d: Def[_]): Option[Rep[Array[A]] forSome {type A}] = d match {
-        case MethodCall(receiver, method, Seq(arr, _*), _) if receiver.elem.isInstanceOf[SRDDCompanionElem] && method.getName == "apply" =>
+        case MethodCall(receiver, method, Seq(arr, _*), _) if receiver.elem == SRDDCompanionElem && method.getName == "apply" =>
           Some(arr).asInstanceOf[Option[Rep[Array[A]] forSome {type A}]]
         case _ => None
       }
@@ -598,7 +595,7 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
 
     object fromArray {
       def unapply(d: Def[_]): Option[Rep[Array[A]] forSome {type A}] = d match {
-        case MethodCall(receiver, method, Seq(arr, _*), _) if receiver.elem.isInstanceOf[SRDDCompanionElem] && method.getName == "fromArray" =>
+        case MethodCall(receiver, method, Seq(arr, _*), _) if receiver.elem == SRDDCompanionElem && method.getName == "fromArray" =>
           Some(arr).asInstanceOf[Option[Rep[Array[A]] forSome {type A}]]
         case _ => None
       }
@@ -610,7 +607,7 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
 
     object empty {
       def unapply(d: Def[_]): Option[Unit forSome {type A}] = d match {
-        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SRDDCompanionElem] && method.getName == "empty" =>
+        case MethodCall(receiver, method, _, _) if receiver.elem == SRDDCompanionElem && method.getName == "empty" =>
           Some(()).asInstanceOf[Option[Unit forSome {type A}]]
         case _ => None
       }
@@ -622,7 +619,7 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
 
     object fromArraySC {
       def unapply(d: Def[_]): Option[(Rep[SSparkContext], Rep[Array[A]]) forSome {type A}] = d match {
-        case MethodCall(receiver, method, Seq(sc, arr, _*), _) if receiver.elem.isInstanceOf[SRDDCompanionElem] && method.getName == "fromArraySC" =>
+        case MethodCall(receiver, method, Seq(sc, arr, _*), _) if receiver.elem == SRDDCompanionElem && method.getName == "fromArraySC" =>
           Some((sc, arr)).asInstanceOf[Option[(Rep[SSparkContext], Rep[Array[A]]) forSome {type A}]]
         case _ => None
       }
@@ -634,7 +631,7 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
 
     object emptySC {
       def unapply(d: Def[_]): Option[Rep[SSparkContext] forSome {type A}] = d match {
-        case MethodCall(receiver, method, Seq(sc, _*), _) if receiver.elem.isInstanceOf[SRDDCompanionElem] && method.getName == "emptySC" =>
+        case MethodCall(receiver, method, Seq(sc, _*), _) if receiver.elem == SRDDCompanionElem && method.getName == "emptySC" =>
           Some(sc).asInstanceOf[Option[Rep[SSparkContext] forSome {type A}]]
         case _ => None
       }
@@ -660,41 +657,32 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
   override def unapplyViews[T](s: Exp[T]): Option[Unpacked[T]] = (s match {
     case Def(view: ViewSRDD[_, _]) =>
       Some((view.source, view.iso))
-    /*case UserTypeSRDD(iso: Iso[a, b]) =>
+    case UserTypeSRDD(iso: Iso[a, b]) =>
       val newIso = SRDDIso(iso)
       val repr = reifyObject(UnpackView(s.asRep[SRDD[b]])(newIso))
-      Some((repr, newIso)) */ // Need uncomment??? A.Filippov
+      Some((repr, newIso))
     case _ =>
       super.unapplyViews(s)
   }).asInstanceOf[Option[Unpacked[T]]]
 
-  type SRDDFlatMapArgs[A,B] = (Rep[SRDD[A]], Rep[A => SSeq[B]])
-
   override def rewriteDef[T](d: Def[T]) = d match {
-    case SRDDMethods.map(xs, Def(l: Lambda[_, _])) if l.isIdentity => xs
-    case SRDDMethods.context(HasViews(source, contIso: SRDDIso[a,b])) =>
-      source.asRep[SRDD[a]].context
+    case SRDDMethods.map(xs, Def(IdentityLambda())) => xs
 
-    case SRDDMethods.zip(Def(v1:ViewSRDD[a,_]), rdd2: RepRDD[b] @unchecked) =>
-      implicit val eA = v1.source.elem.eItem
-      implicit val eB = rdd2.elem.eItem
-      val iso2 = identityIso(eB)
-      val pIso = SRDDIso(pairIso(v1.innerIso, iso2))
-      val zipped = v1.source zip rdd2
-      ViewSRDD(zipped)(pIso)
-    case SRDDMethods.zip(rdd1: RepRDD[b] @unchecked, Def(v2:ViewSRDD[a,_])) =>
-      implicit val eB = v2.source.elem.eItem
-      implicit val eA = rdd1.elem.eItem
-      val iso1 = identityIso(eA)
-      val pIso = SRDDIso(pairIso(iso1, v2.innerIso))
-      val zipped = rdd1 zip v2.source
-      ViewSRDD(zipped)(pIso)
-    case SRDDMethods.zipWithIndex(Def(v1:ViewSRDD[a,_])) =>
-      implicit val eA = v1.source.elem.eItem
-      val iso2 = identityIso(element[Long])
-      val pIso = SRDDIso(pairIso(v1.innerIso, iso2))
-      val zipped = v1.source.zipWithIndex
-      ViewSRDD(zipped)(pIso)
+    case view1@ViewSRDD(Def(view2@ViewSRDD(arr))) =>
+      val compIso = composeIso(view1.innerIso, view2.innerIso)
+      implicit val eAB = compIso.eTo
+      ViewSRDD(arr)(SRDDIso(compIso))
+
+    // Rule: W(a).m(args) ==> iso.to(a.m(unwrap(args)))
+    case mc @ MethodCall(Def(wrapper: ExpSRDDImpl[_]), m, args, neverInvoke) if !isValueAccessor(m) =>
+      val resultElem = mc.selfType
+      val wrapperIso = getIsoByElem(resultElem)
+      wrapperIso match {
+        case iso: Iso[base,ext] =>
+          val eRes = iso.eFrom
+          val newCall = unwrapMethodCall(mc, wrapper.wrappedValueOfBaseType, eRes)
+          iso.to(newCall)
+      }
 
     case SRDDMethods.map(xs, f) => (xs, f) match {
       case (xs: RepRDD[a] @unchecked, LambdaResultHasViews(f, iso: Iso[b, c])) =>
@@ -717,85 +705,6 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
       case _ =>
         super.rewriteDef(d)
     }
-
-    case SRDDMethods.flatMap(t: SRDDFlatMapArgs[_,c] @unchecked) => t match {
-      case (xs: RepRDD[a]@unchecked, f @ Def(Lambda(_, _, _, UnpackableExp(_, iso: SSeqIso[b, c])) ) ) => {
-        val f1 = f.asRep[a => SSeq[c]]
-        val baseIso = iso.iso
-        implicit val eA = xs.elem.eItem
-        implicit val eB = baseIso.eFrom
-        implicit val eC = iso.eFrom
-
-        val s = xs.flatMap( fun { x =>
-          val tmp = f1(x)
-          iso.from(tmp)
-        })
-        ViewSRDD(s)(SRDDIso(baseIso))
-      }
-      case (Def(view: ViewSRDD[a, b]), _) => {
-        val iso = view.innerIso
-        val ff = t._2.asRep[b => SSeq[c]]
-        implicit val eA = iso.eFrom
-        implicit val eB = iso.eTo
-        val eR = ff.elem.eRange
-        implicit val eC =  (eR match {
-          case bEl: BaseElemEx1[_,_,SSeq @unchecked] => bEl.eItem
-          case sEl: SSeqElem[_,_] => sEl.eA
-          case _ => !!!
-        }).asInstanceOf[Element[c]]
-        view.source.flatMap(fun { x => ff(iso.to(x))})
-      }
-      case _ =>
-        super.rewriteDef(d)
-    }
-
-    case SRDDMethods.collect(Def(view: ViewSRDD[_,_])) => {
-      val iso = view.innerIso
-      ViewArray(view.source.collect)(ArrayIso(iso))
-    }
-
-    case SRDDMethods.cache(HasViews(source, rddIso: SRDDIso[a, b])) => {
-      ViewSRDD(source.asRep[SRDD[a]].cache)(rddIso)
-    }
-
-    // TODO: Move to ScalantLite
-    case SSeqCompanionMethods.apply(HasViews(source, arrIso: ArrayIso[a,b])) => {
-      val iso = arrIso.iso
-      implicit val eA = iso.eFrom
-      ViewSSeq(SSeq(source.asRep[Array[a]]))(SSeqIso(iso))
-    }
-    case v1@PairView(Def(v2@PairView(source))) => {
-      val i1 = v1.iso.asInstanceOf[PairIso[Any,Any,Any,Any]]
-      val i2 = v2.iso.asInstanceOf[PairIso[Any,Any,Any,Any]]
-      val pIso1 = composeIso(i1.iso1,i2.iso1)
-      val pIso2 = composeIso(i1.iso2, i2.iso2)
-      PairView(source)(pIso1, pIso2)
-    }
-    case IfThenElse(cond, HasViews(source1, iso1: Iso[a,b]), HasViews(source2, iso2)) if ((iso1.eTo == iso2.eTo) && (iso1.eFrom == iso2.eFrom)) =>
-    {
-      val unviewed = IF(cond) THEN (source1) ELSE (source2)
-      iso1.to(unviewed.asRep[a])
-    }
-    /*case Tup(Def(Tup(Def(IfThenElse(c1, t1, e1)), sec1)), Def(Tup(Def(IfThenElse(c2, t2, e2)), sec2))) if c1 == c2 => {
-      val ifFused = IF (c1) THEN { Pair(t1, t2) } ELSE { Pair(e1, e2) }
-      Pair(Pair(ifFused._1, sec1), Pair(ifFused._2,sec2))
-    } */
-
-    case view1@ViewSRDD(Def(view2@ViewSRDD(arr))) =>
-      //val compIso = composeIso(view1.innerIso, view2.innerIso)
-      val iso1 = view1.innerIso
-      val iso2 = view2.innerIso
-
-      val compIso = if (iso1.isInstanceOf[PairIso[_,_,_,_]] && iso2.isInstanceOf[PairIso[_,_,_,_]]) {
-        val i1 = iso1.asInstanceOf[PairIso[Any,Any,Any,Any]]
-        val i2 = iso2.asInstanceOf[PairIso[Any,Any, Any, Any]]
-        PairIso(composeIso(i1.iso1, i2.iso1), composeIso(i1.iso2, i2.iso2)).asInstanceOf[Iso[Any,Any]]
-      }
-      else composeIso(iso1, iso2)
-
-      implicit val eAB = compIso.eTo
-      ViewSRDD(arr)(SRDDIso(compIso))
-
 
     case _ => super.rewriteDef(d)
   }
