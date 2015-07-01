@@ -101,7 +101,7 @@ trait RDDCollections { self: SparkDsl with RDDCollectionsDsl =>
   trait RDDIndexedCollectionCompanion extends ConcreteClass1[RDDIndexedCollection] with IRDDCollectionCompanion {
   }
 
-  trait IRDDPairCollection[A,B] extends IPairCollection[A,B] {
+  trait IRDDPairCollection[A,B] extends PairCollection[A,B] {
     implicit def eA: Elem[A]
     implicit def eB: Elem[B]
     def pairRDD: RepRDD[(A,B)]
@@ -115,9 +115,9 @@ trait RDDCollections { self: SparkDsl with RDDCollectionsDsl =>
     def arr = pairRDD.collect
     def lst = arr.toList
     def apply(i: Rep[Int]) = {
-      val ppElem = PairElem(element[Long], elem)
-      val lElem = toLazyElem(PairElem(elem, element[Long]))
-      val indexKey: RepRDD[(Long, (A,B))] = pairRDD.zipWithIndex.map(fun({p: Rep[((A,B),Long)] => Pair(p._2, p._1)})(lElem))(ppElem)
+      implicit val ppElem = PairElem(element[Long], elem)
+      implicit val lElem = toLazyElem(PairElem(elem, element[Long]))
+      val indexKey: RepRDD[(Long, (A,B))] = pairRDD.zipWithIndex.map(fun({p: Rep[((A,B),Long)] => Pair(p._2, p._1)}))
       rddToPairRddFunctions(indexKey).lookup(i.toLong)(0)
     }
     def length = pairRDD.count.toInt
@@ -135,17 +135,17 @@ trait RDDCollections { self: SparkDsl with RDDCollectionsDsl =>
 
       val irdd: RepPairRDDFunctions[Long, Int] = SRDD.fromArraySC(pairRDD.context, indices.arr).map(fun {(i: Rep[Int]) => Pair(i.toLong, 0)})
 
-      val vrdd: RepRDD[(Long, (A,B))] = pairRDD.zipWithIndex.map(fun({p: Rep[((A,B),Long)] => Pair(p._2, p._1)})(lElem))(ppElem)
+      val vrdd: RepRDD[(Long, (A,B))] = pairRDD.zipWithIndex.map(fun({p: Rep[((A,B),Long)] => Pair(p._2, p._1)})(lElem, ppElem))(ppElem)
 
       val joinedRdd: RepRDD[(Long, (Int, (A,B)))] = SPairRDDFunctionsImpl(irdd).join(vrdd)
 
       val lElem1 = toLazyElem(PairElem(element[Long], PairElem(element[Int], elem)))
-      PairRDDCollection( joinedRdd.map(fun {(in: Rep[(Long, (Int, (A,B)))]) => Pair(in._3, in._4)} (lElem1)) )
+      PairRDDCollection( joinedRdd.map(fun {(in: Rep[(Long, (Int, (A,B)))]) => Pair(in._3, in._4)} (lElem1, elem)) )
     }
     def mapBy[C: Elem](f: Rep[(A,B) @uncheckedVariance => C]): Coll[C] = RDDCollection(pairRDD.map(f))
     def reduce(implicit m: RepMonoid[(A,B) @uncheckedVariance]): Rep[(A,B)] = {
       val lElem = toLazyElem(PairElem(elem, elem))
-      pairRDD.fold(m.zero)(fun { in: Rep[((A, B), (A, B))] => m.append(in._1, (in._2, in._3))}(lElem))
+      pairRDD.fold(m.zero)(fun { in: Rep[((A, B), (A, B))] => m.append(in._1, (in._2, in._3))}(lElem, elem))
     }
     def zip[C: Elem](ys: Coll[C]): PairColl[(A,B),C] = PairRDDCollection(pairRDD zip SRDD.fromArraySC(pairRDD.context, ys.arr) )
     def update (idx: Rep[Int], value: Rep[(A,B)]): Coll[(A,B)] = ??? //PCollection(parr <<- (idx, value))
@@ -189,14 +189,14 @@ trait RDDCollections { self: SparkDsl with RDDCollectionsDsl =>
       val joinedRdd: RepRDD[(Long, (Int, (A,B)))] = rddToPairRddFunctions(irdd).join(indices zip pairRDD)
 
       val lElem1 = toLazyElem(PairElem(element[Long], PairElem(element[Int], elem)))
-      val newIndices = joinedRdd.map(fun { in:Rep[(Long, (Int, (A,B)))] => in._1}(lElem1))
-      val newPairRDD = joinedRdd.map(fun { in:Rep[(Long, (Int, (A,B)))] => (in._3, in._4)}(lElem1))
+      val newIndices = joinedRdd.map(fun { in:Rep[(Long, (Int, (A,B)))] => in._1}(lElem1, element[Long]))
+      val newPairRDD = joinedRdd.map(fun { in:Rep[(Long, (Int, (A,B)))] => (in._3, in._4)}(lElem1, elem))
       PairRDDIndexedCollection( newIndices, newPairRDD)
     }
     def mapBy[C: Elem](f: Rep[(A,B) @uncheckedVariance => C]): Coll[C] = RDDIndexedCollection(indices zip pairRDD.map(f))
     def reduce(implicit m: RepMonoid[(A,B) @uncheckedVariance]): Rep[(A,B)] = {
       val lElem = toLazyElem(PairElem(elem, elem))
-      pairRDD.fold(m.zero)(fun { in: Rep[((A, B), (A, B))] => m.append(in._1, (in._2, in._3))}(lElem))
+      pairRDD.fold(m.zero)(fun { in: Rep[((A, B), (A, B))] => m.append(in._1, (in._2, in._3))}(lElem, elem))
     }
     def zip[C: Elem](ys: Coll[C]): PairColl[(A,B),C] = PairRDDIndexedCollection(indices, pairRDD zip SRDD.fromArraySC(pairRDD.context, ys.arr) )
     def update (idx: Rep[Int], value: Rep[(A,B)]): Coll[(A,B)] = ??? //PCollection(parr <<- (idx, value))
@@ -210,7 +210,7 @@ trait RDDCollections { self: SparkDsl with RDDCollectionsDsl =>
   }
 
 
-  trait IRDDNestedCollection[A] extends INestedCollection[A] {
+  trait IRDDNestedCollection[A] extends NestedCollection[A] {
     implicit def eA: Elem[A]
     def values: Rep[IRDDCollection[A]]
     def segments: Rep[PairRDDCollection[Int, Int]]
