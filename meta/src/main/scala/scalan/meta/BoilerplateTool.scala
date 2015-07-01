@@ -67,7 +67,15 @@ object SparkBoilerplateTool extends BoilerplateTool {
     entityTypeSynonyms = sparkTypeSynonims ++ laTypeSynonyms
   )
 
-  override def getConfigs(args: Array[String]) = Seq( /*sparkConfig ,*/ rddCollConfig /*, sparkLAConfig*/)
+  //override def getConfigs(args: Array[String]) = Seq( /*sparkConfig ,*/ rddCollConfig /*, sparkLAConfig*/)
+
+  override val configsMap = /*super.configsMap ++ */ Map(
+    "spark" -> List(sparkConfig),
+    "sparkLA" -> List(sparkLAConfig),
+    "rddColl" -> List(rddCollConfig),
+    "all" -> List(sparkConfig, rddCollConfig, sparkLAConfig)
+  )
+
 
   override def main(args: Array[String]) = super.main(args)
 }
