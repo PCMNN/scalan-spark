@@ -1,6 +1,7 @@
 build: clone
 	cd lms && git checkout topic-ml && git pull && sbt publishLocal 
-	cd scalan-lite-public && git checkout fixes-for-SVD-211 && git pull && sbt publishLocal "project core" publishLocal "project common" publishLocal "project community-edition" publishLocal "project meta" publishLocal "project lms-backend" publishLocal
+	cd scalan-lite-public && git checkout fixes-for-SVD-211 && git pull && sbt publishLocal 
+	#"project scalan-core" publishLocal "project scalan-common" publishLocal "project scalan-libraty" publishLocal "project scalan-meta" publishLocal "project scalan-lms-backend" publishLocal
 	cd scalan-ml && git checkout master-for-fixes-forSVD && git pull && sbt publishLocal 
 	#cd scalan-spark && git checkout topic-ml && git pull && sbt test 
 

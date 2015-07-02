@@ -4,6 +4,10 @@
 # Scalan specific
 test-out
 
+# topic-ml-adel specific
+/it-out/
+/dependencies
+
 # sbt specific
 .cache/
 .history/
