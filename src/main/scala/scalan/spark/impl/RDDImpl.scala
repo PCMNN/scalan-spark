@@ -717,6 +717,11 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
         implicit val eB = iso.eTo
         implicit val eC = f1.elem.eRange
         source.asRep[SRDD[a]].map(fun { x => f1(iso.to(x)) })
+      case ( Def(SRDDMethods.zip(xs: RepRDD[a], ys)), f: Rep[Function1[_,c] @unchecked]) if (xs == ys) =>
+        val f1 = f.asRep[((a,a)) => c]
+        implicit val eA = xs.elem.eItem
+        implicit val eC = f1.elem.eRange
+        xs.map( fun({x: Rep[a] => f1(Pair(x,x))}) )
       case _ =>
         super.rewriteDef(d)
     }

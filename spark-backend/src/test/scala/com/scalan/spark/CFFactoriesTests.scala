@@ -42,6 +42,7 @@ class CFFactoriesTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil
       def FactorsMatrix(rows: Coll[AbstractVector[Double]], numColumns: IntRep): Matrix[Double] =
         ??? //CompoundMatrix.fromRows[Double](rows, numColumns)
       def RandomMatrix(numRows: IntRep, numColumns: IntRep, mean: DoubleRep, stddev: DoubleRep): Matrix[Double] = ???
+      def FactorsVector[T: Elem](items: Coll[T]): Vector[T] = ???
     }
 
     class SparkBLExt(sc: Rep[SSparkContext]) extends BL with SparkBLFactory {
@@ -61,6 +62,7 @@ class CFFactoriesTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil
       def RatingsVector(nonZeroIndices: Coll[Int], nonZeroValues: Coll[Double], length: IntRep): Vector[Double] = {
         SparseVector(nonZeroIndices, nonZeroValues, length)
       }
+      def FactorsVector[T: Elem](items: Coll[T]): Vector[T] = ???
     }
 
     class SparkSVDppExt(sc: Rep[SSparkContext]) extends SVDpp with SparkSVDppFactory {
@@ -95,7 +97,7 @@ class CFFactoriesTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil
       val parameters = new ParametersBL(mR.numRows, nItems, maxIterations, convergeLimit, gamma1, lambda6, coeffDecrease)
       val instance = new SparkBLExt(rddIndexes.context)
       val stateFinal = instance.train(parameters, mR)
-      val rmse = instance.predict(mT, stateFinal._1)
+      val rmse = instance.predictRMSE(mT, stateFinal._1)
       rmse
     }
 
@@ -132,7 +134,7 @@ class CFFactoriesTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil
         gamma2, lambda6, lambda7, width, coeffDecrease, stddev)
       val svdpp = new SparkSVDppExt(rddIndexes.context)
       val stateFinal = svdpp.train(parameters, (mR, mR))
-      val rmse = svdpp.predict((mT, mT), stateFinal._1)
+      val rmse = svdpp.predictRMSE((mT, mT), stateFinal._1)
 
       rmse
     }

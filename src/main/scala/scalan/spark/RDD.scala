@@ -72,7 +72,7 @@ trait RDDs extends Base with TypeWrappers { self: SparkDsl =>
     def empty[A: Elem]: Rep[SRDD[A]] = repSparkContext.makeRDD(SSeq.empty[A])
 
     def fromArraySC[A: Elem](sc: Rep[SSparkContext], arr: Rep[Array[A]]) = {
-      sc.makeRDD(SSeq(arr))
+      sc.makeRDD(SSeq(arr), sc.defaultParallelism)
     }
     def emptySC[A: Elem](sc: Rep[SSparkContext]) = sc.makeRDD(SSeq.empty[A])
   }

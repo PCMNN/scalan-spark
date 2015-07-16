@@ -28,6 +28,35 @@ class SVDppSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil 
     val subfolder = "simple"
     lazy val initialRMSE = toRep(Double.MaxValue)
 
+    trait SparkSVDppFactory extends Factory {
+      def replicate[T: Elem](len: IntRep, v: Rep[T]): Coll[T] = Collection.replicate[T](len, v)
+      def ReplicatedVector(len: IntRep, v: DoubleRep): Vector[Double] = DenseVector(replicate(len, v))
+      def zeroVector(len: IntRep): Vector[Double] = DenseVector(Collection.replicate(len, 0.0))
+      def fromRows(rows: Coll[AbstractVector[Double]], numColumns: IntRep): Matrix[Double] = ???
+      def RatingsVector(nonZeroIndices: Coll[Int], nonZeroValues: Coll[Double], length: IntRep): Vector[Double] = {
+        SparseVector(nonZeroIndices, nonZeroValues, length)
+      }
+      def FactorsVector[T: Elem](items: Coll[T]): Vector[T] = ???
+    }
+
+    class SparkSVDppExt(sc: Rep[SSparkContext]) extends SVDpp with SparkSVDppFactory {
+      def indexRange(l: Rep[Int]): Coll[Int] = Collection(SArray.rangeFrom0(l))
+      def RatingsMatrix(rows: Rep[Collection[AbstractVector[Double]]], numColumns: IntRep): Matrix[Double] = {
+        val rddIndexes = RDDCollection(sc.makeRDD(rows.map { vec => vec.nonZeroIndices.arr}.seq)) //asRep[RDDCollection[Array[Int]]]
+        val rddValues = RDDCollection(sc.makeRDD(rows.map { vec => vec.nonZeroValues.arr}.seq)) //asRep[RDDCollection[Array[Double]]]
+        SparkSparseMatrix(rddIndexes, rddValues, numColumns)
+      }
+      def FactorsMatrix(rows: Coll[AbstractVector[Double]], numColumns: IntRep): Matrix[Double] = {
+        val rddValues = RDDCollection(sc.makeRDD(rows.map { vec => vec.items.arr}.seq)) //asRep[RDDCollection[Array[Double]]]
+        SparkDenseMatrix(rddValues, numColumns)
+      }
+      def RandomMatrix(numRows: IntRep, numColumns: IntRep, mean: DoubleRep, stddev: DoubleRep): Matrix[Double] = {
+        val rddVals = sc.makeRDD(SSeq(SArray.replicate(numRows, 0))).map { i: Rep[Int] => SArray.replicate(numColumns, 0.0)}
+        SparkDenseMatrix(RDDCollection(rddVals), numColumns)
+      }
+    }
+
+
     type ParametersPaired = (Int, (Double, (Double, (Double, (Double, (Double, (Int, Double)))))))
     type SparkClosure = Rep[(ParametersPaired, (SparkSparseIndexedMatrix[Double], SparkSparseIndexedMatrix[Double]))]
 
@@ -615,6 +644,33 @@ class SVDppSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil 
       mY
     }
 
+    def predictAll(mu: DoubleRep, model: SparkSVDModel): SparkDenseIndexedMatrix[Double] = {
+      val Tuple(vBu, vBi, mP, mQ, mY) = model
+      // Initial code (below) contains nested parallel structures. It should be vectorized
+      /* FactorsMatrix((vBu.items zip mP.rows).map { case Pair(bu, vP) =>
+           FactorsVector((vBi.items zip mQ.rows).map { case Pair(bi, vQ) => mu + bu + bi + (vP dot vQ) }) }, vBi.length) */
+
+      // Manual vectorization
+      //val = applyTransposedLifted()
+      val sc = mP.sc
+      val mQCollected: Rep[Collection[AbstractVector[Double]]] = Collection(mQ.rows.arr)
+      val mQBc: Rep[SBroadcast[Collection[AbstractVector[Double]]]] = sc.broadcast(mQCollected)
+      val vBiBc: Rep[SBroadcast[AbstractVector[Double]]] = sc.broadcast(vBi)
+
+      val biPlusDotLifted: Rep[Collection[Array[Double]]] = mP.rows.mapBy( fun { vP:Vector[Double]  =>
+        val dot = (mQBc.value zip vBiBc.value.items).map { case Pair(vQ, bi) =>
+          (vP dot vQ) + bi
+        }
+        dot.arr
+      })
+
+      val rows: Rep[Collection[Array[Double]]] = (vBu zip biPlusDotLifted).mapBy( fun { case Pair(bu, biPlusDotRow) =>
+          biPlusDotRow.map { biPlusDot:Rep[Double] => mu + bu + biPlusDot }
+        })
+
+      SparkDenseIndexedMatrix(rows.convertTo[RDDIndexedCollection[Array[Double]]], vBi.length)
+    }
+
     def trainSpark(closure: SparkClosure, stddev: DoubleRep)(implicit o: Overloaded1): SparkSVDRes = {
       val Tuple(parameters, mR, _) = closure
       val Tuple(_, _, _, _, _, _, width, _) = parameters
@@ -636,6 +692,7 @@ class SVDppSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil 
       Pair(mu,stateFinal)
     }
 
+    // Functions
     def SVDppSpark_Train = fun { in: Rep[(ParametersPaired, (RDD[(Long,Array[Int])], (RDD[(Long,Array[Double])],
       (Int, Double))))] =>
       val Tuple(parametersPaired, idxs, vals, nItems, stddev) = in
@@ -670,6 +727,31 @@ class SVDppSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil 
       val instance = new SparkSVDpp()
       val rating = instance.predictRating(user, item, mu, model)
       rating
+    }
+
+    def SVDppSpark_PredictTopK = fun { in:  Rep[((Int, Int),(Int, (Double, (RDD[(Long, Double)], (Array[Double], (RDD[(Long, Array[Double])], (RDD[(Long, Array[Double])], (RDD[(Long, Array[Double])]))))))) )] =>
+      val Pair(Pair(user, kNum), Tuple(nColumns, mu, bu, bi, mRDD, qRDD, yRDD)) = in
+      val vBu = DenseVector(RDDIndexedCollection(SRDDImpl(bu)))
+      val vBi = DenseVector(Collection(bi))
+      val mP = SparkDenseIndexedMatrix(RDDIndexedCollection(SRDDImpl(mRDD)), nColumns)
+      val mQ = SparkDenseIndexedMatrix(RDDIndexedCollection(SRDDImpl(qRDD)), nColumns)
+      val mY = SparkDenseIndexedMatrix(RDDIndexedCollection(SRDDImpl(yRDD)), nColumns)
+      val model = Tuple(vBu, vBi, mP, mQ, mY)
+      val instance = new SparkSVDppExt(SRDDImpl(bu).context)
+      val ratings = instance.predictTopK(user, kNum, mu, model)
+      (ratings.nonZeroIndices.arr, ratings.nonZeroValues.arr)
+    }
+
+    def SVDppSpark_PredictAll = fun { in:  Rep[(Int, (Double, (RDD[(Long, Double)], (Array[Double], (RDD[(Long, Array[Double])], (RDD[(Long, Array[Double])], (RDD[(Long, Array[Double])])))))))] =>
+      val Tuple(nColumns, mu, bu, bi, mRDD, qRDD, yRDD) = in
+      val vBu = RDDIndexedCollection(SRDDImpl(bu))
+      val vBi = DenseVector(Collection(bi))
+      val mP = SparkDenseIndexedMatrix(RDDIndexedCollection(SRDDImpl(mRDD)), nColumns)
+      val mQ = SparkDenseIndexedMatrix(RDDIndexedCollection(SRDDImpl(qRDD)), nColumns)
+      val mY = SparkDenseIndexedMatrix(RDDIndexedCollection(SRDDImpl(yRDD)), nColumns)
+      val model = Tuple(vBu, vBi, mP, mQ, mY)
+      val ratings = predictAll(mu, model)
+      ratings.rddVals.indexedRdd.wrappedValueOfBaseType
     }
 
     def SVDppSpark_errorMatrix = fun { in: Rep[(ParametersPaired, (RDD[(Long,Array[Int])], (RDD[(Long,Array[Double])], (Int, Double))))] =>
@@ -714,6 +796,22 @@ class SVDppSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil 
   test("SVDppSpark_PredictRating Code Gen") {
     val testCompiler = new TestClass {}
     val compiled1 = compileSource(testCompiler)(testCompiler.SVDppSpark_PredictRating, "SVDppSpark_PredictRating", generationConfig(testCompiler, "SVDppSpark_PredictRating", "package"))
+  }
+  test("SVDppSpark_PredictTopK Code Gen") {
+    val testCompiler = new TestClass {
+      override def graphPasses(config: CompilerConfig) = {
+        Seq(AllUnpackEnabler, AllInvokeEnabler, CacheAndFusion, AllWrappersCleaner)
+      }
+    }
+    val compiled1 = compileSource(testCompiler)(testCompiler.SVDppSpark_PredictTopK, "SVDppSpark_PredictTopK", generationConfig(testCompiler, "SVDppSpark_PredictTopK", "package"))
+  }
+  test("SVDppSpark_PredictAll Code Gen") {
+    val testCompiler = new TestClass {
+      override def graphPasses(config: CompilerConfig) = {
+        Seq(AllUnpackEnabler, AllInvokeEnabler, CacheAndFusion, AllWrappersCleaner)
+      }
+    }
+    val compiled1 = compileSource(testCompiler)(testCompiler.SVDppSpark_PredictAll, "SVDppSpark_PredictAll", generationConfig(testCompiler, "SVDppSpark_PredictAll", "package"))
   }
 }
 
