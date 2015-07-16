@@ -64,7 +64,7 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
     extends PairCollectionElem[A, B, To] {
     override def isEntityType = true
     override lazy val tag = {
-      implicit val tagA = eItem.tag
+      implicit val tagA = eA.tag
       implicit val tagB = eB.tag
       weakTypeTag[IRDDPairCollection[A, B]].asInstanceOf[WeakTypeTag[To]]
     }
@@ -726,6 +726,18 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
         case _ => None
       }
     }
+
+    object sortBy {
+      def unapply(d: Def[_]): Option[(Rep[RDDCollection[A]], Rep[A => O], Ordering[O]) forSome {type A; type O}] = d match {
+        case MethodCall(receiver, method, Seq(by, o, _*), _) if receiver.elem.isInstanceOf[RDDCollectionElem[_]] && method.getName == "sortBy" =>
+          Some((receiver, by, o)).asInstanceOf[Option[(Rep[RDDCollection[A]], Rep[A => O], Ordering[O]) forSome {type A; type O}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[RDDCollection[A]], Rep[A => O], Ordering[O]) forSome {type A; type O}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
   }
 
   object RDDCollectionCompanionMethods {
@@ -942,6 +954,18 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
         case _ => None
       }
       def unapply(exp: Exp[_]): Option[(Rep[RDDIndexedCollection[A]], Rep[A @uncheckedVariance]) forSome {type A}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object sortBy {
+      def unapply(d: Def[_]): Option[(Rep[RDDIndexedCollection[A]], Rep[A => O], Ordering[O]) forSome {type A; type O}] = d match {
+        case MethodCall(receiver, method, Seq(by, o, _*), _) if receiver.elem.isInstanceOf[RDDIndexedCollectionElem[_]] && method.getName == "sortBy" =>
+          Some((receiver, by, o)).asInstanceOf[Option[(Rep[RDDIndexedCollection[A]], Rep[A => O], Ordering[O]) forSome {type A; type O}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[RDDIndexedCollection[A]], Rep[A => O], Ordering[O]) forSome {type A; type O}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
@@ -1166,6 +1190,18 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
         case _ => None
       }
     }
+
+    object sortBy {
+      def unapply(d: Def[_]): Option[(Rep[PairRDDCollection[A, B]], Rep[((A, B)) => O], Ordering[O]) forSome {type A; type B; type O}] = d match {
+        case MethodCall(receiver, method, Seq(by, o, _*), _) if receiver.elem.isInstanceOf[PairRDDCollectionElem[_, _]] && method.getName == "sortBy" =>
+          Some((receiver, by, o)).asInstanceOf[Option[(Rep[PairRDDCollection[A, B]], Rep[((A, B)) => O], Ordering[O]) forSome {type A; type B; type O}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[PairRDDCollection[A, B]], Rep[((A, B)) => O], Ordering[O]) forSome {type A; type B; type O}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
   }
 
   object PairRDDCollectionCompanionMethods {
@@ -1386,6 +1422,18 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
         case _ => None
       }
     }
+
+    object sortBy {
+      def unapply(d: Def[_]): Option[(Rep[PairRDDIndexedCollection[A, B]], Rep[((A, B)) => O], Ordering[O]) forSome {type A; type B; type O}] = d match {
+        case MethodCall(receiver, method, Seq(by, o, _*), _) if receiver.elem.isInstanceOf[PairRDDIndexedCollectionElem[_, _]] && method.getName == "sortBy" =>
+          Some((receiver, by, o)).asInstanceOf[Option[(Rep[PairRDDIndexedCollection[A, B]], Rep[((A, B)) => O], Ordering[O]) forSome {type A; type B; type O}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[PairRDDIndexedCollection[A, B]], Rep[((A, B)) => O], Ordering[O]) forSome {type A; type B; type O}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
   }
 
   object PairRDDIndexedCollectionCompanionMethods {
@@ -1602,6 +1650,18 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
         case _ => None
       }
       def unapply(exp: Exp[_]): Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A @uncheckedVariance]]) forSome {type A}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
+
+    object sortBy {
+      def unapply(d: Def[_]): Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A @uncheckedVariance] => O], Ordering[O]) forSome {type A; type O}] = d match {
+        case MethodCall(receiver, method, Seq(by, o, _*), _) if receiver.elem.isInstanceOf[RDDNestedCollectionElem[_]] && method.getName == "sortBy" =>
+          Some((receiver, by, o)).asInstanceOf[Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A @uncheckedVariance] => O], Ordering[O]) forSome {type A; type O}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[RDDNestedCollection[A]], Rep[Collection[A @uncheckedVariance] => O], Ordering[O]) forSome {type A; type O}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }

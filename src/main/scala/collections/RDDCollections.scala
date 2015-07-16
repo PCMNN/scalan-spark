@@ -41,11 +41,6 @@ trait RDDCollections { self: SparkDsl with RDDCollectionsDsl =>
     }
     @OverloadId("many")
     def apply(indices: Coll[Int])(implicit o: Overloaded1): RDDColl[A] = {
-      //val irdd : RepPairRDDFunctions[Long, Int] = SRDD.fromArraySC(rdd.context, indices.arr).map(fun {(i: Rep[Int]) => Pair(i.toLong, 0)})
-      //val vrdd: RepRDD[(Long, A)] = rdd.zipWithIndex.map({p: Rep[(A,Long)] => Pair(p._2, p._1)})
-      //val joinedRdd: RepRDD[(Long, (Int, A))] = SPairRDDFunctionsImpl(irdd).join(vrdd)
-      //implicit val ppElem = PairElem(element[Long], PairElem(element[Int], elem))
-      //RDDCollection( joinedRdd.map(fun {(in: Rep[(Long, (Int, A))]) => in._3}) )
       val irdd = SRDD.fromArraySC(rdd.context, indices.arr).map(fun {(i: Rep[Int]) => Pair(i.toLong, 0)})
       val vrdd: RepPairRDDFunctions[Long, A] = rdd.zipWithIndex.map({p: Rep[(A,Long)] => Pair(p._2, p._1)})
       val joinedRdd: RepRDD[(Long, (A, Int))] = SPairRDDFunctionsImpl(vrdd).join(irdd)
@@ -60,6 +55,7 @@ trait RDDCollections { self: SparkDsl with RDDCollectionsDsl =>
     def filterBy(f: Rep[A @uncheckedVariance => Boolean]): Coll[A] = ???
     def flatMapBy[B: Elem](f: Rep[A @uncheckedVariance => Collection[B]]): Coll[B] = RDDCollection(rdd.flatMap({in: Rep[A] => SSeq(f(in).arr)}))
     def append(value: Rep[A @uncheckedVariance]): Coll[A]  = ??? //PCollection(PArray.replicate(length+1, value) <<- (parr.indices, parr))
+    def sortBy[O: Elem](by: Rep[A => O])(implicit o: Ordering[O]): Coll[A] = ???
   }
   trait RDDCollectionCompanion extends ConcreteClass1[RDDCollection] with IRDDCollectionCompanion {
   }
@@ -97,6 +93,7 @@ trait RDDCollections { self: SparkDsl with RDDCollectionsDsl =>
       val arr =
       SSeq(f(in._2).arr)}*/
     def append(value: Rep[A @uncheckedVariance]): Coll[A]  = ??? //PCollection(PArray.replicate(length+1, value) <<- (parr.indices, parr))
+    def sortBy[O: Elem](by: Rep[A => O])(implicit o: Ordering[O]): Coll[A] = ???
   }
   trait RDDIndexedCollectionCompanion extends ConcreteClass1[RDDIndexedCollection] with IRDDCollectionCompanion {
   }
@@ -157,6 +154,7 @@ trait RDDCollections { self: SparkDsl with RDDCollectionsDsl =>
     def filterBy(f: Rep[(A,B) @uncheckedVariance => Boolean]): PairColl[A,B] = ???
     def flatMapBy[C: Elem](f: Rep[(A,B) @uncheckedVariance => Collection[C]]): Coll[C] = ???
     def append(value: Rep[(A,B) @uncheckedVariance]): Coll[(A,B)]  = ??? //PCollection(PArray.replicate(length+1, value) <<- (parr.indices, parr))
+    def sortBy[O: Elem](by: Rep[((A,B)) => O])(implicit o: Ordering[O]): Coll[(A,B)] = ???
   }
 
   trait PairRDDCollectionCompanion extends ConcreteClass2[PairRDDCollection] {
@@ -208,6 +206,7 @@ trait RDDCollections { self: SparkDsl with RDDCollectionsDsl =>
     def filterBy(f: Rep[(A,B) @uncheckedVariance => Boolean]): PairColl[A,B] = ???
     def flatMapBy[C: Elem](f: Rep[(A,B) @uncheckedVariance => Collection[C]]): Coll[C] = ???
     def append(value: Rep[(A,B) @uncheckedVariance]): Coll[(A,B)]  = ??? //PCollection(PArray.replicate(length+1, value) <<- (parr.indices, parr))
+    def sortBy[O: Elem](by: Rep[((A,B)) => O])(implicit o: Ordering[O]): Coll[(A,B)] = ???
   }
 
   trait PairRDDIndexedCollectionCompanion extends ConcreteClass2[PairRDDIndexedCollection] {
@@ -257,6 +256,7 @@ trait RDDCollections { self: SparkDsl with RDDCollectionsDsl =>
     def filterBy(f: Rep[Collection[A @uncheckedVariance] => Boolean]): Rep[IRDDNestedCollection[A]] = ???
     def flatMapBy[B: Elem](f: Rep[Collection[A @uncheckedVariance] => Collection[B]]): Coll[B] = ???
     def append(value: Rep[Collection[A @uncheckedVariance]]): Rep[IRDDNestedCollection[A]]  = ??? //Collection(arr.append(value))
+    def sortBy[O: Elem](by: Rep[Collection[A @uncheckedVariance] => O])(implicit o: Ordering[O]): Rep[IRDDNestedCollection[A]] = ???
   }
 
   trait RDDNestedCollectionCompanion extends ConcreteClass1[RDDNestedCollection] {
