@@ -3,8 +3,9 @@ package com.scalan.spark.backend
 import org.apache.spark.rdd.{RDD, PairRDDFunctions}
 
 import scalan.compilation.language._
+import scalan.spark.SparkDslExp
 
-trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {
+trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {  self: SparkDslExp =>
 
   trait SparkScalanTags extends MappingTags {
 
@@ -42,6 +43,16 @@ trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {
           }
         }
       }
+      val scalan_Partitioner = {
+        val sPartClass = findDefinition(SPartitioner) match {
+          case Some(TableEntry(sym, rhs)) =>
+            rhs.getClass
+        }
+        new ClassType(Symbol(sPartClass.getName)) {
+          val defaultPartitioner = Method('defaultPartitioner, typeOf[org.apache.spark.Partitioner], MethodArg(typeOf[Int]) )
+        }
+      }
+
       val scalanSparkPackImpl = new Pack("scalan.spark.impl") {
         val famRDDsAbs = new Family('RDDsAbs) {
           val sRDDImpl = new ClassType('SRDDImpl, TyArg('A)) {
@@ -50,10 +61,8 @@ trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {
             val partitionBy = Method('partitionBy, tyRDD)
           }
         }
+
         val famPartitionersAbs = new Family('PartitionersAbs) {
-          val sPartitionerCompanionAbs = new ClassType('SPartitionerCompanionAbs) {
-            val defaultPartitioner = Method('defaultPartitioner, typeOf[org.apache.spark.Partitioner])
-          }
           val sPartitionerImpl = new ClassType('SPartitionerImpl, TyArg('A)) {
             val wrappedValueOfBaseType = Method('wrappedValueOfBaseType, typeOf[org.apache.spark.Partitioner])
           }
@@ -64,7 +73,7 @@ trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {
             val countByKey = Method('countByKey, tyPairRDDFunctions)
             val foldByKey = Method('foldByKey, tyPairRDDFunctions)
             val groupByKey = Method('groupByKey, tyPairRDDFunctions)
-            val groupWithExt = Method('groupWithExt, tyPairRDDFunctions)
+            val groupWithExt = Method('groupWithExt, typeOf[RDD[(Int, (Seq[_], Seq[_]))]] )
             val wrappedValueOfBaseType = Method('wrappedValueOfBaseType, typeOf[scalan.Elems#Element[_]])
           }
         }
@@ -84,11 +93,15 @@ trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {
     val scalanComunity = new Library() {
       val scalanColectionsImp = new Pack("scalan.collections.impl") {
         val seqsAbs = new Family('SeqsAbs) {
-          val sSeqCompanionAbs = new ClassType('SSeqCompanionAbs, TyArg('A)) {
-            val empty = Method('empty, typeOf[scalan.Elems#Element[_]])
+          val sseqClass = findDefinition(SSeq) match {
+            case Some(TableEntry(sym, rhs)) =>
+              rhs.getClass
+          }
+          val sSeqCompanionAbs = new ClassType(Symbol(sseqClass.getName)) {
+            val empty = Method('empty, typeOf[Seq[_]])
             val single = Method('single, typeOf[Seq[_]])
             val apply = Method('apply, typeOf[Seq[_]])
-            val fromList = Method('fromList, typeOf[scalan.collections.Seqs#SSeq[_]], MethodArg(typeOf[List[_]]))
+            val fromList = Method('fromList, typeOf[Seq[_]], MethodArg(typeOf[List[_]]))
           }
           val sSeqImpl = new ClassType('SSeqImpl, TyArg('A)) {
             val wrappedValueOfBaseType = Method('wrappedValueOfBaseType, typeOf[scalan.Elems#Element[_]])
@@ -144,8 +157,6 @@ trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {
     }
 
     val sparkClasses = new ScalaLib() {
-      val gridDirection = ScalaFunc(Symbol("acp.GridDirection"))()
-      val dArrayPartitioner = ScalaFunc(Symbol("acp.DArrayPartitioner"))()
       val pairRDDFunctions = ScalaFunc(Symbol("org.apache.spark.rdd.PairRDDFunctions"))()
       val sparkConf = ScalaFunc(Symbol("org.apache.spark.SparkConf"))()
       val sparkContext = ScalaFunc(Symbol("org.apache.spark.SparkContext"))()
@@ -174,7 +185,7 @@ trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {
         scalanSpark.scalanSparkPack.famRDDs.sRDD.fold -> testMethod.fold,
         scalanSpark.scalanSparkPack.famRDDs.sRDD.zipSafe -> testMethod.zipSafe,
         scalanSpark.scalanSparkPack.famPairRDDFunctionssAbs.pairRDDFunctions.reduceByKey -> testMethod.reduceByKey,
-        scalanSpark.scalanSparkPackImpl.famPartitionersAbs.sPartitionerCompanionAbs.defaultPartitioner -> testMethod.defaultPartitioner,
+        scalanSpark.scalan_Partitioner.defaultPartitioner -> testMethod.defaultPartitioner,
         scalanSpark.scalanSparkPackImpl.famPartitionersAbs.sPartitionerImpl.wrappedValueOfBaseType -> basic.noMethodWrapper,
         scalanComunity.scalanColectionsImp.seqsAbs.sSeqCompanionAbs.empty -> seq.empty,
         scalanComunity.scalanColectionsImp.seqsAbs.sSeqCompanionAbs.fromList -> testMethod.fromList,

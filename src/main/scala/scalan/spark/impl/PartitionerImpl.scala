@@ -135,7 +135,7 @@ trait PartitionersSeq extends PartitionersDsl with ScalanCommunityDslSeq {
   lazy val SPartitioner: Rep[SPartitionerCompanionAbs] = new SPartitionerCompanionAbs with UserTypeSeq[SPartitionerCompanionAbs] {
     lazy val selfType = element[SPartitionerCompanionAbs]
     override def defaultPartitioner(numPartitions: Rep[Int]): Rep[SPartitioner] =
-      SPartitionerImpl(Partitioner.defaultPartitioner(numPartitions))
+      ??? //SPartitionerImpl(Partitioner.defaultPartitioner(numPartitions))
   }
 
     // override proxy if we deal with TypeWrapper

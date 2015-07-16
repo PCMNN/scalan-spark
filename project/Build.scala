@@ -27,7 +27,7 @@ object ScalanStartRootBuild extends Build {
 
   val buildSettings = Seq(
     organization := "com.huawei.scalan",
-    scalaVersion := "2.11.2",
+    scalaVersion := "2.11.7",
     scalacOptions ++= Seq(
       "-unchecked", "-deprecation",
       "-feature",
@@ -65,7 +65,7 @@ object ScalanStartRootBuild extends Build {
 
   def liteProject(name: String) = ProjectRef(file("../scalan-lite"), name)
 
-  def liteDependency(name: String) = "com.huawei.scalan" %% name % "0.2.9.fixes-for-SVD.0"
+  def liteDependency(name: String) = "com.huawei.scalan" %% name % "0.2.9-SNAPSHOT"
 
   lazy val metaDeps = liteDependency("scalan-meta")
   lazy val sparkmeta = Project(
@@ -76,7 +76,7 @@ object ScalanStartRootBuild extends Build {
   lazy val core = liteDependency("scalan-core")
   lazy val common = liteDependency("scalan-common")
   lazy val library = liteDependency("scalan-library")
-  lazy val ml = "com.huawei.scalan" %% "scalan-ml" % "0.3.0.master-for-fixes-forSVD.0"
+  lazy val ml = "com.huawei.scalan" %% "scalan-ml" % "0.3.0"
 
   lazy val start = Project(
     id = "scalan-spark",

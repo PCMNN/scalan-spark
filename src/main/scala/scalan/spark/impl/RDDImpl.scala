@@ -194,8 +194,7 @@ trait RDDsAbs extends RDDs with ScalanCommunityDsl {
       implicit val tagA = eA.tag
       weakTypeTag[SRDDImpl[A]]
     }
-    lazy val defaultRepTo = Default.defaultVal[Rep[SRDDImpl[A]]](SRDDImpl(DefaultOfRDD[A].value))
-    //lazy val defaultRepTo: Rep[SRDDImpl[A]] = SRDDImpl(DefaultOfRDD[A].value) //generated
+    lazy val defaultRepTo: Rep[SRDDImpl[A]] = SRDDImpl(DefaultOfRDD[A].value)
     lazy val eTo = new SRDDImplElem[A](this)
   }
   // 4) constructor and deconstructor
@@ -700,23 +699,6 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
       val zipped = v1.source.zipWithIndex
       ViewSRDD(zipped)(pIso)
 
-    case view1@ViewSRDD(Def(view2@ViewSRDD(arr))) =>
-      val compIso = composeIso(view1.innerIso, view2.innerIso)
-      implicit val eAB = compIso.eTo
-      ViewSRDD(arr)(SRDDIso(compIso))
-
-    // Rule: W(a).m(args) ==> iso.to(a.m(unwrap(args)))
-    case mc @ MethodCall(Def(wrapper: ExpSRDDImpl[_]), m, args, neverInvoke) if !isValueAccessor(m) =>
-      val resultElem = mc.selfType
-      val wrapperIso = getIsoByElem(resultElem)
-      wrapperIso match {
-        case iso: Iso[base,ext] =>
-          val eRes = iso.eFrom
-          val newCall = unwrapMethodCall(mc, wrapper.wrappedValueOfBaseType, eRes)
-          iso.to(newCall)
-      }
-
-
     case SRDDMethods.map(xs, f) => (xs, f) match {
       case (xs: RepRDD[a] @unchecked, LambdaResultHasViews(f, iso: Iso[b, c])) =>
         val f1 = f.asRep[a => c]
@@ -778,29 +760,6 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
     case SRDDMethods.cache(HasViews(source, rddIso: SRDDIso[a, b])) => {
       ViewSRDD(source.asRep[SRDD[a]].cache)(rddIso)
     }
-
-    // TODO: Move to ScalantLite
-    case SSeqCompanionMethods.apply(HasViews(source, arrIso: ArrayIso[a,b])) => {
-      val iso = arrIso.iso
-      implicit val eA = iso.eFrom
-      ViewSSeq(SSeq[a](source.asRep[Array[a]])(eA))(SSeqIso(iso))
-    }
-    case v1@PairView(Def(v2@PairView(source))) => {
-      val i1 = v1.iso.asInstanceOf[PairIso[Any,Any,Any,Any]]
-      val i2 = v2.iso.asInstanceOf[PairIso[Any,Any,Any,Any]]
-      val pIso1 = composeIso(i1.iso1,i2.iso1)
-      val pIso2 = composeIso(i1.iso2, i2.iso2)
-      PairView(source)(pIso1, pIso2)
-    }
-    case IfThenElse(cond, HasViews(source1, iso1: Iso[a,b]), HasViews(source2, iso2)) if ((iso1.eTo == iso2.eTo) && (iso1.eFrom == iso2.eFrom)) =>
-    {
-      val unviewed = IF(cond) THEN (source1.asRep[a]) ELSE (source2.asRep[a])
-      iso1.to(unviewed.asRep[a])
-    }
-    /*case Tup(Def(Tup(Def(IfThenElse(c1, t1, e1)), sec1)), Def(Tup(Def(IfThenElse(c2, t2, e2)), sec2))) if c1 == c2 => {
-      val ifFused = IF (c1) THEN { Pair(t1, t2) } ELSE { Pair(e1, e2) }
-      Pair(Pair(ifFused._1, sec1), Pair(ifFused._2,sec2))
-    } */
 
     case view1@ViewSRDD(Def(view2@ViewSRDD(arr))) =>
       //val compIso = composeIso(view1.innerIso, view2.innerIso)

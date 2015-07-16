@@ -29,9 +29,7 @@ object run {
     println("Result1: " + v._1.mkString(" , "))
     println("Result2: " + v._2._1.mkString(" , "))
     println("Result3: " + v._2._2._1)
-    println("Result4: " + v._2._2._2._1)
-    println("Result5: " + v._2._2._2._2._1)
-    println("Result6: " + v._2._2._2._2._2)
+    println("Result4: " + v._2._2._2)
     println("Done")
   }
 

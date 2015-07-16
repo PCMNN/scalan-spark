@@ -334,4 +334,26 @@ trait SparkContextsExp extends SparkContextsDsl with ScalanCommunityDslExp {
       }
     }
   }
+  override def rewriteDef[T](d: Def[T]) = d match {
+    // Rule: W(a).m(args) ==> iso.to(a.m(unwrap(args)))
+    case mc@MethodCall(Def(wrapper: ExpSSparkContextImpl), m, args, neverInvoke) if !isValueAccessor(m) =>
+      val resultElem = mc.selfType
+      val wrapperIso = getIsoByElem(resultElem)
+      wrapperIso match {
+        case iso: Iso[base, ext] =>
+          val eRes = iso.eFrom
+          val newCall = unwrapMethodCall(mc, wrapper.wrappedValueOfBaseType, eRes)
+          iso.to(newCall)
+      }
+    case SSparkContextMethods.makeRDD(sc, HasViews(source, seqIso: SSeqIso[a,b]), numPartitions) => {
+      val iso = seqIso.iso
+      implicit val eA = iso.eFrom
+      ViewSRDD(sc.makeRDD(source.asRep[SSeq[a]], numPartitions))(SRDDIso(iso))
+    }
+    case SSparkContextMethods.broadcast(sc, HasViews(source, iso: Iso[a,b])) => {
+      implicit val eA = iso.eFrom
+      ViewSBroadcast(sc.broadcast(source.asRep[a]))(SBroadcastIso(iso))
+    }
+    case _ => super.rewriteDef(d)
+  }
 }

@@ -7,16 +7,8 @@ import scala.language.reflectiveCalls
 import scalan._
 
 class SerialTests extends BaseTests with BeforeAndAfterAll { suite =>
-  val globalSparkConf = new SparkConf().setAppName("Serialization Tests").setMaster("local")
+  val globalSparkConf = new SparkConf().setAppName("Serialization Tests").setMaster("local[4]")
   var globalSparkContext: SparkContext = null
-
-  override def beforeAll() = {
-    globalSparkContext = new SparkContext(globalSparkConf)
-  }
-
-  override def afterAll() = {
-    globalSparkContext.stop()
-  }
 
   trait SimpleSerialTests extends ScalanDsl with SparkDsl {
     val prefix = suite.prefix
@@ -73,13 +65,13 @@ class SerialTests extends BaseTests with BeforeAndAfterAll { suite =>
     val ctx = new ScalanCtxSeq with SparkDslSeq {
       val sparkContext = globalSparkContext
       val sSparkContext = SeqSSparkContextImpl(globalSparkContext)
-      val repSparkContext = SSparkContext(SSparkConf())
+      val repSparkContext = SSparkContext(SSparkConf().setMaster("local[4]").setAppName("pluOne"))
     }
     {
       val inc = new PlusOne(ctx)
       import inc.ctx._
       val a = 42
-      val res = inc.plusOne((inc.ctx.sSparkContext, a))
+      val res = inc.plusOne(Pair(inc.ctx.repSparkContext, a))
       assertResult(a + 1)(res)
     }
   }

@@ -336,6 +336,12 @@ trait BroadcastsExp extends BroadcastsDsl with ScalanCommunityDslExp {
           iso.to(newCall)
       }
 
+    case SBroadcastMethods.value(HasViews(source, bcIso: SBroadcastIso[a,b])) => {
+      val iso = bcIso.iso
+      implicit val eA = iso.eFrom
+      iso.to(source.asRep[SBroadcast[a]].value)
+    }
+
     case SBroadcastMethods.map(xs, f) => (xs, f) match {
       case (xs: RepBroadcast[a] @unchecked, LambdaResultHasViews(f, iso: Iso[b, c])) =>
         val f1 = f.asRep[a => c]
@@ -357,6 +363,11 @@ trait BroadcastsExp extends BroadcastsDsl with ScalanCommunityDslExp {
       case _ =>
         super.rewriteDef(d)
     }
+
+    case view1@ViewSBroadcast(Def(view2@ViewSBroadcast(arr))) =>
+      val compIso = composeIso(view1.innerIso, view2.innerIso)
+      implicit val eAB = compIso.eTo
+      ViewSBroadcast(arr)(SBroadcastIso(compIso))
 
     case _ => super.rewriteDef(d)
   }

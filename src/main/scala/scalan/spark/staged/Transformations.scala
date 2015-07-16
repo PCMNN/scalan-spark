@@ -16,6 +16,16 @@ trait Transformations { self: SparkDslExp =>
     res
   }
   val wrappersCleaner = new PartialRewriter({
+    // Rule: W(a).m(args) ==> iso.to(a.m(unwrap(args)))
+    case Def(mc @ MethodCall(Def(wrapper: ExpSSparkContextImpl), m, args, neverInvoke)) if !isValueAccessor(m) =>
+      val resultElem = mc.selfType
+      val wrapperIso = getIsoByElem(resultElem)
+      wrapperIso match {
+        case iso: Iso[base,ext] =>
+          val eRes = iso.eFrom
+          val newCall = unwrapMethodCall(mc, wrapper.wrappedValueOfBaseType, eRes)
+          iso.to(newCall)
+      }
     case Def(mc @ MethodCall(Def(wrapper: ExpSRDDImpl[_]), m, args, neverInvoke)) if !isValueAccessor(m) =>
       val resultElem = mc.selfType
       val wrapperIso = getIsoByElem(resultElem)
@@ -45,9 +55,8 @@ trait Transformations { self: SparkDslExp =>
       }
     case Def(nobj @ NewObject(clazz, args, neverInvoke)) if hasViewArg(args) =>
       unwrapNewObj(clazz, args, neverInvoke, nobj.selfType)
-    /*case Def(mc @ MethodCall(reciever,m, args, neverInvoke)) if (!isValueAccessor(m) && hasViewArg(args)) =>
-      val newCall = mkMethodCall(reciever, m, unwrapSyms(args), true, mc.selfType)
-      newCall*/
+    case Def(mc @ MethodCall(reciever,m, args, neverInvoke)) if (!isValueAccessor(m) && hasViewArg(args)) =>
+      unwrapMethodCall(mc, reciever, mc.selfType)
   })
 
   private case class FuseNode[A,B](source: Exp[SRDD[A]], func: Exp[A => B], el: Elem[B]) {

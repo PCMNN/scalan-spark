@@ -7,73 +7,65 @@ package com.scalan.spark
 import java.io.File
 
 import com.scalan.spark.backend.SparkScalanCompiler
-import la.{SparkLADslExp, SparkLADsl}
+import la.{SparkLADsl, SparkLADslExp}
 import org.apache.spark._
 import org.apache.spark.rdd.RDD
 import org.scalatest.BeforeAndAfterAll
 
 import scala.language.reflectiveCalls
+import scalan.BaseTests
 import scalan.common.OverloadHack.Overloaded1
 import scalan.it.ItTestsUtil
-import scalan.ml.{CF, CFDslExp, ExampleBL}
-import scalan.spark.SparkDsl
-import scalan.{BaseTests, ScalanDsl}
+import scalan.ml.cf.CFDsl
 
 class SVDppSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil { suite =>
   val pref = new File("test-out/scalan/spark/backend/")
-  val globalSparkConf = null //new SparkConf().setAppName("R/W Broadcast").setMaster("local")
+  val globalSparkConf = null
   var globalSparkContext: SparkContext = null
 
-  override def beforeAll() = {
-    //globalSparkContext = new SparkContext(globalSparkConf)
-  }
-
-  override def afterAll() = {
-    //globalSparkContext.stop()
-  }
-
-  trait SVDppSpark extends SparkLADsl with CF {
+  trait SVDppSpark extends SparkLADsl with CFDsl {
     val prefix = suite.pref
     val subfolder = "simple"
+    lazy val initialRMSE = toRep(Double.MaxValue)
 
-    type SparkClosure = Rep[(ParametersPaired, (SparkSparseMatrix[Double], SparkSparseMatrix[Double]))]
+    type ParametersPaired = (Int, (Double, (Double, (Double, (Double, (Double, (Int, Double)))))))
+    type SparkClosure = Rep[(ParametersPaired, (SparkSparseIndexedMatrix[Double], SparkSparseIndexedMatrix[Double]))]
 
-    type SparkSVDModelVal = (DenseVector[Double], (DenseVector[Double],
-      (SparkDenseMatrix[Double], (SparkDenseMatrix[Double], SparkDenseMatrix[Double]))))
+    type SparkSVDModelVal = (RDDIndexedCollection[Double], (DenseVector[Double],
+      (SparkDenseIndexedMatrix[Double], (SparkDenseIndexedMatrix[Double], SparkDenseIndexedMatrix[Double]))))
 
     type SparkSVDModel = Rep[SparkSVDModelVal]
 
     type SparkSVDState = Rep[(SparkSVDModelVal, (Int, (Double, (Int, Double))))]
+    type SparkSVDRes = Rep[(Double, (SparkSVDModelVal, (Int, (Double, (Int, Double)))))]
 
-    type SparkModSVD = Rep[(SparkDenseMatrix[Double], SparkDenseMatrix[Double])]
+    type SparkModSVD = Rep[(SparkDenseIndexedMatrix[Double], SparkDenseIndexedMatrix[Double])]
 
-    type SparkModSVDpp = Rep[(SparkDenseMatrix[Double], (SparkDenseMatrix[Double], SparkDenseMatrix[Double]))]
+    type SparkModSVDpp = Rep[(SparkDenseIndexedMatrix[Double], (SparkDenseIndexedMatrix[Double], SparkDenseIndexedMatrix[Double]))]
 
 
     def replicate[T: Elem](len: IntRep, v: Rep[T]): Coll[T] = Collection.replicate[T](len, v)
     def ReplicatedVector(len: IntRep, v: DoubleRep): Rep[DenseVector[Double]] = DenseVector(replicate(len, v))
-    def zeroVector(sc: Rep[SSparkContext], len: IntRep): Rep[DenseVector[Double]] = {
+    def zeroVector(sc: Rep[SSparkContext], len: IntRep): Rep[RDDIndexedCollection[Double]] = {
       val arr = SArray.replicate(len, 0.0)
       val arrIdxs = SArray.rangeFrom0(len).map { i:Rep[Int] => i.toLong}
       val rdd: Rep[SRDD[(Long, Double)]] = rddToPairRddFunctions(sc.makeRDD(SSeq(arrIdxs zip arr), sc.defaultParallelism)).partitionBy(SPartitioner.defaultPartitioner(sc.defaultParallelism))
-      DenseVector(RDDCollection(rdd.map(fun{in => in._2})))
+      /*DenseVector*/(RDDIndexedCollection(rdd))
       //DenseVector(Collection.replicate(len, 0.0))
     }
 
-    def RandomMatrix(sc: Rep[SSparkContext], numRows: IntRep, numColumns: IntRep, mean: DoubleRep, stddev: DoubleRep): Rep[SparkDenseMatrix[Double]] = {
+    def RandomMatrix(sc: Rep[SSparkContext], numRows: IntRep, numColumns: IntRep, mean: DoubleRep, stddev: DoubleRep): Rep[SparkDenseIndexedMatrix[Double]] = {
       //val vals = SArray.replicate(numRows, SArray.replicate(numColumns, 0.0))
       val arr = SArray.replicate(numRows, 0)
       val arrIdxs = SArray.rangeFrom0(numRows).map { i: Rep[Int] => i.toLong}
       val rowIndRdd = rddToPairRddFunctions(sc.makeRDD(SSeq(arrIdxs zip arr), sc.defaultParallelism)).partitionBy(SPartitioner.defaultPartitioner(sc.defaultParallelism))
 
-      val rddVals = rowIndRdd.map { i:Rep[(Long,Int)] => /*SArray.replicate(numColumns, zero) }*/ array_randomGaussian(mean, stddev, SArray.replicate(numColumns, zero)) }
-      SparkDenseMatrix(RDDCollection(rddVals), numColumns)
+      val rddVals: Rep[SRDD[(Long, Array[Double])]] = rowIndRdd.map(fun { in:Rep[(Long,Int)] => Pair(in._1, /*SArray.replicate(numColumns, zero) }*/ array_randomGaussian(mean, stddev, SArray.replicate(numColumns, zero)) ) })
+      SparkDenseIndexedMatrix(RDDIndexedCollection(rddVals), numColumns)
     }
 
-    def RatingsMatrix(sc: Rep[SSparkContext], rows: Rep[RDDCollection[SparseVector[Double]]], numColumns: IntRep): Rep[SparkSparseMatrix[Double]] = {
-      val rddIndexes = rows.map{ vec => vec.nonZeroIndices.arr}.asRep[RDDCollection[Array[Int]]]
-      val rddValues = rows.map{ vec => vec.nonZeroValues.arr}.asRep[RDDCollection[Array[Double]]]
-      SparkSparseMatrix(rddIndexes, rddValues, numColumns)
+    def RatingsMatrix(rddIndexes: Rep[RDDIndexedCollection[Array[Int]]], rddValues: Rep[RDDIndexedCollection[Array[Double]]], numColumns: IntRep): Rep[SparkSparseIndexedMatrix[Double]] = {
+      SparkSparseIndexedMatrix(rddIndexes, rddValues, numColumns)
     }
 
     def FactorsMatrix(sc: Rep[SSparkContext], rows: Coll[AbstractVector[Double]], numColumns: IntRep): Rep[SparkDenseMatrix[Double]] = {
@@ -81,51 +73,100 @@ class SVDppSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil 
       SparkDenseMatrix(rddValues, numColumns)
     }
 
-    def FactorsMatrixNew(rows: Rep[SRDD[Array[Double]]], numColumns: IntRep): Rep[SparkDenseMatrix[Double]] = {
-      SparkDenseMatrix(RDDCollection(rows), numColumns)
+    def FactorsMatrixNew(rows: Rep[SRDD[(Long,Array[Double])]], numColumns: IntRep): Rep[SparkDenseIndexedMatrix[Double]] = {
+      SparkDenseIndexedMatrix(RDDIndexedCollection(rows), numColumns)
     }
 
-    def average(matrix: Rep[SparkSparseMatrix[Double]]) = {
-      val coll = matrix.rows.flatMap(v => v.nonZeroValues)
-      coll.reduce / coll.length.toDouble
+    def average(matrix: Rep[SparkSparseIndexedMatrix[Double]]) = {
+      val rdd: Rep[SRDD[(Double,Int)]] = matrix.rddVals.rdd.map(fun{ v: Rep[Array[Double]] => Pair(v.reduce, v.length)})
+      val redFun = fun[((Double,Int),(Double,Int)), (Double,Int)] { case Pair(Pair(i11,i12),Pair(i21,i22)) => Pair(i11 + i21, i12 + i22)}
+
+      val reduced: Rep[(Double, Int)] = rdd.fold((0.0,0))(redFun)
+      reduced._1 / reduced._2.toDouble
+
+      //val coll = matrix.rows.map{ v => v.nonZeroValues.reduce }
+      //coll.reduce / coll.length.toDouble
     }
 
     def initSpark(sc: Rep[SSparkContext], nUsers: IntRep, nItems: IntRep, width: IntRep, stddev: DoubleRep) = {
       val vBu0 = zeroVector(sc, nUsers) // DenseVector(RDDCollection(sc.makeRDD(SSeq(SArray.replicate(nUsers, 0.0)))))//zeroVector(nUsers)
-      val vBi0 = DenseVector(Collection.replicate(nItems, 0.0)) //zeroVector(nItems)
+      val vBi0 = DenseVector(Collection.replicate(nItems, 0.0)) // zeroVector(nItems)
       val mP0 = RandomMatrix(sc,nUsers, width, zero, stddev)
       val mQ0 = RandomMatrix(sc,nItems, width, zero, stddev)
       val mY0 = RandomMatrix(sc,nItems, width, zero, stddev)
       Tuple(vBu0, vBi0, mP0, mQ0, mY0)
     }
 
-    def stepSpark(closure: SparkClosure, cs0: Coll[Int], cs0T: Vector[Int], mu: DoubleRep)(state: SparkSVDState): SparkSVDState = {
-      val Tuple(parameters, mR, mN) = closure
-      val Tuple(maxIterations, convergeLimit, gamma1, gamma2, lambda6, lambda7, _, coeffDecrease) = parameters
-      val Pair(model0, meta) = state
-      val Tuple(_, _, _, stepDecrease) = meta
-      val Tuple(vBuPrev, vBi0, mPPrev, mQPrev, mYPrev) = model0
-      /* Unpersist cached results */
-      val vBu0 = vBuPrev //.unpersist(true)
-      val mP0 = mPPrev //SparkDenseMatrix(RDDCollection(mPPrev.rddVals.rdd.unpersist(true)), mPPrev.numColumns)
-      val mQ0 = mQPrev //SparkDenseMatrix(RDDCollection(mQPrev.rddVals.rdd.unpersist(true)), mQPrev.numColumns )
-      val mY0 = mYPrev //SparkDenseMatrix(RDDCollection(mYPrev.rddVals.rdd.unpersist(true)), mYPrev.numColumns )
+    type ValueType = Array[Double]
 
-      val bl = Tuple(vBu0, vBi0)
-      val svd = Tuple(mP0, mQ0)
-      val svdpp = Tuple(mP0, mQ0, mY0)
+    val swapArrIntLongFun = fun {in: Rep[(Long,Array[Int])] => Pair(in._2, in._1)}
+    val flatMapWithIdxsFun = fun { in: Rep[(Long, Array[Int])] => SSeq(in._2.map({ v: Rep[Int] => (v.toLong, in._1)})) }
+    val resFlatMapFun = fun{ in: Rep[(Long, (ValueType, SSeq[Long]))] =>
+      val seq: Rep[SSeq[Long]] = in._3
+      val value: Rep[ValueType] = in._2
+      seq.map( fun{ i: Rep[Long] => (i,value)} )
+    }
+    val finalResFun = fun { in:Rep[(Long, (SSeq[ValueType], SSeq[Boolean]))] => in._2.toArray}
+    val emptyFun = fun { in: Rep[(Long,Array[Int])] => Pair(in._1, toRep(false))}
+    val multiplyEachRowByVectorElemFun = fun { in: Rep[(Array[Array[Double]], Array[Double])] =>
+      val Pair(matr, vec) = in
+      (matr zip vec).map { case Pair(row, e) => row.map { v => v * e}}
+    }
+
+    def stepSpark(closure: SparkClosure, cs0: Rep[RDDIndexedCollection[Int]], cs0T: Vector[Int], mu: DoubleRep)(state: SparkSVDState): SparkSVDState = {
+      val Tuple(parameters, mR, mN) = closure
+      val Tuple(maxIterations, convergeLimit, gamma1, gamma2, lambda6, lambda7, width, coeffDecrease) = parameters
+      val Pair(model0, meta) = state
+      val Tuple(vBu0, vBi0, mP0, mQ0, mY0) = model0
+
       val mE = errorMatrixSpark(mR, mN, mu)(model0)
-      val Tuple(vBu, vBi) = calculateBaselineSpark(mE, cs0, cs0T, mu, gamma1 * stepDecrease, lambda6)(bl)
-      val mP = calculateMPSpark(mE, gamma2 * stepDecrease, lambda7)(svd)
-      val mQ = calculateMQSpark(mE, mN, gamma2 * stepDecrease, lambda7)(svdpp)
-      val mY = calculateMYSpark(mE, mN, gamma2 * stepDecrease, lambda7)(svdpp)
-      //println("[CF] mP0: " + mP0)
-      //println("[CF] mQ0: " + mQ0)
-      //println("[CF] mY0: " + mY0)
-      val rmse = calculateRMSESpark(mE)
-      //println("[SVD++] rmse: " + rmse)
-      val modelNew = Tuple(vBu, vBi, mP, mQ, mY)
-      val stateNew = selectStateSpark(rmse, maxIterations, convergeLimit, coeffDecrease)(state, modelNew)
+      //val rmseNew = calculateRMSESpark(mE)
+
+      val Tuple(iteration, rmse, flagRunning, stepDecrease0) = meta
+      val rmseNew = calculateRMSESpark(mE)
+      val stepDecrease = coeffDecrease * stepDecrease0
+
+      val stateNew = IF (rmseNew > rmse) THEN {
+        Pair(model0, Tuple(iteration, rmse, flagFailure1, stepDecrease))
+      } ELSE {
+        val bl = Tuple(vBu0, vBi0)
+        val svd = Tuple(mP0, mQ0)
+        val svdpp = Tuple(mP0, mQ0, mY0)
+        val Tuple(vBu, vBi) = calculateBaselineSpark(mE, cs0, cs0T, mu, gamma1 * stepDecrease, lambda6)(bl)
+
+        val mQMultipliedReducedLifted: Rep[SRDD[Array[Double]]] = {
+          val indicesLifted: Rep[SRDD[(Long, Array[Int])]] = mE.rddIdxs.indexedRdd
+          val errorsLifted: Rep[SRDD[Array[Double]]] = mE.rddVals.rdd
+          val mQ0CutLifted: Rep[SRDD[Array[Array[Double]]]] = applyLifted(mQ0.rddVals.indexedRdd, indicesLifted)
+
+          val multipliedLifted: Rep[SRDD[Array[Array[Double]]]] = (mQ0CutLifted zip errorsLifted).map(multiplyEachRowByVectorElemFun)
+          val res = multipliedLifted.map(fun { in: Rep[Array[Array[Double]]] =>
+            val numRows = in.length
+            array_rangeFrom0(width).map { col: Rep[Int] =>
+              array_rangeFrom0(numRows).map { row: Rep[Int] => in(row)(col)}.reduce
+            }
+          })
+          res.cache
+        }
+        val mP = calculateMPSpark(mE, gamma2 * stepDecrease, lambda7, mQMultipliedReducedLifted)(svd)
+        val mQ = calculateMQSpark(mE, mN, gamma2 * stepDecrease, lambda7)(svdpp)
+        val mY = calculateMYSpark(mE, mN, gamma2 * stepDecrease, lambda7, mQMultipliedReducedLifted)(svdpp)
+
+        val modelNew = Tuple(vBu, vBi, mP, mQ, mY)
+
+        val parameters = IF (iteration >= maxIterations) THEN {
+          Tuple(iteration, rmseNew, flagOverMaxIter, stepDecrease)
+        } ELSE {
+          IF (rmse - rmseNew < convergeLimit) THEN {
+            Tuple(iteration, rmseNew, flagConverged, stepDecrease)
+          } ELSE {
+            Tuple(iteration + oneInt, rmseNew, flagRunning, stepDecrease)
+          }
+        }
+
+        Pair(modelNew, parameters)
+      }
+      //val stateNew = selectStateSpark(rmse, maxIterations, convergeLimit, coeffDecrease)(state, modelNew)
       stateNew
     }
 
@@ -135,24 +176,30 @@ class SVDppSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil 
       exitFlag !== flagRunning
     }
 
-    def calculateRMSESpark(mE: Rep[SparkSparseMatrix[Double]]): DoubleRep = {
-      val coll = mE.rows.flatMap(v => v.nonZeroValues.map(v => v * v))
+    def calculateRMSESpark(mE: Rep[SparkSparseIndexedMatrix[Double]]): DoubleRep = {
+      val rdd: Rep[SRDD[(Double,Int)]] = mE.rddVals.rdd.map(fun{ v: Rep[Array[Double]] => Pair(v.map{el:Rep[Double] => el * el}.reduce, v.length)})
       // TODO LMS: this code fails in LMS backend (the previous line passes)
       //val coll = mE.rows.flatMap(v => v.nonZeroValues).map(v => v * v)
-      Math.sqrt(coll.reduce / coll.length.toDouble)
+      val redFun = fun[((Double,Int),(Double,Int)), (Double,Int)] { case Pair(Pair(i11,i12),Pair(i21,i22)) => Pair(i11 + i21, i12 + i22)}
+
+      val reduced: Rep[(Double, Int)] = rdd.fold((0.0,0))(redFun)
+      Math.sqrt(reduced._1 / reduced._2.toDouble)
     }
-    def calculateBaselineSpark(mE: Rep[SparkSparseMatrix[Double]], cs0: Coll[Int], cs0T: Vector[Int], mu: Rep[Double],
-                          gamma1: Rep[Double], lambda6: Rep[Double])(baseline: Rep[(DenseVector[Double],DenseVector[Double])]) : Rep[(DenseVector[Double],DenseVector[Double])] = {
+    def calculateBaselineSpark(mE: Rep[SparkSparseIndexedMatrix[Double]], cs0: Rep[RDDIndexedCollection[Int]], cs0T: Vector[Int], mu: Rep[Double],
+                          gamma1: Rep[Double], lambda6: Rep[Double])(baseline: Rep[(RDDIndexedCollection[Double],DenseVector[Double])]) : Rep[(RDDIndexedCollection[Double],DenseVector[Double])] = {
       val Pair(vBu0, vBi0) = baseline
       val c0 = one - gamma1 * lambda6
-      val cs = cs0.map(n => power(c0, n))
+      //val cs = cs0.map(n => power(c0, n))
       val csT = cs0T.items.map(n => power(c0, n))
-      val vBu = (mE.reduceByRows *^ gamma1) +^ (vBu0 *^ cs)
+      val vBu = (mE.rddVals.indexedRdd zip (vBu0.rdd zip cs0.rdd)).map(fun {in: Rep[((Long,Array[Double]), (Double, Int))] =>
+        val Pair(Pair(id,arr), Pair(bu0, n)) = in
+        Pair(id, arr.reduce* gamma1 + bu0*power(c0,n)) })
+      //val vBu = (mE.reduceByRows *^ gamma1) +^ (DenseVector(vBu0) *^ cs)
       val vBi = (mE.reduceByColumns *^ gamma1) +^ (vBi0 *^ csT)
-      (DenseVector(vBu.items), DenseVector(vBi.items))
+      (RDDIndexedCollection(vBu.cache), DenseVector(vBi.items))
     }
 
-    // move to States DSL
+    // Unused
     def selectStateSpark(rmseNew: DoubleRep, maxIterations: IntRep,
                     convergeLimit: DoubleRep, coeffDecrease: DoubleRep)
                    (state: SparkSVDState, modelNew: SparkSVDModel): SparkSVDState = {
@@ -181,93 +228,85 @@ class SVDppSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil 
       res
     }
 
-    def applyLifted[ValueType: Elem](rdd: Rep[SRDD[ValueType]], irdd: Rep[SRDD[Array[Int]]]): Rep[SRDD[Array[ValueType]]] = {
-      val rddWithIdxs: Rep[SPairRDDFunctions[Long, ValueType]] = rdd.zipWithIndex.map { fun{ in: Rep[(ValueType, Long)] => (in._2, in._1)} }
+    def applyTransposedLifted(sc: Rep[SSparkContext], rdd: Rep[SRDD[(Long,ValueType)]], irdd: Rep[SRDD[(Long,Array[Int])]], height: Rep[Int]): Rep[SRDD[Array[ValueType]]] = {
+      val rddWithIdxs = rdd
 
-      val idxsWithIdxs: Rep[SRDD[(Array[Int], Long)]] = irdd.zipWithIndex
-      val flatWithIdxs: Rep[SPairRDDFunctions[Long, Long]] = idxsWithIdxs.flatMap (fun { in: Rep[(Array[Int], Long)] => SSeq(in._1.map({ v: Rep[Int] => (v.toLong, in._2)})) })
+      val flatWithIdxs: Rep[SRDD[(Long, Long)]]= irdd.flatMap(fun { in: Rep[(Long, Array[Int])] => SSeq(in._2.map({ v: Rep[Int] => (in._1, v.toLong)})) })
+      val groupped: Rep[SRDD[(Long, SSeq[Long])]] = rddToPairRddFunctions(flatWithIdxs).groupByKey
 
-      val groupped: Rep[SRDD[(Long, SSeq[Long])]] = SPairRDDFunctionsImpl(flatWithIdxs).groupByKey
+      val joined: Rep[SRDD[(Long, (ValueType, SSeq[Long]))]] = rddToPairRddFunctions(rddWithIdxs).join(groupped)
 
-      val joined: Rep[SRDD[(Long, (ValueType, SSeq[Long]))]] = SPairRDDFunctionsImpl(rddWithIdxs).join(groupped)
+      val resFlat:Rep[SRDD[(Long,ValueType)]] = joined.flatMap(resFlatMapFun)
+      val empty = sc.makeRDD(SSeq(SArray.rangeFrom0(height)), sc.defaultParallelism ).map ( fun { in: Rep[Int] => Pair(in.toLong, toRep(false))})
+      //val empty = irdd.map( emptyFun )
 
-      val resFlat: Rep[SPairRDDFunctions[Long,ValueType]] = joined.flatMap (fun{ in: Rep[(Long, (ValueType, SSeq[Long]))] =>
-        val seq: Rep[SSeq[Long]] = in._3
-        val value: Rep[ValueType] = in._2
-        seq.map( fun{ i: Rep[Long] => (i,value)} )
-      })
-
-      val numRows = irdd.count
-      val sc = irdd.context
-      //val empty = sc.makeRDD(SSeq(SArray.rangeFrom0(numRows.toInt)), sc.defaultParallelism ).map ( fun[Int, (Long,Int)] { in: Rep[Int] => Pair(in.toLong, -1)})
-      val empty = irdd.zipWithIndex.map( fun { in: Rep[(Array[Int], Long)] => Pair(in._2, -1)} )
-
-      val res: Rep[SRDD[Array[ValueType]]] = SPairRDDFunctionsImpl(resFlat).groupWithExt(empty).map ( fun { in:Rep[(Long, (SSeq[ValueType], SSeq[Int]))] => in._2.toArray})
+      val res: Rep[SRDD[Array[ValueType]]] = rddToPairRddFunctions(resFlat).groupWithExt(empty).map(finalResFun) //( fun { in:Rep[(Long, (SSeq[ValueType], SSeq[Int]))] => in._2.toArray})
 
       res //SPairRDDFunctionsImpl(resFlat).groupByKey.map (fun { in: Rep[(Long, SSeq[ValueType])] => in._2.toArray})
     }
-    def transposeLocal(matr: Rep[SparkSparseMatrix[Double]]): Rep[SparkSparseMatrix[Double]] = {
+    def applyLifted(rdd: Rep[SRDD[(Long,ValueType)]], irdd: Rep[SRDD[(Long,Array[Int])]], needSwap: Boolean = true): Rep[SRDD[Array[ValueType]]] = {
+      val rddWithIdxs = rdd
+
+      val flatWithIdxs: Rep[SRDD[(Long, Long)]]= needSwap match {
+        //val idxsWithIdxs: Rep[SRDD[(Array[Int], Long)]] = irdd.map(swapArrIntLongFun) //fun{ in => Pair(in._2, in._1)})
+        case true => irdd.flatMap(flatMapWithIdxsFun) //(fun { in: Rep[(Array[Int], Long)] => SSeq(in._1.map({ v: Rep[Int] => (v.toLong, in._2)})) })
+        case false => irdd.flatMap(fun { in: Rep[(Long, Array[Int])] => SSeq(in._2.map({ v: Rep[Int] => (in._1, v.toLong)})) })
+      }
+
+      val groupped: Rep[SRDD[(Long, SSeq[Long])]] = rddToPairRddFunctions(flatWithIdxs).groupByKey
+
+      val joined: Rep[SRDD[(Long, (ValueType, SSeq[Long]))]] = rddToPairRddFunctions(rddWithIdxs).join(groupped)
+
+      val resFlat:Rep[SRDD[(Long,ValueType)]] = joined.flatMap(resFlatMapFun) /*(fun{ in: Rep[(Long, (ValueType, SSeq[Long]))] =>
+        val seq: Rep[SSeq[Long]] = in._3
+        val value: Rep[ValueType] = in._2
+        seq.map( fun{ i: Rep[Long] => (i,value)} )
+      })*/
+
+      //val empty = sc.makeRDD(SSeq(SArray.rangeFrom0(numRows.toInt)), sc.defaultParallelism ).map ( fun[Int, (Long,Int)] { in: Rep[Int] => Pair(in.toLong, -1)})
+      val empty = irdd.map( emptyFun )
+
+      val res: Rep[SRDD[Array[ValueType]]] = rddToPairRddFunctions(resFlat).groupWithExt(empty).map(finalResFun) //( fun { in:Rep[(Long, (SSeq[ValueType], SSeq[Int]))] => in._2.toArray})
+
+      res //SPairRDDFunctionsImpl(resFlat).groupByKey.map (fun { in: Rep[(Long, SSeq[ValueType])] => in._2.toArray})
+    }
+    def transposeLocal(matr: Rep[SparkSparseIndexedMatrix[Double]]): Rep[SparkSparseIndexedMatrix[Double]] = {
 
       val idxs: Rep[SRDD[Array[Int]]] = matr.rddIdxs.rdd
-      val vals: Rep[SRDD[Array[Double]]] = matr.rddVals.rdd
+      val vals: Rep[SRDD[(Long,Array[Double])]] = matr.rddVals.indexedRdd
       val sc: Rep[SSparkContext] = matr.sc
       val numRows = matr.numRows
       val numColumns = matr.numColumns
 
-      //val rs: Rep[SRDD[Int]] = sc.makeRDD(SSeq(SArray.rangeFrom0(numRows)))
-      val cols: Rep[SRDD[Int]] = sc.makeRDD(SSeq(SArray.rangeFrom0(numColumns)), sc.defaultParallelism)
 
-      //val flatValsWithRows: Rep[SRDD[(Int, Double)]] = (rs zip vals).flatMap( fun { rv: Rep[(Int, Array[Double])] => SSeq(rv._2.map { v: Rep[Double] => (rv._1,v)}) } )
-      val flatValsWithRows: Rep[SRDD[(Long, Double)]] = vals.zipWithIndex.flatMap( fun { rv: Rep[(Array[Double], Long)] => SSeq(rv._1.map { v: Rep[Double] => (rv._2,v)}) } )
-      val flatIdxs: Rep[SRDD[Int]] = idxs.flatMap( fun { a: Rep[Array[Int]] => SSeq(a) })
-      val zippedFlat: Rep[SRDD[(Int, (Long, Double))]] = flatIdxs zip flatValsWithRows
+      // TODO: CHeck if Int is OK
+      val hostCols = SSeq(SArray.rangeFrom0(numColumns).map { i => (i.toLong,toRep(false))})
+      val cols: Rep[SRDD[(Long,Boolean)]] = rddToPairRddFunctions(sc.makeRDD(hostCols, sc.defaultParallelism)).partitionBy(SPartitioner.defaultPartitioner(sc.defaultParallelism))
 
-      //type SIT = SSeq[(Int,Double)]
+      val flatValsWithRows: Rep[SRDD[(Long, Double)]] = vals.flatMap( fun { rv: Rep[(Long,Array[Double])] => SSeq(rv._2.map { v: Rep[Double] => (rv._1,v)}) } )
+      val flatIdxs: Rep[SRDD[Long]] = idxs.flatMap( fun { a: Rep[Array[Int]] => SSeq(a.map{i => i.toLong}) })
+      val zippedFlat: Rep[SRDD[(Long, (Long, Double))]] = flatIdxs zip flatValsWithRows
 
-      val empty: Rep[Int] = -1 //SSeq.empty[(Int,T)]
-      val eCols: Rep[SPairRDDFunctionsImpl[Int, Int]] =  rddToPairRddFunctions(rddToPairRddFunctions(cols.map (fun{c => (c, empty)})).partitionBy(SPartitioner.defaultPartitioner(sc.defaultParallelism)))
+      val eCols: Rep[SPairRDDFunctionsImpl[Long, Boolean]] =  rddToPairRddFunctions(cols)
 
+      val groupped = eCols.groupWithExt(zippedFlat)
 
-      val r = eCols.groupWithExt(zippedFlat)
+      val el: LElem[(Long,(SSeq[Boolean], SSeq[(Long,Double)]))] = toLazyElem(PairElem(element[Long], PairElem(element[SSeq[Boolean]], element[SSeq[(Long,Double)]])))
+      val eB: Elem[((Long, Array[Int]), (Long, Array[Double]))] = PairElem(PairElem(element[Long], element[Array[Int]]), PairElem(element[Long], element[Array[Double]]))
+      val r: Rep[SRDD[((Long,Array[Int]), (Long, Array[Double]))]] = groupped.map(fun{in: Rep[(Long, (SSeq[Boolean], SSeq[(Long,Double)]))] =>
+        val Pair(ind,Pair(_,seq)) = in
+        val idxs = seq.map(fun {in: Rep[(Long,Double)] => in._1.toInt}).toArray
+        val vals = seq.map(fun {in: Rep[(Long,Double)] => in._2}).toArray
+        Pair(Pair(ind, idxs), Pair(ind, vals))
+      }(el, eB))
 
-      val el: LElem[(Int,(SSeq[Int], SSeq[(Long,Double)]))] = toLazyElem(PairElem(element[Int], PairElem(element[SSeq[Int]], element[SSeq[(Long,Double)]])))
-      val result = r.map(fun{in: Rep[(Int, (SSeq[Int], SSeq[(Long,Double)]))] =>
-        val Pair(_,Pair(_,seq)) = in
-        seq.toArray
-      }(el))
+      val result: Rep[SPairRDDFunctionsImpl[(Long,Array[Int]), (Long, Array[Double])]] = rddToPairRddFunctions(r)
 
-      val resIdxs: Rep[RDDCollection[Array[Int]]] = RDDCollection(result.map(fun{ in: Rep[Array[(Long,Double)]] => in.map{ i => i._1.toInt}}))
-      val resVals: Rep[RDDCollection[Array[Double]]] = RDDCollection(result.map(fun{ in: Rep[Array[(Long,Double)]] => in.map{ i => i._2}}))
-
-      SparkSparseMatrix(resIdxs, resVals, numRows)
-    }
-
-    def transposeIndicesLocal(matr: Rep[SparkSparseMatrix[Double]]): Rep[SRDD[Array[Int]]] = {
-
-      val idxs: Rep[SRDD[Array[Int]]] = matr.rddIdxs.rdd
-      val sc: Rep[SSparkContext] = matr.sc
-      val numColumns = matr.numColumns
-
-      val cols: Rep[SRDD[Int]] = sc.makeRDD(SSeq(SArray.rangeFrom0(numColumns)), sc.defaultParallelism)
-
-      val flatIdxsWithRows: Rep[SRDD[(Int, Int)]] = idxs.zipWithIndex.flatMap( fun { rv: Rep[(Array[Int], Long)] => SSeq(rv._1.map { v: Rep[Int] => Pair(v,rv._2.toInt)}) } )
-
-      val empty: Rep[Boolean] = false //SSeq.empty[(Int,T)]
-      val eCols: Rep[SPairRDDFunctionsImpl[Int, Boolean]] =  rddToPairRddFunctions(rddToPairRddFunctions(cols.map (fun{c => (c, empty)})).partitionBy(SPartitioner.defaultPartitioner(sc.defaultParallelism)))
-
-      val r: Rep[SRDD[(Int, (SSeq[Boolean], SSeq[Int]))]] = eCols.groupWithExt(flatIdxsWithRows)
-
-      val el: LElem[(Int,(SSeq[Boolean], SSeq[Int]))] = toLazyElem(PairElem(element[Int], PairElem(element[SSeq[Boolean]], element[SSeq[Int]])))
-      val result: Rep[SRDD[Array[Int]]] = r.map(fun{in: Rep[(Int, (SSeq[Boolean], SSeq[Int]))] =>
-        val Pair(_,Pair(_,seq)) = in
-        seq.toArray
-      }(el))
-
-      result
+      SparkSparseIndexedMatrix(RDDIndexedCollection(result.keys), RDDIndexedCollection(result.values), numRows)
     }
 
     // move to Datasets DSL? Or better to Models DSL?
-    def errorMatrixSpark(mR: Rep[SparkSparseMatrix[Double]], mN: Rep[SparkSparseMatrix[Double]], mu: DoubleRep)(model: SparkSVDModel): Rep[SparkSparseMatrix[Double]] = {
+    def errorMatrixSpark(mR: Rep[SparkSparseIndexedMatrix[Double]], mN: Rep[SparkSparseIndexedMatrix[Double]], mu: DoubleRep)(model: SparkSVDModel): Rep[SparkSparseIndexedMatrix[Double]] = {
       //println("[SVD++] mu: " + mu)
       val Tuple(vBu, vBi, mP, mQ, mY) = model
       val nItems = mR.numColumns
@@ -294,49 +333,55 @@ class SVDppSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil 
         Currently, it is made manually
       */
 
-      val indicesLifted: Rep[SRDD[Array[Int]]] = mN.rddIdxs.rdd
-      val vrIndicesLifted: Rep[SRDD[Array[Int]]] = mR.rddIdxs.rdd
+      val indicesLifted: Rep[SRDD[(Long,Array[Int])]] = mN.rddIdxs.indexedRdd
+      val vrIndicesLifted: Rep[SRDD[(Long,Array[Int])]] = mR.rddIdxs.indexedRdd
 
-      val kLifted: Rep[SRDD[Double]] = indicesLifted.map { indices: Rep[Array[Int]] =>
-        IF (indices.length > zeroInt) THEN { one / Math.sqrt(indices.length.toDouble) } ELSE zero
+      val kLifted: Rep[SRDD[Double]] = indicesLifted.map { indices: Rep[(Long,Array[Int])] =>
+        val idx = indices._1
+        val k = IF (indices._2.length > zeroInt) THEN { one / Math.sqrt(indices._2.length.toDouble) } ELSE zero
+        k
       }
 
-      val arrayReduceFun =  fun {in: Rep[(Array[Double],Array[Double])] =>
-        (in._1 zip in._2).map{ pair => pair._1 + pair._2}
-      }
+      val mYCutLifted: Rep[SRDD[Array[Array[Double]]]] =  applyLifted(mY.rddVals.indexedRdd, indicesLifted)
 
-      val applyLiftedReduced: Rep[SRDD[Array[Double]]] =  applyLifted[Array[Double]](mY.rddVals.rdd, indicesLifted). map { in: Rep[Array[Array[Double]]] =>
+      val applyLiftedReduced: Rep[SRDD[Array[Double]]] =   mYCutLifted.map { in: Rep[Array[Array[Double]]] =>
         val numRows = in.length
-        array_rangeFrom0(mY.numColumns).map { col: Rep[Int] =>
-          array_rangeFrom0(numRows).map { row: Rep[Int] => in(row)(col) }.reduce
+        val red: Rep[Array[Double]] = array_rangeFrom0(mY.numColumns).map { col: Rep[Int] =>
+          array_rangeFrom0(numRows).map { row: Rep[Int] => (in)(row)(col) }.reduce
         }
+        red
       }
 
-      val vPvYLifted: Rep[SRDD[Array[Double]]] = (applyLiftedReduced zip (mP.rddVals.rdd zip kLifted)) map ( fun { case Tuple(vY, vP, k) =>
-        (vY zip vP).map { case Pair(y,p) => y * k + p}
+      val vPvYLifted: Rep[SRDD[Array[Double]]] = (applyLiftedReduced zip (mP.rddVals.rdd zip kLifted)) map ( fun { case Pair(vY, Pair(vP, k)) =>
+        val value = (vY zip vP).map { case Pair(y,p) => y * k + p}
+        value
       })
 
-      val mQCutLifted: Rep[SRDD[Array[Array[Double]]]] = applyLifted[Array[Double]](mQ.rddVals.rdd, vrIndicesLifted)
+      val mQCutLifted: Rep[SRDD[Array[Array[Double]]]] = applyLifted(mQ.rddVals.indexedRdd, vrIndicesLifted)
 
       val mQLiftedReduced: Rep[SRDD[Array[Double]]] = (mQCutLifted zip vPvYLifted).map (fun { case Pair(mQCut, vPvY) =>
-          mQCut.map { row: Rep[Array[Double]] =>
+          val value: Rep[Array[Double]] = mQCut.map { row: Rep[Array[Double]] =>
             (row zip vPvY).map { in: Rep[(Double, Double)] => in._1 * in._2}.reduce
           }
+          value
       })
 
-      val vBrdd = mR.sc.makeRDD(vBu.items.seq)  // Lift non-distrubuted value, from closure
-      val vsE = ( mQLiftedReduced zip (vBrdd zip (mR.rddIdxs.rdd zip mR.rddVals.rdd))) map fun({ case Tuple(mQReduced, bu, vRidxs, vRvals) =>
-        val vBii = vBi.items(Collection(vRidxs)).arr
-        val newValues = (vRvals zip (vBii zip mQReduced)).map { case Tuple(r, bi, pq) =>
-          r - mu - bu - bi - pq
-        }
-        SparseVector(Collection(vRidxs), Collection(newValues), nItems)
+      val vBrdd = vBu.rdd
+      val vBiBC: Rep[SBroadcast[Collection[Double]]] = mR.sc.broadcast(vBi.items)
+
+      val vsE: Rep[SRDD[(Long, Array[Double])]] = ( mQLiftedReduced zip (vBrdd zip (mR.rddIdxs.indexedRdd zip mR.rddVals.rdd))) map fun({
+          case Pair(mQReduced, Pair( bu, Pair(Pair(id,vRidxs), vRvals))) =>
+            val vBii = vBiBC.value.apply(Collection(vRidxs)).arr
+            val newValues = (vRvals zip (vBii zip mQReduced)).map { case Tuple(r, bi, pq) =>
+              r - mu - bu - bi - pq
+            }
+            Pair(id, newValues)
       })
-      RatingsMatrix(mR.sc, RDDCollection(vsE.cache), nItems)
+      RatingsMatrix(mR.rddIdxs, RDDIndexedCollection(vsE.cache), nItems)
     }
 
     // move to Models DSL
-    def calculateMPSpark(mE: Rep[SparkSparseMatrix[Double]], gamma2: DoubleRep, lambda7: DoubleRep)(svd: SparkModSVD): Rep[SparkDenseMatrix[Double]] = {
+    def calculateMPSpark(mE: Rep[SparkSparseIndexedMatrix[Double]], gamma2: DoubleRep, lambda7: DoubleRep, mQMultipliedReducedLifted: Rep[SRDD[Array[Double]]])(svd: SparkModSVD): Rep[SparkDenseIndexedMatrix[Double]] = {
 
       val Pair(mP0, mQ0) = svd
       //mP0
@@ -359,37 +404,42 @@ class SVDppSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil 
         There should be lifted version of each operation here.
         Currently, it is made manually
       */
-      val indicesLifted: Rep[SRDD[Array[Int]]] = mE.rddIdxs.rdd
+      val indicesLifted: Rep[SRDD[(Long,Array[Int])]] = mE.rddIdxs.indexedRdd
+      /*
       val valuesLifted: Rep[SRDD[Array[Double]]] = mE.rddVals.rdd
-      val lenLifted: Rep[SRDD[Int]] = indicesLifted.map { indices: Rep[Array[Int]] => indices.length}
+      val lenLifted: Rep[SRDD[Int]] = indicesLifted.map { indices: Rep[(Long,Array[Int])] => indices._2.length}
 
-      val mQ0CutLifted: Rep[SRDD[Array[Array[Double]]]] = applyLifted[Array[Double]](mQ0.rddVals.rdd, indicesLifted)
+      val mQ0CutLifted: Rep[SRDD[Array[Array[Double]]]] = applyLifted(mQ0.rddVals.indexedRdd, indicesLifted)
 
-      val factorMatrixLifted: Rep[SRDD[Array[Array[Double]]]] = (mQ0CutLifted zip valuesLifted).map (fun { case Pair(mQ0_cut, values) =>
+      val factorMatrixLifted: Rep[SRDD[Array[Array[Double]]]] = (mQ0CutLifted zip valuesLifted).map(multiplyEachRowByVectorElemFun) /*(fun { case Pair(mQ0_cut, values) =>
         (mQ0_cut zip values).map { case Pair(vQ0, e) => vQ0.map { v => v * e}}
-      })
-      val vP1Lifted: Rep[SRDD[Array[Double]]] = factorMatrixLifted.map ( fun { in: Rep[Array[Array[Double]]] =>
+      })  */
+      val mQMultipliedReducedLifted: Rep[SRDD[Array[Double]]] = factorMatrixLifted.map /*(reduceByColumnsFun) */( fun { in: Rep[Array[Array[Double]]] =>
         val numRows = in.length
         array_rangeFrom0(mQ0.numColumns).map { col: Rep[Int] =>
           array_rangeFrom0(numRows).map { row: Rep[Int] => in(row)(col) }.reduce
         }
-      })
+      }) */
 
-      val kLifted: Rep[SRDD[Double]] = lenLifted.map( fun { len: Rep[Int] =>
+      val kLifted: Rep[SRDD[Double]] = indicesLifted.map( fun { row: Rep[(Long, Array[Int])] =>
+        val len = row._2.length
         IF (len > zeroInt) THEN power(one - gamma2 * lambda7, len) ELSE one
       })
 
-      val vsP: Rep[SRDD[Array[Double]]] = (vP1Lifted zip (mP0.rddVals.rdd zip kLifted)).map( fun { case Tuple(vP1, vP0, k) =>
-        (vP1 zip vP0).map { case Pair(p1, p0) => p1 * gamma2 + p0 *k}
+      val vsP: Rep[SRDD[(Long,Array[Double])]] = (mQMultipliedReducedLifted zip (mP0.rddVals.indexedRdd zip kLifted)).map( fun { case Tuple(vP1, Pair(id,vP0), k) =>
+        val value= (vP1 zip vP0).map { case Pair(p1, p0) => p1 * gamma2 + p0 *k}
+        Pair(id,value)
       })
 
       FactorsMatrixNew(vsP.cache, width)
     }
 
     // move to Models DSL
-    def calculateMQSpark(mE: Rep[SparkSparseMatrix[Double]], mN: Rep[SparkSparseMatrix[Double]],
-                    gamma2: DoubleRep, lambda7: DoubleRep)(svdpp: SparkModSVDpp): Rep[SparkDenseMatrix[Double]] = {
+    def calculateMQSpark(mE: Rep[SparkSparseIndexedMatrix[Double]], mN: Rep[SparkSparseIndexedMatrix[Double]],
+                    gamma2: DoubleRep, lambda7: DoubleRep)(svdpp: SparkModSVDpp): Rep[SparkDenseIndexedMatrix[Double]] = {
       val Tuple(mP0, mQ0, mY0) = svdpp
+      //mQ0
+
       val mEt = transposeLocal(mE)
       val width = mQ0.numColumns
       /* Initial version */
@@ -424,52 +474,56 @@ class SVDppSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil 
         Currently, it is made manually
       */
       val mYu = {
-        val indicesLifted = mN.rddIdxs.rdd
-        val lenLifted: Rep[SRDD[Int]] = indicesLifted.map(fun { idxs: Rep[Array[Int]] => idxs.length})
-        val multLifted: Rep[SRDD[Double]] = lenLifted.map(fun { len: Rep[Int] => IF(len > zeroInt)(one / Math.sqrt(len.toDouble)) ELSE zero})
+        val indicesLifted = mN.rddIdxs.indexedRdd
+        val lenLifted: Rep[SRDD[(Long,Int)]] = indicesLifted.map(fun { idxs: Rep[(Long,Array[Int])] => Pair(idxs._1,idxs._2.length)})
+        val multLifted: Rep[SRDD[(Long,Double)]] = lenLifted.map(fun { len: Rep[(Long,Int)] => Pair(len._1, IF(len._2 > zeroInt)(one / Math.sqrt(len._2.toDouble)) ELSE zero ) })
 
-        val mY0CutLifted: Rep[SRDD[Array[Array[Double]]]] = applyLifted[Array[Double]](mY0.rddVals.rdd, indicesLifted)
-        val mY0ReducedLifted: Rep[SRDD[Array[Double]]] = mY0CutLifted.map(fun { in: Rep[Array[Array[Double]]] =>
+        val mY0CutLifted: Rep[SRDD[Array[Array[Double]]]] = applyLifted(mY0.rddVals.indexedRdd, indicesLifted)
+
+        val mY0ReducedLifted: Rep[SRDD[Array[Double]]] = mY0CutLifted.map/*(reduceByColumnsFun) */(fun { in: Rep[Array[Array[Double]]] =>
           val numRows = in.length
           array_rangeFrom0(width).map { col: Rep[Int] =>
             array_rangeFrom0(numRows).map { row: Rep[Int] => in(row)(col)}.reduce
           }
         })
-        val vsYu: Rep[SRDD[Array[Double]]] = (mY0ReducedLifted zip multLifted).map(fun { case Pair(mY0Reduced, mult) =>
-          mY0Reduced.map { i: Rep[Double] => i * mult}
+        val vsYu: Rep[SRDD[(Long,Array[Double])]] = (mY0ReducedLifted zip multLifted).map(fun { case Pair(mY0Reduced, Pair(id,mult)) =>
+          val value =  mY0Reduced.map { i: Rep[Double] => i * mult}
+          Pair(id,value)
         })
         FactorsMatrixNew(vsYu, width)
       }
+
       val vsQ0: Rep[SRDD[Array[Double]]] = mQ0.rddVals.rdd
 
-      val vsQ = {
-        val indicesLifted: Rep[SRDD[Array[Int]]] = mEt.rddIdxs.rdd
+      val vsQ: Rep[SRDD[(Long,Array[Double])]] = {
+        val indicesLifted: Rep[SRDD[(Long,Array[Int])]] = mEt.rddIdxs.indexedRdd
         val nonZeroValsLifted: Rep[SRDD[Array[Double]]] = mEt.rddVals.rdd
 
-        val mP0CutLifted: Rep[SRDD[Array[Array[Double]]]] = applyLifted[Array[Double]](mP0.rddVals.rdd, indicesLifted)
-        val mYuCutLifted: Rep[SRDD[Array[Array[Double]]]] = applyLifted[Array[Double]](mYu.rddVals.rdd, indicesLifted)
+        val mP0CutLifted: Rep[SRDD[Array[Array[Double]]]] = applyLifted(mP0.rddVals.indexedRdd, indicesLifted)
+        val mYuCutLifted: Rep[SRDD[Array[Array[Double]]]] = applyLifted(mYu.rddVals.indexedRdd, indicesLifted)
 
         val plused: Rep[SRDD[Array[Array[Double]]]] = (mP0CutLifted zip mYuCutLifted).map (fun { in: Rep[(Array[Array[Double]], Array[Array[Double]])] =>
           (in._1 zip in._2).map { arrs: Rep[(Array[Double], Array[Double])] =>
             (arrs._1 zip arrs._2).map { vs: Rep[(Double, Double)] => vs._1 + vs._2}
         }
         })
-        val multiplied :Rep[SRDD[Array[Array[Double]]]] = (plused zip nonZeroValsLifted).map( fun { in: Rep[(Array[Array[Double]], Array[Double])] =>
+        val multiplied :Rep[SRDD[Array[Array[Double]]]] = (plused zip nonZeroValsLifted).map(multiplyEachRowByVectorElemFun)/*( fun { in: Rep[(Array[Array[Double]], Array[Double])] =>
           (in._1 zip in._2).map { in: Rep[(Array[Double], Double)] => in._1.map { v => v* in._2} }
-        })
+        }) */
 
-        val vQ1Lifted: Rep[SRDD[Array[Double]]] = multiplied.map( fun { in: Rep[Array[Array[Double]]] =>
+        val vQ1Lifted: Rep[SRDD[Array[Double]]] = multiplied.map/*(reduceByColumnsFun) */( fun { in: Rep[Array[Array[Double]]] =>
           val numRows = in.length
           array_rangeFrom0(width).map { col: Rep[Int] =>
             array_rangeFrom0(numRows).map { row: Rep[Int] => in(row)(col)}.reduce
           }
         } )
 
-        val multsLifted: Rep[SRDD[Double]] = indicesLifted.map(fun { indices: Rep[Array[Int]] => (one - indices.length.toDouble * gamma2 * lambda7)})
+        val multsLifted: Rep[SRDD[(Long,Double)]] = indicesLifted.map(fun { case Pair(id, arr) => Pair(id,(one - arr.length.toDouble * gamma2 * lambda7)) })
 
-        val res: Rep[SRDD[Array[Double]]] = (vsQ0 zip (vQ1Lifted zip multsLifted)).map ( fun { case Tuple(vQ0, vQ1, mult) =>
-          (vQ0 zip vQ1).map { case Tuple(v0,v1) => v0 * mult + v1 * gamma2}
-        } )
+        val res: Rep[SRDD[(Long,Array[Double])]] = (vsQ0 zip (vQ1Lifted zip multsLifted)).map ( fun { case Tuple(vQ0, vQ1, id,mult) =>
+          val value = (vQ0 zip vQ1).map { case Tuple(v0,v1) => v0 * mult + v1 * gamma2}
+          Pair(id, value)
+        })
 
         res
       }
@@ -478,8 +532,8 @@ class SVDppSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil 
     }
 
     // move to Models DSL
-    def calculateMYSpark(mE: Rep[SparkSparseMatrix[Double]], mN: Rep[SparkSparseMatrix[Double]],
-                    gamma2: DoubleRep, lambda7: DoubleRep)(svdpp: SparkModSVDpp): Rep[SparkDenseMatrix[Double]] = {
+    def calculateMYSpark(mE: Rep[SparkSparseIndexedMatrix[Double]], mN: Rep[SparkSparseIndexedMatrix[Double]],
+                    gamma2: DoubleRep, lambda7: DoubleRep, mQMultipliedReducedLifted: Rep[SRDD[Array[Double]]])(svdpp: SparkModSVDpp): Rep[SparkDenseIndexedMatrix[Double]] = {
       val Tuple(mP0, mQ0, mY0) = svdpp
      //mY0
       val c0 = one - gamma2 * lambda7
@@ -506,25 +560,24 @@ class SVDppSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil 
       }
 
       */
-      val addDevs: Rep[SRDD[Array[Double]]] = {
-        val indicesLifted: Rep[SRDD[Array[Int]]] = mE.rddIdxs.rdd
-        val errorsLifted: Rep[SRDD[Array[Double]]] = mE.rddVals.rdd
-        val mQ0CutLifted: Rep[SRDD[Array[Array[Double]]]] = applyLifted(mQ0.rddVals.rdd, indicesLifted)
-        val cLifted: Rep[SRDD[Double]] = indicesLifted.map( fun { indices: Rep[Array[Int]] => IF ( indices.length > zeroInt) THEN one / Math.sqrt(indices.length.toDouble) ELSE zero} )
+      val addDevs: Rep[SRDD[(Long,Array[Double])]] = {
+        val indicesLifted: Rep[SRDD[(Long,Array[Int])]] = mE.rddIdxs.indexedRdd
+        /*val errorsLifted: Rep[SRDD[Array[Double]]] = mE.rddVals.rdd
+        val mQ0CutLifted: Rep[SRDD[Array[Array[Double]]]] = applyLifted(mQ0.rddVals.indexedRdd, indicesLifted)
 
-        val multipliedLifted: Rep[SRDD[Array[Array[Double]]]] = (mQ0CutLifted zip errorsLifted).map (fun { in: Rep[(Array[Array[Double]], Array[Double])] =>
-          (in._1 zip in._2).map { case Pair(vQc,e) => vQc.map {vq => vq*e} }
-        })
-
-        val reducedLifted: Rep[SRDD[Array[Double]]] = multipliedLifted.map( fun { in: Rep[Array[Array[Double]]] =>
+        val multipliedLifted: Rep[SRDD[Array[Array[Double]]]] = (mQ0CutLifted zip errorsLifted).map(multiplyEachRowByVectorElemFun)
+        val mQMultipliedReducedLifted: Rep[SRDD[Array[Double]]] = multipliedLifted.map/*(reduceByColumnsFun) */( fun { in: Rep[Array[Array[Double]]] =>
             val numRows = in.length
             array_rangeFrom0(width).map { col: Rep[Int] =>
               array_rangeFrom0(numRows).map { row: Rep[Int] => in(row)(col)}.reduce
             }
           } )
-
-        val res: Rep[SRDD[Array[Double]]] = (reducedLifted zip cLifted).map (fun { in: Rep[(Array[Double], Double)] =>
-          in._1.map { v => v*in._2}
+        */
+        // Fused manually
+        //val cLifted: Rep[SRDD[Double]] = indicesLifted.map( fun { indices: Rep[Array[Int]] => IF ( indices.length > zeroInt) THEN one / Math.sqrt(indices.length.toDouble) ELSE zero} )
+        val res: Rep[SRDD[(Long,Array[Double])]] = (mQMultipliedReducedLifted zip /*cLifted*/indicesLifted).map (fun { case Tuple(r, id, indices) /*in: Rep[(Array[Double], Double)]*/ =>
+          val c = IF ( indices.length > zeroInt) THEN one / Math.sqrt(indices.length.toDouble) ELSE zero
+          Pair(id, r.map { v => v*c})
         })
         res
       }
@@ -539,22 +592,22 @@ class SVDppSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil 
           (vY0 *^ k) +^ addDevY
         } ELSE { vY0 }
       }  */
-      val vsY:  Rep[SRDD[Array[Double]]] = {
-        val indicesLifted: Rep[SRDD[Array[Int]]] = transposeIndicesLocal(mN)
-        val lenLifted: Rep[SRDD[Int]] = indicesLifted.map( fun { in: Rep[Array[Int]] => in.length} )
-        val kLifted: Rep[SRDD[Double]] = lenLifted.map (fun { len: Rep[Int] => IF (len > zeroInt) THEN power(c0,len) ELSE one } )
+      val vsY:  Rep[SRDD[(Long,Array[Double])]] = {
+        // Fused manually
+        val mAddDevCutLifted: Rep[SRDD[Array[Array[Double]]]] = applyTransposedLifted(mN.sc, mAddDev.rddVals.indexedRdd, mN.rddIdxs.indexedRdd, mN.numColumns)
 
-        val mAddDevCutLifted: Rep[SRDD[Array[Array[Double]]]] = applyLifted(mAddDev.rddVals.rdd, indicesLifted)
-
-        val addDevYLifted: Rep[SRDD[Array[Double]]] = mAddDevCutLifted.map( fun { in: Rep[Array[Array[Double]]] =>
+        val addDevYLifted: Rep[SRDD[(Double,Array[Double])]] = mAddDevCutLifted.map/*(reduceByColumnsFun) */( fun { in: Rep[Array[Array[Double]]] =>
           val numRows = in.length
-          array_rangeFrom0(width).map { col: Rep[Int] =>
+          val arr = array_rangeFrom0(width).map { col: Rep[Int] =>
             array_rangeFrom0(numRows).map { row: Rep[Int] => in(row)(col)}.reduce
           }
+          val k = IF (numRows > zeroInt) THEN power(c0,numRows) ELSE one
+          Pair(k, arr)
         } )
 
-        val res: Rep[SRDD[Array[Double]]] = (mY0.rddVals.rdd zip (kLifted zip addDevYLifted)).map ( fun { case Tuple(vY0, k, addDevY) =>
-          (vY0 zip addDevY).map { in: Rep[(Double, Double)] => in._1 * k + in._2}
+        val res: Rep[SRDD[(Long,Array[Double])]] = (mY0.rddVals.indexedRdd zip (/*kLifted zip */addDevYLifted)).map ( fun { case Pair(Pair(id,vY0), Pair(k, addDevY)) =>
+          val value = (vY0 zip addDevY).map { in: Rep[(Double, Double)] => in._1 * k + in._2}
+          Pair(id,value)
         })
         res
       }
@@ -562,7 +615,7 @@ class SVDppSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil 
       mY
     }
 
-    def trainSpark(closure: SparkClosure, stddev: DoubleRep)(implicit o: Overloaded1): SparkSVDState = {
+    def trainSpark(closure: SparkClosure, stddev: DoubleRep)(implicit o: Overloaded1): SparkSVDRes = {
       val Tuple(parameters, mR, _) = closure
       val Tuple(_, _, _, _, _, _, width, _) = parameters
       val nUsers = mR.numRows
@@ -571,38 +624,60 @@ class SVDppSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil 
       trainSparkInternal(closure, mdl0)
     }
 
-    def trainSparkInternal(closure: SparkClosure, mdl: SparkSVDModel): SparkSVDState = {
+    def trainSparkInternal(closure: SparkClosure, mdl: SparkSVDModel): SparkSVDRes = {
       val Tuple(_, mR, _) = closure
       //val start: StateML = StateSVDpp(mdl, oneInt, initialRMSE, flagRunning, one)//.convertTo[AbstractState]
       val meta = Tuple(oneInt, initialRMSE, flagRunning, one)
       val start: SparkSVDState = Pair(mdl, meta)//.convertTo[AbstractState]
       val mu = average(mR)
-      val cs0 = mR.rows.map(v => v.nonZeroItems.length)
+      val cs0 = RDDIndexedCollection(mR.rddIdxs.indexedRdd.map(fun {v => (v._1,v._2.length)}) )
       val cs0T = mR.countNonZeroesByColumns
-      from(start).until(convergedSpark)(stepSpark(closure, cs0, cs0T, mu))
+      val stateFinal = from(start).until(convergedSpark)(stepSpark(closure, cs0, cs0T, mu))
+      Pair(mu,stateFinal)
     }
 
-    def SVDppSpark_Train = fun { in: Rep[(ParametersPaired, (RDD[Array[Int]], (RDD[Array[Double]],
+    def SVDppSpark_Train = fun { in: Rep[(ParametersPaired, (RDD[(Long,Array[Int])], (RDD[(Long,Array[Double])],
       (Int, Double))))] =>
       val Tuple(parametersPaired, idxs, vals, nItems, stddev) = in
 
       val rddIndexes = SRDDImpl(idxs)
       val rddValues = SRDDImpl(vals)
-      val mR = SparkSparseMatrix(RDDCollection(rddIndexes), RDDCollection(rddValues), nItems)
+      val mR = SparkSparseIndexedMatrix(RDDIndexedCollection(rddIndexes), RDDIndexedCollection(rddValues), nItems)
 
       val closure = Tuple(parametersPaired, mR, mR)
-      val stateFinal = trainSpark(closure, stddev)
-
-      val Tuple(res1, res2,res3, res4, res5) = stateFinal
-      Pair(res1._1.items.arr, Pair(res1._2.items.arr, Pair(res2, Pair(res3, Pair(res4, res5)))) )
+      val Pair(mu,stateFinal) = trainSpark(closure, stddev)
+      val Tuple(model,res2,res3, res4, res5) = stateFinal
+      val Tuple(vBu, vBi, mP, mQ, mY) = model
+      Pair(mu,
+        Pair(vBu.indexedRdd.wrappedValueOfBaseType,
+          Pair(vBi.items.arr,
+            Pair( mP.rddVals.indexedRdd.wrappedValueOfBaseType,
+              Pair ( mQ.rddVals.indexedRdd.wrappedValueOfBaseType,
+                Pair ( mY.rddVals.indexedRdd.wrappedValueOfBaseType,
+                  Pair(res2,
+                    Pair(res3,
+                      Pair(res4, res5)))) ) ) ) ) )
     }
 
-    def SVDppSpark_errorMatrix = fun { in: Rep[(ParametersPaired, (RDD[Array[Int]], (RDD[Array[Double]], (Int, Double))))] =>
+    def SVDppSpark_PredictRating = fun { in:  Rep[((Int, Int),(Int, (Double, (RDD[(Long, Double)], (Array[Double], (RDD[(Long, Array[Double])], (RDD[(Long, Array[Double])], (RDD[(Long, Array[Double])]))))))) )] =>
+      val Pair(Pair(user, item), Tuple(nColumns, mu, bu, bi, mRDD, qRDD, yRDD)) = in
+      val vBu = DenseVector(RDDIndexedCollection(SRDDImpl(bu)))
+      val vBi = DenseVector(Collection(bi))
+      val mP = SparkDenseIndexedMatrix(RDDIndexedCollection(SRDDImpl(mRDD)), nColumns)
+      val mQ = SparkDenseIndexedMatrix(RDDIndexedCollection(SRDDImpl(qRDD)), nColumns)
+      val mY = SparkDenseIndexedMatrix(RDDIndexedCollection(SRDDImpl(yRDD)), nColumns)
+      val model = Tuple(vBu, vBi, mP, mQ, mY)
+      val instance = new SparkSVDpp()
+      val rating = instance.predictRating(user, item, mu, model)
+      rating
+    }
+
+    def SVDppSpark_errorMatrix = fun { in: Rep[(ParametersPaired, (RDD[(Long,Array[Int])], (RDD[(Long,Array[Double])], (Int, Double))))] =>
       val Tuple(parametersPaired, idxs, vals, nItems,stddev) = in
 
       val rddIndexes = SRDDImpl(idxs)
       val rddValues = SRDDImpl(vals)
-      val mR = SparkSparseMatrix(RDDCollection(rddIndexes), RDDCollection(rddValues), nItems)
+      val mR = SparkSparseIndexedMatrix(RDDIndexedCollection(rddIndexes), RDDIndexedCollection(rddValues), nItems)
 
       val Tuple(_, _, _, _, _, _, width, _) = parametersPaired
       val nUsers = mR.numRows
@@ -621,26 +696,24 @@ class SVDppSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil 
         toSystemOut = !getOutput,
         commands = if (command == null) cmpl.defaultCompilerConfig.sbt.commands else Seq(command)))
 
-  /*test("SVDppSpark ErrorMatrix Code Gen") {
-    val testCompiler = new SparkScalanCompiler with SparkLADslExp with SVDppSpark with CFDslExp {
-      self =>
-      val sparkContext = globalSparkContext
-      val sSparkContext = null
-      val conf = null
-      val repSparkContext = null
-    }
-    val compiled1 = compileSource(testCompiler)(testCompiler.SVDppSpark_errorMatrix, "SVDppSpark_errorMatrix", generationConfig(testCompiler, "SVDppSpark_errorMatrix", "package"))
-  } */
+  class TestClass extends SparkScalanCompiler with SparkLADslExp with SVDppSpark {
+    val sparkContext = globalSparkContext
+    val sSparkContext = null
+    val conf = null
+    val repSparkContext = null
+  }
 
+  test("SVDppSpark_ErrorMatrix Code Gen") {
+    val testCompiler = new TestClass {}
+    val compiled1 = compileSource(testCompiler)(testCompiler.SVDppSpark_errorMatrix, "SVDppSpark_errorMatrix", generationConfig(testCompiler, "SVDppSpark_errorMatrix", "package"))
+  }
   test("SVDppSpark_Train Code Gen") {
-    val testCompiler = new SparkScalanCompiler with SparkLADslExp with SVDppSpark with CFDslExp {
-      self =>
-      val sparkContext = globalSparkContext
-      val sSparkContext = null
-      val conf = null
-      val repSparkContext = null
-    }
+    val testCompiler = new TestClass {}
     val compiled1 = compileSource(testCompiler)(testCompiler.SVDppSpark_Train, "SVDppSpark_Train", generationConfig(testCompiler, "SVDppSpark_Train", "package"))
+  }
+  test("SVDppSpark_PredictRating Code Gen") {
+    val testCompiler = new TestClass {}
+    val compiled1 = compileSource(testCompiler)(testCompiler.SVDppSpark_PredictRating, "SVDppSpark_PredictRating", generationConfig(testCompiler, "SVDppSpark_PredictRating", "package"))
   }
 }
 

@@ -27,7 +27,7 @@ trait SparkConfs extends Base with TypeWrappers { self: SparkDsl =>
   }
 
   def DefaultOfSparkConf: Default[SparkConf] = {
-    Default.defaultVal(sparkContext.getConf)
+    null //Default.defaultVal(sparkContext.getConf)
   }
 }
 

@@ -11,14 +11,6 @@ class SmokeTests extends BaseTests with BeforeAndAfterAll { suite =>
   val globalSparkConf = new SparkConf().setAppName("R/W Broadcast").setMaster("local")
   var globalSparkContext: SparkContext = null
 
-  override def beforeAll() = {
-    globalSparkContext = new SparkContext(globalSparkConf)
-  }
-
-  override def afterAll() = {
-    globalSparkContext.stop()
-  }
-
   trait SimpleSparkTests extends ScalanDsl with SparkDsl with RDDCollectionsDsl {
     val prefix = suite.prefix
     val subfolder = "simple"
@@ -82,16 +74,14 @@ class SmokeTests extends BaseTests with BeforeAndAfterAll { suite =>
   }
 
   test("simpleSparkSeq") {
-    pending
     val ctx = new ScalanCtxSeq with SimpleSparkTests with SparkDslSeq with RDDCollectionsDslSeq {
       val sparkContext = globalSparkContext
       val sSparkContext = SeqSSparkContextImpl(globalSparkContext)
-      val repSparkContext = SSparkContext(SSparkConf())
+      val repSparkContext = SSparkContext(SSparkConf().setMaster("local[4]").setAppName("broadcastDouble"))
     }
-
     {
       val gravityAcc = 9.8
-      val res = ctx.broadcastDouble((ctx.sSparkContext, gravityAcc))
+      val res = ctx.broadcastDouble((ctx.repSparkContext, gravityAcc))
       assertResult(gravityAcc)(res)
     }
   }

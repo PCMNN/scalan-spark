@@ -11,30 +11,20 @@ import org.scalatest.BeforeAndAfterAll
 
 import scala.language.reflectiveCalls
 import scalan.la.{LADslExp, LADsl}
-import scalan.ml.{MLDslExp, ExampleSVDpp, MLDsl}
+import scalan.ml.{MLDslExp, MLDsl}
 import scalan.util.FileUtil
 import scalan.{BaseTests, ScalanDsl}
 import scalan.spark.collections.{RDDCollectionsDsl, RDDCollectionsDslExp}
 import scalan.spark.{SparkDsl, SparkDslExp}
 import scalan.compilation.{GraphVizConfig, Passes}
 
-class LATests extends BaseTests with BeforeAndAfterAll { suite =>
-  val globalSparkConf = new SparkConf().setAppName("R/W Broadcast").setMaster("local")
-  var globalSparkContext: SparkContext = null
-
-  override def beforeAll() = {
-    globalSparkContext = new SparkContext(globalSparkConf)
-  }
-
-  override def afterAll() = {
-    globalSparkContext.stop()
-  }
+class LATests extends BaseTests { suite =>
 
   class Context  extends SimpleLASparkTests with MLDslExp with SparkLADslExp
   with scalan.compilation.DummyCompilerWithPasses {
-    val sparkContext = globalSparkContext
-    val sSparkContext = ExpSSparkContextImpl(globalSparkContext)
-    val repSparkContext = SSparkContext(SSparkConf())
+    val sparkContext = null
+    val sSparkContext = null
+    val repSparkContext = null
 
     def emitGraph[A, B](functionName: String, func: Exp[A => B]): Unit = {
       val sourcesDir = FileUtil.file(suite.prefix, functionName)
@@ -69,16 +59,7 @@ class LATests extends BaseTests with BeforeAndAfterAll { suite =>
     ctx3.emitGraph("ddMVM", ctx3.ddmvm)
 
     val ctx4 = new Context
-    ctx4.emitGraph("trainAndTestCF", ctx4.trainAndTestCF)
-
-    val ctx5 = new Context
-    ctx5.emitGraph("rmse", ctx5.rmse)
-
-    val ctx6 = new Context
-    ctx6.emitGraph("flatMapDomain", ctx6.flatMapDomain)
-
-    val ctx7 = new Context
-    ctx7.emitGraph("sdmvm", ctx7.sdmvm)
+    ctx4.emitGraph("sdmvm", ctx4.sdmvm)
   }
 
 }

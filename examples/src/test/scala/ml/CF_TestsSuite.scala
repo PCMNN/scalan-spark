@@ -1,6 +1,7 @@
 package ml
 
-import scalan.ml.{CF_Tests, MLDslSeq}
+import scalan.ml.MLDslSeq
+import scalan.ml.cf.{CF_Launcher, CF_TestData, CFDslSeq}
 import scalan.{ScalanCtxSeq, BaseShouldTests}
 
 /**
@@ -8,20 +9,24 @@ import scalan.{ScalanCtxSeq, BaseShouldTests}
  */
 class CF_TestsSuite extends BaseShouldTests {
 
+
   "CF RMSE Measuring" should "be equal to 0.5" in {
-    val ctx = new ScalanCtxSeq with MLDslSeq with CF_Tests {}
+    val ctx = new ScalanCtxSeq with MLDslSeq with CFDslSeq {}
+    import ctx._
     val len = 2
     val nArr = Array(Array((0, 0.5)), Array((1, 0.5)))
     val arr = nArr.flatMap(v => v)
     val lens = nArr.map(i => i.length)
     val offs = lens.scanLeft(0)((x, y) => x + y).take(lens.length)
-    val in = ctx.Tuple(arr, offs zip lens, len)
-    val res = (ctx.rmse(in) * 100.0).toInt.toDouble / 100.0
+    val nColl = NestedCollectionFlat(Collection(arr), PairCollectionAOS.fromArray(offs zip lens))
+    val in = CompoundMatrix.fromNColl(nColl, len)
+    val svdpp = new LmsSVDpp()
+    val res = (svdpp.calculateRMSE(in) * 100.0).toInt.toDouble / 100.0
     res should be(0.5)
   }
 
   "CF test 2x2 RMSE on Baseline training model" should "be lower than RMSE on Baseline (~0.826)" in {
-    val ctx = new ScalanCtxSeq with MLDslSeq with CF_Tests {}
+    val ctx = new ScalanCtxSeq with MLDslSeq with CF_TestData with CF_Launcher {}
     import ctx.{delta, gamma1, gamma2, lambda6, lambda7, stepDecrease}
     val nItems = 2
     val (arrTrain, segsTrain) = ctx.getNArrayWithSegmentsFromJaggedArray(ctx.jArrTrain2x2)
@@ -31,16 +36,16 @@ class CF_TestsSuite extends BaseShouldTests {
     lazy val stddev = 0.007
     val paramsPaired = ctx.Tuple(maxIterations, delta, gamma1, gamma2, lambda6, lambda7, width, stepDecrease)
     val in = ctx.Tuple(paramsPaired, arrTrain, segsTrain, arrTest, segsTest, nItems, stddev)
-    val res = ctx.trainAndTestCF(in)
+    val res = ctx.LMS_SVDpp_TrainAndTest(in)
     println("[SVD++] RMSE 2x2: " + res)
     val inBL = ctx.Tuple(paramsPaired, arrTrain, segsTrain, arrTest, segsTest, nItems, 0.0)
-    val resBL = ctx.trainAndTestCF(inBL)
+    val resBL = ctx.LMS_SVDpp_TrainAndTest(inBL)
     println("[BL]    RMSE 2x2: " + resBL)
     res should be <= resBL
   }
 
   "CF test 3x5 RMSE on Baseline training model" should "be lower than RMSE on Baseline (~1.633)" in {
-    val ctx = new ScalanCtxSeq with MLDslSeq with CF_Tests {}
+    val ctx = new ScalanCtxSeq with MLDslSeq with CF_TestData with CF_Launcher {}
     import ctx.{delta, gamma1, gamma2, lambda6, lambda7, stepDecrease}
     val nItems = 5
     val (arrTrain, segsTrain) = ctx.getNArrayWithSegmentsFromJaggedArray(ctx.jArrTrain3x5)
@@ -50,10 +55,10 @@ class CF_TestsSuite extends BaseShouldTests {
     lazy val stddev = 0.003
     val paramsPaired = ctx.Tuple(maxIterations, delta, gamma1, gamma2, lambda6, lambda7, width, stepDecrease)
     val in = ctx.Tuple(paramsPaired, arrTrain, segsTrain, arrTest, segsTest, nItems, stddev)
-    val res = ctx.trainAndTestCF(in)
+    val res = ctx.LMS_SVDpp_TrainAndTest(in)
     println("[SVD++] RMSE 3x5: " + res)
     val inBL = ctx.Tuple(paramsPaired, arrTrain, segsTrain, arrTest, segsTest, nItems, 0.0)
-    val resBL = ctx.trainAndTestCF(inBL)
+    val resBL = ctx.LMS_SVDpp_TrainAndTest(inBL)
     println("[BL]    RMSE 3x5: " + resBL)
     res should be <= resBL
   }

@@ -1,11 +1,11 @@
-package com.scalan.spark.SVDppSpark_errorMatrix_new
+package com.scalan.spark.SVDppSpark_errorMatrix
 
 import org.apache.spark.rdd.{PairRDDFunctions, RDD}
 import org.apache.spark.{SparkConf, SparkContext}
 import com.scalan.spark.method.Methods._
 
 object run {
-  val globalSparkConf = new SparkConf().setAppName("R/W Broadcast").setMaster("local[8]")
+  val globalSparkConf = new SparkConf().setAppName("SVDppSpark_errorMatrix").setMaster("local[8]")
   var globalSparkContext: SparkContext = null
 
   type ParametersPaired = (Int, (Double, (Double, (Double, (Double, (Double, (Int, Double)))))))
@@ -40,7 +40,7 @@ object run {
 
   private def exec(tuple: (ParametersPaired, (RDD[(Long,Array[Int])], (RDD[(Long,Array[Double])], (Int, Double))))) = {
     try {
-      new SVDppSpark_errorMatrix_new()(tuple)
+      new SVDppSpark_errorMatrix()(tuple)
     }
     finally stop()
   }

@@ -19,11 +19,11 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
   }
 
   // familyElem
-  class IRDDCollectionElem[A, To <: IRDDCollection[A]](implicit val eA: Elem[A])
+  class IRDDCollectionElem[A, To <: IRDDCollection[A]](implicit override val eItem: Elem[A])
     extends CollectionElem[A, To] {
     override def isEntityType = true
     override lazy val tag = {
-      implicit val tagA = eA.tag
+      implicit val tagA = eItem.tag
       weakTypeTag[IRDDCollection[A]].asInstanceOf[WeakTypeTag[To]]
     }
     override def convert(x: Rep[Reifiable[_]]) = {
@@ -39,7 +39,7 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
     override def getDefaultRep: Rep[To] = ???
   }
 
-  implicit def iRDDCollectionElement[A](implicit eA: Elem[A]): Elem[IRDDCollection[A]] =
+  implicit def iRDDCollectionElement[A](implicit eItem: Elem[A]): Elem[IRDDCollection[A]] =
     new IRDDCollectionElem[A, IRDDCollection[A]]
 
   implicit case object IRDDCollectionCompanionElem extends CompanionElem[IRDDCollectionCompanionAbs] {
@@ -60,11 +60,11 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
     proxyOps[IRDDPairCollection[A, B]](p)(scala.reflect.classTag[IRDDPairCollection[A, B]])
   }
   // familyElem
-  class IRDDPairCollectionElem[A, B, To <: IRDDPairCollection[A, B]](implicit val eA: Elem[A], val eB: Elem[B])
+  class IRDDPairCollectionElem[A, B, To <: IRDDPairCollection[A, B]](implicit override val eA: Elem[A], override val eB: Elem[B])
     extends PairCollectionElem[A, B, To] {
     override def isEntityType = true
     override lazy val tag = {
-      implicit val tagA = eA.tag
+      implicit val tagA = eItem.tag
       implicit val tagB = eB.tag
       weakTypeTag[IRDDPairCollection[A, B]].asInstanceOf[WeakTypeTag[To]]
     }
@@ -89,7 +89,7 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
     proxyOps[IRDDNestedCollection[A]](p)(scala.reflect.classTag[IRDDNestedCollection[A]])
   }
   // familyElem
-  class IRDDNestedCollectionElem[A, To <: IRDDNestedCollection[A]](implicit val eA: Elem[A])
+  class IRDDNestedCollectionElem[A, To <: IRDDNestedCollection[A]](implicit override val eA: Elem[A])
     extends NestedCollectionElem[A, To] {
     override def isEntityType = true
     override lazy val tag = {
@@ -113,13 +113,13 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
     new IRDDNestedCollectionElem[A, IRDDNestedCollection[A]]
 
   // elem for concrete class
-  class RDDCollectionElem[A](val iso: Iso[RDDCollectionData[A], RDDCollection[A]])(implicit eA: Elem[A])
+  class RDDCollectionElem[A](val iso: Iso[RDDCollectionData[A], RDDCollection[A]])(implicit eItem: Elem[A])
     extends IRDDCollectionElem[A, RDDCollection[A]]
     with ConcreteElem[RDDCollectionData[A], RDDCollection[A]] {
     override def convertIRDDCollection(x: Rep[IRDDCollection[A]]) = RDDCollection(x.rdd)
     override def getDefaultRep = super[ConcreteElem].getDefaultRep
     override lazy val tag = {
-      implicit val tagA = eA.tag
+      implicit val tagA = eItem.tag
       weakTypeTag[RDDCollection[A]]
     }
   }
@@ -128,7 +128,7 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
   type RDDCollectionData[A] = SRDD[A]
 
   // 3) Iso for concrete class
-  class RDDCollectionIso[A](implicit eA: Elem[A])
+  class RDDCollectionIso[A](implicit eItem: Elem[A])
     extends Iso[RDDCollectionData[A], RDDCollection[A]] {
     override def from(p: Rep[RDDCollection[A]]) =
       p.rdd
@@ -143,7 +143,7 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
   abstract class RDDCollectionCompanionAbs extends CompanionBase[RDDCollectionCompanionAbs] with RDDCollectionCompanion {
     override def toString = "RDDCollection"
 
-    def apply[A](rdd: RepRDD[A])(implicit eA: Elem[A]): Rep[RDDCollection[A]] =
+    def apply[A](rdd: RepRDD[A])(implicit eItem: Elem[A]): Rep[RDDCollection[A]] =
       mkRDDCollection(rdd)
   }
   object RDDCollectionMatcher {
@@ -162,27 +162,27 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
   implicit def proxyRDDCollection[A](p: Rep[RDDCollection[A]]): RDDCollection[A] =
     proxyOps[RDDCollection[A]](p)
 
-  implicit class ExtendedRDDCollection[A](p: Rep[RDDCollection[A]])(implicit eA: Elem[A]) {
-    def toData: Rep[RDDCollectionData[A]] = isoRDDCollection(eA).from(p)
+  implicit class ExtendedRDDCollection[A](p: Rep[RDDCollection[A]])(implicit eItem: Elem[A]) {
+    def toData: Rep[RDDCollectionData[A]] = isoRDDCollection(eItem).from(p)
   }
 
   // 5) implicit resolution of Iso
-  implicit def isoRDDCollection[A](implicit eA: Elem[A]): Iso[RDDCollectionData[A], RDDCollection[A]] =
+  implicit def isoRDDCollection[A](implicit eItem: Elem[A]): Iso[RDDCollectionData[A], RDDCollection[A]] =
     new RDDCollectionIso[A]
 
   // 6) smart constructor and deconstructor
-  def mkRDDCollection[A](rdd: RepRDD[A])(implicit eA: Elem[A]): Rep[RDDCollection[A]]
+  def mkRDDCollection[A](rdd: RepRDD[A])(implicit eItem: Elem[A]): Rep[RDDCollection[A]]
   def unmkRDDCollection[A](p: Rep[IRDDCollection[A]]): Option[(Rep[SRDD[A]])]
 
   // elem for concrete class
-  class RDDIndexedCollectionElem[A](val iso: Iso[RDDIndexedCollectionData[A], RDDIndexedCollection[A]])(implicit eA: Elem[A])
+  class RDDIndexedCollectionElem[A](val iso: Iso[RDDIndexedCollectionData[A], RDDIndexedCollection[A]])(implicit eItem: Elem[A])
     extends IRDDCollectionElem[A, RDDIndexedCollection[A]]
     with ConcreteElem[RDDIndexedCollectionData[A], RDDIndexedCollection[A]] {
     override def convertIRDDCollection(x: Rep[IRDDCollection[A]]) = // Converter is not generated by meta
 !!!("Cannot convert from IRDDCollection to RDDIndexedCollection: missing fields List(indexedRdd)")
     override def getDefaultRep = super[ConcreteElem].getDefaultRep
     override lazy val tag = {
-      implicit val tagA = eA.tag
+      implicit val tagA = eItem.tag
       weakTypeTag[RDDIndexedCollection[A]]
     }
   }
@@ -191,7 +191,7 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
   type RDDIndexedCollectionData[A] = SRDD[(Long, A)]
 
   // 3) Iso for concrete class
-  class RDDIndexedCollectionIso[A](implicit eA: Elem[A])
+  class RDDIndexedCollectionIso[A](implicit eItem: Elem[A])
     extends Iso[RDDIndexedCollectionData[A], RDDIndexedCollection[A]] {
     override def from(p: Rep[RDDIndexedCollection[A]]) =
       p.indexedRdd
@@ -206,7 +206,7 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
   abstract class RDDIndexedCollectionCompanionAbs extends CompanionBase[RDDIndexedCollectionCompanionAbs] with RDDIndexedCollectionCompanion {
     override def toString = "RDDIndexedCollection"
 
-    def apply[A](indexedRdd: RepRDD[(Long, A)])(implicit eA: Elem[A]): Rep[RDDIndexedCollection[A]] =
+    def apply[A](indexedRdd: RepRDD[(Long, A)])(implicit eItem: Elem[A]): Rep[RDDIndexedCollection[A]] =
       mkRDDIndexedCollection(indexedRdd)
   }
   object RDDIndexedCollectionMatcher {
@@ -225,16 +225,16 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
   implicit def proxyRDDIndexedCollection[A](p: Rep[RDDIndexedCollection[A]]): RDDIndexedCollection[A] =
     proxyOps[RDDIndexedCollection[A]](p)
 
-  implicit class ExtendedRDDIndexedCollection[A](p: Rep[RDDIndexedCollection[A]])(implicit eA: Elem[A]) {
-    def toData: Rep[RDDIndexedCollectionData[A]] = isoRDDIndexedCollection(eA).from(p)
+  implicit class ExtendedRDDIndexedCollection[A](p: Rep[RDDIndexedCollection[A]])(implicit eItem: Elem[A]) {
+    def toData: Rep[RDDIndexedCollectionData[A]] = isoRDDIndexedCollection(eItem).from(p)
   }
 
   // 5) implicit resolution of Iso
-  implicit def isoRDDIndexedCollection[A](implicit eA: Elem[A]): Iso[RDDIndexedCollectionData[A], RDDIndexedCollection[A]] =
+  implicit def isoRDDIndexedCollection[A](implicit eItem: Elem[A]): Iso[RDDIndexedCollectionData[A], RDDIndexedCollection[A]] =
     new RDDIndexedCollectionIso[A]
 
   // 6) smart constructor and deconstructor
-  def mkRDDIndexedCollection[A](indexedRdd: RepRDD[(Long, A)])(implicit eA: Elem[A]): Rep[RDDIndexedCollection[A]]
+  def mkRDDIndexedCollection[A](indexedRdd: RepRDD[(Long, A)])(implicit eItem: Elem[A]): Rep[RDDIndexedCollection[A]]
   def unmkRDDIndexedCollection[A](p: Rep[IRDDCollection[A]]): Option[(Rep[SRDD[(Long, A)]])]
 
   // elem for concrete class
@@ -438,7 +438,7 @@ trait RDDCollectionsSeq extends RDDCollectionsDsl with SparkDslSeq {
 
   case class SeqRDDCollection[A]
       (override val rdd: RepRDD[A])
-      (implicit eA: Elem[A])
+      (implicit eItem: Elem[A])
     extends RDDCollection[A](rdd)
         with UserTypeSeq[RDDCollection[A]] {
     lazy val selfType = element[RDDCollection[A]]
@@ -448,7 +448,7 @@ trait RDDCollectionsSeq extends RDDCollectionsDsl with SparkDslSeq {
   }
 
   def mkRDDCollection[A]
-      (rdd: RepRDD[A])(implicit eA: Elem[A]): Rep[RDDCollection[A]] =
+      (rdd: RepRDD[A])(implicit eItem: Elem[A]): Rep[RDDCollection[A]] =
       new SeqRDDCollection[A](rdd)
   def unmkRDDCollection[A](p: Rep[IRDDCollection[A]]) = p match {
     case p: RDDCollection[A] @unchecked =>
@@ -458,7 +458,7 @@ trait RDDCollectionsSeq extends RDDCollectionsDsl with SparkDslSeq {
 
   case class SeqRDDIndexedCollection[A]
       (override val indexedRdd: RepRDD[(Long, A)])
-      (implicit eA: Elem[A])
+      (implicit eItem: Elem[A])
     extends RDDIndexedCollection[A](indexedRdd)
         with UserTypeSeq[RDDIndexedCollection[A]] {
     lazy val selfType = element[RDDIndexedCollection[A]]
@@ -468,7 +468,7 @@ trait RDDCollectionsSeq extends RDDCollectionsDsl with SparkDslSeq {
   }
 
   def mkRDDIndexedCollection[A]
-      (indexedRdd: RepRDD[(Long, A)])(implicit eA: Elem[A]): Rep[RDDIndexedCollection[A]] =
+      (indexedRdd: RepRDD[(Long, A)])(implicit eItem: Elem[A]): Rep[RDDIndexedCollection[A]] =
       new SeqRDDIndexedCollection[A](indexedRdd)
   def unmkRDDIndexedCollection[A](p: Rep[IRDDCollection[A]]) = p match {
     case p: RDDIndexedCollection[A] @unchecked =>
@@ -547,7 +547,7 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
 
   case class ExpRDDCollection[A]
       (override val rdd: RepRDD[A])
-      (implicit eA: Elem[A])
+      (implicit eItem: Elem[A])
     extends RDDCollection[A](rdd) with UserTypeDef[RDDCollection[A]] {
     lazy val selfType = element[RDDCollection[A]]
     override def mirror(t: Transformer) = ExpRDDCollection[A](t(rdd))
@@ -732,7 +732,7 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
   }
 
   def mkRDDCollection[A]
-    (rdd: RepRDD[A])(implicit eA: Elem[A]): Rep[RDDCollection[A]] =
+    (rdd: RepRDD[A])(implicit eItem: Elem[A]): Rep[RDDCollection[A]] =
     new ExpRDDCollection[A](rdd)
   def unmkRDDCollection[A](p: Rep[IRDDCollection[A]]) = p.elem.asInstanceOf[Elem[_]] match {
     case _: RDDCollectionElem[A] @unchecked =>
@@ -743,7 +743,7 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
 
   case class ExpRDDIndexedCollection[A]
       (override val indexedRdd: RepRDD[(Long, A)])
-      (implicit eA: Elem[A])
+      (implicit eItem: Elem[A])
     extends RDDIndexedCollection[A](indexedRdd) with UserTypeDef[RDDIndexedCollection[A]] {
     lazy val selfType = element[RDDIndexedCollection[A]]
     override def mirror(t: Transformer) = ExpRDDIndexedCollection[A](t(indexedRdd))
@@ -952,7 +952,7 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
   }
 
   def mkRDDIndexedCollection[A]
-    (indexedRdd: RepRDD[(Long, A)])(implicit eA: Elem[A]): Rep[RDDIndexedCollection[A]] =
+    (indexedRdd: RepRDD[(Long, A)])(implicit eItem: Elem[A]): Rep[RDDIndexedCollection[A]] =
     new ExpRDDIndexedCollection[A](indexedRdd)
   def unmkRDDIndexedCollection[A](p: Rep[IRDDCollection[A]]) = p.elem.asInstanceOf[Elem[_]] match {
     case _: RDDIndexedCollectionElem[A] @unchecked =>

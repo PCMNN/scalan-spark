@@ -10,14 +10,14 @@ import scalan.common.OverloadHack.{Overloaded1, Overloaded2}
 trait SparkMatrices {  self: SparkLADsl =>
   type SparkMatrix[A] = Rep[SparkAbstractMatrix[A]]
   trait SparkAbstractMatrix[A] extends AbstractMatrix[A] {
-    implicit def elem: Elem[A]
+    implicit def eT: Elem[A]
     val numColumns: Rep[Int]
     def sc: Rep[SSparkContext]
   }
   trait SparkAbstractMatrixCompanion extends TypeFamily1[SparkAbstractMatrix] {
   }
 
-  abstract class SparkSparseMatrix[T] (val rddIdxs: Rep[RDDCollection[Array[Int]]], val rddVals: Rep[RDDCollection[Array[T]]], val numColumns: Rep[Int])(implicit val elem: Elem[T]) extends SparkAbstractMatrix[T] {
+  abstract class SparkSparseMatrix[T] (val rddIdxs: Rep[RDDCollection[Array[Int]]], val rddVals: Rep[RDDCollection[Array[T]]], val numColumns: Rep[Int])(implicit val eT: Elem[T]) extends SparkAbstractMatrix[T] {
     def numRows: Rep[Int] = rddIdxs.length
     def rddColl  = rddIdxs zip rddVals
     def sc: Rep[SSparkContext] = rddIdxs.rdd.context
@@ -127,7 +127,9 @@ trait SparkMatrices {  self: SparkLADsl =>
 
     @OverloadId("matrix")
     def +^^(other: Rep[AbstractMatrix[T]])(implicit n: Numeric[T]): Rep[AbstractMatrix[T]] = ???
+    @OverloadId("matrix")
     def *^^(other: Rep[AbstractMatrix[T]])(implicit n: Numeric[T]): Rep[AbstractMatrix[T]] = ???
+    def *^^(value: Rep[T])(implicit n: Numeric[T], o: Overloaded1): Rep[AbstractMatrix[T]] = ???
     def average(implicit f: Fractional[T], m: RepMonoid[T]): DoubleRep = {
       val items = rows.flatMap(v => v.nonZeroValues)
       items.reduce.toDouble / items.length.toDouble
@@ -140,7 +142,7 @@ trait SparkMatrices {  self: SparkLADsl =>
 
   }
 
-  abstract class SparkSparseIndexedMatrix[T] (val rddIdxs: Rep[RDDIndexedCollection[Array[Int]]], val rddVals: Rep[RDDIndexedCollection[Array[T]]], val numColumns: Rep[Int])(implicit val elem: Elem[T]) extends SparkAbstractMatrix[T] {
+  abstract class SparkSparseIndexedMatrix[T] (val rddIdxs: Rep[RDDIndexedCollection[Array[Int]]], val rddVals: Rep[RDDIndexedCollection[Array[T]]], val numColumns: Rep[Int])(implicit val eT: Elem[T]) extends SparkAbstractMatrix[T] {
     def numRows: Rep[Int] = rddIdxs.length
     def rddColl  = rddIdxs zip rddVals
     def sc: Rep[SSparkContext] = rddIdxs.indexedRdd.context
@@ -213,7 +215,9 @@ trait SparkMatrices {  self: SparkLADsl =>
 
     @OverloadId("matrix")
     def +^^(other: Rep[AbstractMatrix[T]])(implicit n: Numeric[T]): Rep[AbstractMatrix[T]] = ???
+    @OverloadId("matrix")
     def *^^(other: Rep[AbstractMatrix[T]])(implicit n: Numeric[T]): Rep[AbstractMatrix[T]] = ???
+    def *^^(value: Rep[T])(implicit n: Numeric[T], o: Overloaded1): Rep[AbstractMatrix[T]] = ???
     def average(implicit f: Fractional[T], m: RepMonoid[T]): DoubleRep = {
       val items = rows.flatMap(v => v.nonZeroValues)
       items.reduce.toDouble / items.length.toDouble
@@ -226,7 +230,7 @@ trait SparkMatrices {  self: SparkLADsl =>
 
   }
 
-  abstract class SparkDenseMatrix[T] (val rddVals: Rep[RDDCollection[Array[T]]], val numColumns: Rep[Int])(implicit val elem: Elem[T]) extends SparkAbstractMatrix[T] {
+  abstract class SparkDenseMatrix[T] (val rddVals: Rep[RDDCollection[Array[T]]], val numColumns: Rep[Int])(implicit val eT: Elem[T]) extends SparkAbstractMatrix[T] {
     def numRows: Rep[Int] = rddVals.length
     def sc = rddVals.rdd.context
     def rows = rddVals.map({arr: Rep[Array[T]] => DenseVector(Collection(arr))})
@@ -280,10 +284,12 @@ trait SparkMatrices {  self: SparkLADsl =>
       val newRows = (rows zip other.rows).map({vecs: Rep[(AbstractVector[T], AbstractVector[T])] => (vecs._1 +^ vecs._2).items.arr})
       SparkDenseMatrix(newRows.asRep[RDDCollection[Array[T]]], numColumns)
     }
+    @OverloadId("matrix")
     def *^^(other: Rep[AbstractMatrix[T]])(implicit n: Numeric[T]): Rep[AbstractMatrix[T]] = {
       val newRows = (rows zip other.rows).map({vecs: Rep[(AbstractVector[T], AbstractVector[T])] => (vecs._1 *^ vecs._2).items.arr})
       SparkDenseMatrix(newRows.asRep[RDDCollection[Array[T]]], numColumns)
     }
+    def *^^(value: Rep[T])(implicit n: Numeric[T], o: Overloaded1): Rep[AbstractMatrix[T]] = ???
 
     def average(implicit f: Fractional[T], m: RepMonoid[T]): DoubleRep = {
       val items = rows.flatMap(v => v.nonZeroValues)
@@ -297,7 +303,7 @@ trait SparkMatrices {  self: SparkLADsl =>
 
   }
 
-  abstract class SparkDenseIndexedMatrix[T] (val rddVals: Rep[RDDIndexedCollection[Array[T]]], val numColumns: Rep[Int])(implicit val elem: Elem[T]) extends SparkAbstractMatrix[T] {
+  abstract class SparkDenseIndexedMatrix[T] (val rddVals: Rep[RDDIndexedCollection[Array[T]]], val numColumns: Rep[Int])(implicit val eT: Elem[T]) extends SparkAbstractMatrix[T] {
     def numRows: Rep[Int] = rddVals.length
     def sc = rddVals.rdd.context
     def rows = rddVals.map({arr: Rep[Array[T]] => DenseVector(Collection(arr))})
@@ -306,7 +312,7 @@ trait SparkMatrices {  self: SparkLADsl =>
     @OverloadId("rows")
     def apply(iRows: Coll[Int])(implicit o: Overloaded1): SparkMatrix[T] = SparkDenseIndexedMatrix(rddVals(iRows).convertTo[RDDIndexedCollection[Array[T]]] , numColumns)
     @OverloadId("row")
-    def apply(row: Rep[Int]): Vector[T] = ???
+    def apply(row: Rep[Int]): Vector[T] = DenseVector(Collection(rddVals(row)))
     def apply(row: Rep[Int], column: Rep[Int]): Rep[T] = ???
     def mapBy[R: Elem](f: Rep[AbstractVector[T] => AbstractVector[R] @uncheckedVariance]): Matrix[R] = ???
     def columns(implicit n: Numeric[T]): Rep[Collection[AbstractVector[T]]] = ???
@@ -351,11 +357,12 @@ trait SparkMatrices {  self: SparkLADsl =>
       val newRows = (rows zip other.rows).map({vecs: Rep[(AbstractVector[T], AbstractVector[T])] => (vecs._1 +^ vecs._2).items.arr})
       SparkDenseMatrix(newRows.asRep[RDDCollection[Array[T]]], numColumns)
     }*/
+    @OverloadId("matrix")
     def *^^(other: Rep[AbstractMatrix[T]])(implicit n: Numeric[T]): Rep[AbstractMatrix[T]] = ??? /*{
       val newRows = (rows zip other.rows).map({vecs: Rep[(AbstractVector[T], AbstractVector[T])] => (vecs._1 *^ vecs._2).items.arr})
       SparkDenseMatrix(newRows.asRep[RDDCollection[Array[T]]], numColumns)
     }  */
-
+    def *^^(value: Rep[T])(implicit n: Numeric[T], o: Overloaded1): Rep[AbstractMatrix[T]] = ???
     def average(implicit f: Fractional[T], m: RepMonoid[T]): DoubleRep = {
       val items = rows.flatMap(v => v.nonZeroValues)
       items.reduce.toDouble / items.length.toDouble

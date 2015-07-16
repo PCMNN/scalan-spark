@@ -15,7 +15,7 @@ import scalan.spark.{SparkDslExp, SparkDslSeq, SparkDsl}
 trait RDDCollections { self: SparkDsl with RDDCollectionsDsl =>
   type RDDColl[A] = Rep[IRDDCollection[A]]
   trait IRDDCollection[A] extends Collection[A] {
-    implicit def eA: Elem[A]
+    implicit def eItem: Elem[A]
     def rdd: RepRDD[A]
   }
 
@@ -23,7 +23,7 @@ trait RDDCollections { self: SparkDsl with RDDCollectionsDsl =>
   }
 
 
-  abstract class RDDCollection[A](val rdd: RepRDD[A])(implicit val eA: Elem[A]) extends IRDDCollection[A] {
+  abstract class RDDCollection[A](val rdd: RepRDD[A])(implicit val eItem: Elem[A]) extends IRDDCollection[A] {
     lazy val elem = element[A]
 
     def arr = rdd.collect
@@ -64,7 +64,7 @@ trait RDDCollections { self: SparkDsl with RDDCollectionsDsl =>
   trait RDDCollectionCompanion extends ConcreteClass1[RDDCollection] with IRDDCollectionCompanion {
   }
 
-  abstract class RDDIndexedCollection[A](val indexedRdd: RepRDD[(Long,A)])(implicit val eA: Elem[A]) extends IRDDCollection[A] {
+  abstract class RDDIndexedCollection[A](val indexedRdd: RepRDD[(Long,A)])(implicit val eItem: Elem[A]) extends IRDDCollection[A] {
     lazy val elem = element[A]
     def indices = indexedRdd.map( fun { in => in._1})
     def rdd = indexedRdd.map( fun { in => in._2})
@@ -104,7 +104,11 @@ trait RDDCollections { self: SparkDsl with RDDCollectionsDsl =>
   trait IRDDPairCollection[A,B] extends PairCollection[A,B] {
     implicit def eA: Elem[A]
     implicit def eB: Elem[B]
+    lazy val eItem = element[(A, B)]
     def pairRDD: RepRDD[(A,B)]
+    def coll = RDDCollection(pairRDD)
+    def innerJoin[C, R](other: PairColl[A, C], f: Rep[((B, C)) => R])(implicit ordK: Ordering[A], eR: Elem[R], eB: Elem[B], eC: Elem[C]) = ???
+    def outerJoin[C, R](other: PairColl[A, C], f: Rep[((B, C)) => R], f1: Rep[B => R], f2: Rep[C => R])(implicit ordK: Ordering[A], eR: Elem[R], eB: Elem[B], eC: Elem[C]) = ???
   }
 
   abstract class PairRDDCollection[A, B](val pairRDD: RepRDD[(A,B)])(implicit val eA: Elem[A], val eB: Elem[B])
@@ -214,6 +218,7 @@ trait RDDCollections { self: SparkDsl with RDDCollectionsDsl =>
     implicit def eA: Elem[A]
     def values: Rep[IRDDCollection[A]]
     def segments: Rep[PairRDDCollection[Int, Int]]
+    lazy val eItem = element[RDDCollection[A]].asElem[Collection[A]]
   }
 
   abstract class RDDNestedCollection[A](val values: Rep[IRDDCollection[A]], val segments: Rep[PairRDDCollection[Int, Int]])(implicit val eA: Elem[A])
