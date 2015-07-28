@@ -1,11 +1,11 @@
 package la
 
-import scalan.ml.{MLDsl}
+import scalan.la.LADsl
 
 /**
  * Created by afilippov on 4/15/15.
  */
-trait SimpleLASparkTests extends MLDsl with SparkLADsl {
+trait SimpleLASparkTests extends LADsl with SparkLADsl {
 
   def dvDotDV(in1: Coll[Int], in2: Coll[Int]) = {
     val (vector1, vector2): (Vector[Int], Vector[Int]) = (DenseVector(in1), DenseVector(in2))

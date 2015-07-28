@@ -5,6 +5,7 @@ object SparkBoilerplateTool extends BoilerplateTool {
     "RepSparkConf" -> "SSparkConf",
     "RepSparkContext" -> "SSparkContext",
     "RepRDD" -> "SRDD",
+    "RDDIndexColl" -> "RDDIndexedCollection",
     "RepPairRDDFunctions" -> "SPairRDDFunctions",
     "RepBasePartitioner" -> "SPartitioner",
     "RepBroadcast" -> "SBroadcast",
