@@ -83,7 +83,7 @@ class BackendTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil { s
     }
 
     val compiled = compileSource(testCompiler)(testCompiler.broadcastPi, "broadcastPi", generationConfig(testCompiler, "broadcastPi", "package"))
-    val compiled1 = compileSource(testCompiler)(testCompiler.broadcastDouble, "broadcastDOuble", generationConfig(testCompiler, "broadcastDouble", "package"))
+    val compiled1 = compileSource(testCompiler)(testCompiler.broadcastDouble, "broadcastDouble", generationConfig(testCompiler, "broadcastDouble", "package"))
     val compiled2 = compileSource(testCompiler)(testCompiler.readE, "readE", generationConfig(testCompiler, "readE", "package"))
     val compiled3 = compileSource(testCompiler)(testCompiler.emptyRDD, "emptyRDD", generationConfig(testCompiler, "emptyRDD", "package"))
     val compiled4 = compileSource(testCompiler)(testCompiler.mapRDD, "mapRDD", generationConfig(testCompiler, "mapRDD", "package"))
