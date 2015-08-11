@@ -3,7 +3,7 @@ package com.scalan.spark.broadcastPi
 import org.apache.spark.{SparkConf, SparkContext}
 
 object run {
-  val globalSparkConf = new SparkConf().setAppName("R/W Broadcast").setMaster("local[8]")
+  val globalSparkConf = new SparkConf().setAppName("R/W Broadcast").setMaster("local[4]")
   var globalSparkContext: SparkContext = null
 
   def main(args: Array[String]): Unit = {
@@ -13,17 +13,19 @@ object run {
     println("Done")
   }
 
-  def execute(): Unit = {
-    exec(values())
-  }
+//  def execute(): Unit = {
+//    exec(defaultValues())
+//  }
 
   def stop() = {
     globalSparkContext.stop()
   }
 
-  private def exec(tuple: SparkContext): org.apache.spark.broadcast.Broadcast[Double] = {
+  private def exec(tuple: SparkContext): Double = {
     try {
-      new broadcastPi()(tuple)
+      val sparkData: org.apache.spark.broadcast.Broadcast[Double] = new broadcastPi()(tuple)
+      val scalaData = sparkData.value
+      scalaData
     }
     finally stop()
   }
