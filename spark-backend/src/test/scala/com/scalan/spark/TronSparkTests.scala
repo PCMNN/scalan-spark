@@ -18,14 +18,12 @@ import scalan.common.OverloadHack.Overloaded1
 import scalan.it.ItTestsUtil
 import scalan.ml.lr.LRDsl
 
-class TronSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil { // suite =>
+class TronSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil {
   val pref = new File("test-out/scalan/spark/backend/")
   val globalSparkConf = null
   var globalSparkContext: SparkContext = null
 
   trait TronSpark extends SparkLADsl with LRDsl {
-//    val prefix = suite.pref
-//    val subfolder = "simple"
 
     trait SparkTronFactory extends Factory {
       def replicate[T: Elem](len: IntRep, v: Rep[T]): Coll[T] = Collection.replicate[T](len, v)
@@ -39,19 +37,37 @@ class TronSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil {
       def FactorsVector[T: Elem](items: Coll[T]): Vector[T] = ???
       def RandomMatrix(numRows: IntRep, numColumns: IntRep, mean: DoubleRep, stddev: DoubleRep): Matrix[Double] = ???
     }
+
     class SparkTronExt(sc: Rep[SSparkContext]) extends TRON with SparkTronFactory {
       def FactorsMatrix(rows: Coll[AbstractVector[Double]], numColumns: IntRep): Matrix[Double] = {
-        val rddValues = RDDCollection(sc.makeRDD(rows.map { vec => vec.items.arr}.seq)) //asRep[RDDCollection[Array[Double]]]
-        SparkDenseMatrix(rddValues, numColumns)
+        // case dense
+//        val rddValues = RDDCollection(sc.makeRDD(rows.map { vec => vec.items.arr }.seq)) //asRep[RDDCollection[Array[Double]]]
+//        SparkDenseMatrix(rddValues, numColumns)
+
+        /*
+      val rddIndexes = SRDDImpl(idxs)
+      val rddValues = SRDDImpl(vals)
+      val mR = SparkSparseIndexedMatrix(RDDIndexedCollection(rddIndexes), RDDIndexedCollection(rddValues), nItems)
+         */
+
+        // case sparse
+        // make as notIndexed
+        val rddIndices = RDDCollection(sc.makeRDD(rows.map { vec => vec.nonZeroIndices.arr }.seq))
+        val rddValues = RDDCollection(sc.makeRDD(rows.map { vec => vec.nonZeroValues.arr }.seq))
+        SparkSparseMatrix(rddIndices, rddValues, numColumns)
+
+//        val rddIndices = RDDIndexedCollection(sc.makeRDD[Array[Int]](rows.map { vec => vec.nonZeroIndices.arr }.seq))
+////        val rddIndices = RDDIndexedCollection(SRDD.fromArraySC[Array[Int]](sc, rows.map { vec => vec.nonZeroIndices.arr }.arr))
+////        val rddValues = RDDIndexedCollection(sc.makeRDD(rows.map { vec => vec.nonZeroValues.arr }.seq))
+//        val rddValues = RDDIndexedCollection(SRDD.fromArraySC[Array[Double]](sc, rows.map { vec => vec.nonZeroValues.arr }.arr))
+//
+//        SparkSparseIndexedMatrix(rddIndices, rddValues, numColumns)
+
       }
     }
 
-    // somehow this is needed to compile `def tronSpark_Train`
-    type ValueType = Array[Double]
-    val finalResFun = fun { in: Rep[(Long, (SSeq[ValueType], SSeq[Boolean]))] => in._2.toArray }
-
     // Functions
-    def tronSpark_Train = fun { in: Rep[(RDD[(Long,Array[Int])], (RDD[(Long,Array[Double])], (Int, (RDD[(Long, Double)],
+    def tronSparkTrain = fun { in: Rep[(RDD[(Long,Array[Int])], (RDD[(Long,Array[Double])], (Int, (RDD[(Long, Double)],
       (Int, (Int, (Double, (Double, Double))))))))] =>
 
       val Tuple(idxsMatrixRDD, valsMatrixRDD, nColumnsMatrix, vYRDD, param1, param2, param3, paramTail) = in
@@ -63,8 +79,17 @@ class TronSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil {
       val data = (inMatrix, vY)
 
       val instance = new SparkTronExt(SRDDImpl(vYRDD).context)
-      val model = instance.train(data, parameters)
-      model.items.arr
+//      val model = instance.train(data, parameters)
+  val Tuple(maxIterationsTRON, maxIterationsTRCG, lambda, epsInput, stepUpdate) = parameters
+//  val (inMatrix, vY) = data
+  val epsilon = instance.correctEpsilon(epsInput, vY)
+  val Tuple(mX, modelPart) = instance.prepareMatrixForTraining(FALSE, inMatrix)
+      val vB0 = instance.ReplicatedVector(mX.numColumns, zero)
+      val g0 = instance.gradientRegularized(vY, vB0, mX, lambda, stepUpdate)
+      val res = g0.items.arr
+
+      // model.items.arr
+      res
     }
   }
 
@@ -83,8 +108,8 @@ class TronSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil {
     val repSparkContext = null
   }
 
-  test("TronSpark_Train Code Gen") {
+  test("TronSparkTrain Code Gen") {
     val testCompiler = new TestClass {}
-    val compiled1 = compileSource(testCompiler)(testCompiler.tronSpark_Train, "TronSpark_Train", generationConfig(testCompiler, "TronSpark_Train", "package"))
+    val compiled1 = compileSource(testCompiler)(testCompiler.tronSparkTrain, "TronSparkTrain", generationConfig(testCompiler, "TronSparkTrain", "package"))
   }
 }
