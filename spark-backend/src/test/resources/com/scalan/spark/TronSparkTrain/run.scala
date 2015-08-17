@@ -106,7 +106,7 @@ object run {
     val split = args(2)
     val eps = args(3).toDouble
     val outputPath = args(4)
-    val bias = 1    // should not be changed
+    val b = 1.0    // should not be changed
 
     val globalSparkConf = new SparkConf()
       .setAppName("HiTronSparkTrain")
@@ -117,7 +117,7 @@ object run {
 
     val timeBeforeInput = System.currentTimeMillis()
 
-    val input = trainValues(host, inputPath, split, eps)
+    val input = trainValues(host, inputPath, split, eps, b)
 
     //  val (rddA, rddB) = (input._2._1, input._2._2._1)
     //  val count = rddA.count + rddB.count
@@ -161,7 +161,7 @@ object run {
   //    }
   //  }
 
-  def trainValues(host: String, inputPath: String, split: String, eps: Double) = {
+  def trainValues(host: String, inputPath: String, split: String, eps: Double, b: Double) = {
 
     //  val (_, arrTrainIndices, arrTrainValues) = LoadMovieLensData_IntoRatingMatrix(0.0, 1.0, inputPath, -1.0, nUsers, nItems, split)
 
@@ -186,25 +186,36 @@ object run {
     //  res
 
     // usually used split = ":"
-    def loadLibSVMData(sc: SparkContext, path: String, numPartitions: Int, split: String): RDD[(Array[Int], Array[Double], Double)] = {
+    def loadLibSVMData(sc: SparkContext, path: String, numPartitions: Int, split: String, b: Double): RDD[(Array[Int], Array[Double], Double)] = {
       val parsed = sc.textFile(path, numPartitions).map(_.trim).filter(!_.isEmpty)
-      parsed.map(line => {
+      val isBias = b >= 0
+      val data = parsed.map(line => {
         val tokens = line.split(" |\t|\n")
         val n = tokens.size - 1
         val y = tokens.head.toDouble
-        var index = new Array[Int](n)
-        var value = new Array[Double](n)
-        for (i <- 1 to n) {
-          var pair = tokens(i).split(split)
-          index(i - 1) = pair(0).toInt - 1
-          value(i - 1) = pair(1).toDouble
-        }
-        new Tuple3(index, value, y)
+        val (indexes, values) = tokens.tail.map { token =>
+          val pair = token.split(split)
+          val index = pair(0).toInt - 1     // in file starts from 1, in rdd from 0
+          val value = pair(1).toDouble
+          (index, value)
+        }.unzip
+        new Tuple3(indexes.toArray, values.toArray, y)
       })
+      val res = if (isBias) {
+        val maxId = data.mapPartitions { blocks => blocks.map { case (indexes, values, y) => indexes.max } }.reduce(math.max(_, _))
+        val maxIdBc = sc.broadcast(maxId)
+        data.mapPartitions { blocks => blocks.map { case (indexes, values, y) =>
+          (indexes :+ maxIdBc.value + 1, values :+ b, y)
+        }}
+      } else {
+        data
+      }
+      res
     }
 
-    val res = loadLibSVMData(globalSparkContext, inputPath, 2, split)
+    val res = loadLibSVMData(globalSparkContext, inputPath, 2, split, b)
     println(s"train values = ${res.collect.length}")
+    println(s"train values = ${val r = res.collect.apply(0); (r._1.toList, r._2.toList, r._3)}")
     res
   }
 
