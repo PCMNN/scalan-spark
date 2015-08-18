@@ -124,10 +124,10 @@ trait SparkMatrices {  self: SparkLADsl =>
     def columns: Rep[Collection[AbstractVector[T]]] = ???
     def rddNonZeroIndexes: RDDIndexColl[Array[Int]] = rddValues.mapBy( fun { arr: Arr[T] =>
       val delta = toRep(0.001)
-      (SArray.rangeFrom0(arr.length) zip arr).filter(x => (x._2 != zeroValue)).map(x => x._1)})
+      (SArray.rangeFrom0(arr.length) zip arr).filter(x => (x._2 !== zeroValue)).map(x => x._1)})
     def rddNonZeroValues: RDDIndexColl[Array[T]] = rddValues.mapBy( fun { arr: Arr[T] =>
       val delta = toRep(0.001)
-      (SArray.rangeFrom0(arr.length) zip arr).filter(x => (x._2 != zeroValue)).map(x => x._2)})
+      (SArray.rangeFrom0(arr.length) zip arr).filter(x => (x._2 !== zeroValue)).map(x => x._2)})
 
     @OverloadId("rows")
     def apply(iRows: Coll[Int])(implicit o: Overloaded1): SparkMatrix[T] = SparkDenseIndexedMatrix(rddValues(iRows).convertTo[RDDIndexedCollection[Array[T]]] , numColumns)

@@ -61,15 +61,10 @@ class KernelsSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUti
     }
     def specSMCV(vs: (Rep[SparkDenseIndexedMatrix[Double]], Rep[DenseVector[Double]])) = mvm(vs._1.convertTo[SM], vs._2.convertTo[SV])
     def specSMSV(vs: (Rep[SparkDenseIndexedMatrix[Double]], Rep[DenseVector[Double]])) = mvm(vs._1.convertTo[SM], vs._2.convertTo[CV])
-    def wrap(x: Rep[(SSparkContext, (Array[Array[Double]], Array[Double]))]) = {
-      val Tuple(sc, a, b) = x
-      //val rddValues: Rep[SRDD[Array[Double]]] = SSparkContextImpl(sc).makeRDD(SSeq(a), 2)
-      val arrIdxs = SArray.rangeFrom0(a.length).map { i:Rep[Int] => i.toLong}
-      val rdd: Rep[SRDD[(Long, Array[Double])]] = rddToPairRddFunctions(sc.makeRDD(SSeq(arrIdxs zip a), sc.defaultParallelism)).partitionBy(SPartitioner.defaultPartitioner(sc.defaultParallelism))
-
+    def wrap(x: Rep[(SRDD[(Long, Array[Double])], Array[Double])]) = {
+      val Tuple(rdd, b) = x
       val matrix: Rep[SparkDenseIndexedMatrix[Double]] = SparkDenseIndexedMatrix(RDDIndexedCollection(rdd), b.length)
       val vector: Rep[DenseVector[Double]] = DenseVector(Collection(b))
-
       (matrix, vector)
     }
     def unwrap(y: Rep[DenseVector[Double]]) = isoC.from(isoD.from(y).convertTo(isoC.eTo))
@@ -79,12 +74,12 @@ class KernelsSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUti
 
   trait KernelsSpark extends Specs_MVM {
 
-  lazy val ddmvm_dd = fun { x: Rep[(SSparkContext, (Array[Array[Double]], Array[Double]))] => unwrap(specDMDV(wrap(x))) }
-  lazy val ddmvm_ds = fun { x: Rep[(SSparkContext, (Array[Array[Double]], Array[Double]))] => unwrap(specDMSV(wrap(x))) }
-  lazy val ddmvm_dc = fun { x: Rep[(SSparkContext, (Array[Array[Double]], Array[Double]))] => unwrap(specDMCV(wrap(x))) }
-  lazy val ddmvm_sd = fun { x: Rep[(SSparkContext, (Array[Array[Double]], Array[Double]))] => unwrap(specSMDV(wrap(x))) }
-  lazy val ddmvm_ss = fun { x: Rep[(SSparkContext, (Array[Array[Double]], Array[Double]))] => unwrap(specSMSV(wrap(x))) }
-  lazy val ddmvm_sc = fun { x: Rep[(SSparkContext, (Array[Array[Double]], Array[Double]))] => unwrap(specSMCV(wrap(x))) }
+  lazy val ddmvm_dd = fun { x: Rep[(SRDD[(Long, Array[Double])], Array[Double])] => unwrap(specDMDV(wrap(x))) }
+  lazy val ddmvm_ds = fun { x: Rep[(SRDD[(Long, Array[Double])], Array[Double])] => unwrap(specDMSV(wrap(x))) }
+  lazy val ddmvm_dc = fun { x: Rep[(SRDD[(Long, Array[Double])], Array[Double])] => unwrap(specDMCV(wrap(x))) }
+  lazy val ddmvm_sd = fun { x: Rep[(SRDD[(Long, Array[Double])], Array[Double])] => unwrap(specSMDV(wrap(x))) }
+  lazy val ddmvm_ss = fun { x: Rep[(SRDD[(Long, Array[Double])], Array[Double])] => unwrap(specSMSV(wrap(x))) }
+  lazy val ddmvm_sc = fun { x: Rep[(SRDD[(Long, Array[Double])], Array[Double])] => unwrap(specSMCV(wrap(x))) }
 }
 
   class TestClass extends SparkScalanCompiler with SparkLADslExp with KernelsSpark {
@@ -102,13 +97,18 @@ class KernelsSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUti
     val compiled1 = compileSource(testCompiler)(testCompiler.ddmvm_dd, "ddmvm_dd", generationConfig(testCompiler, "ddmvm_dd", "package"))
   }
 
-  ignore("ddmvm_sd Code Gen") {
+  ignore("ddmvm_ds Code Gen") {
     val testCompiler = new TestClass
-    val compiled1 = compileSource(testCompiler)(testCompiler.ddmvm_sd, "ddmvm_sd", generationConfig(testCompiler, "ddmvm_sd", "package"))
+    compileSource(testCompiler)(testCompiler.ddmvm_ds, "ddmvm_ds", generationConfig(testCompiler, "ddmvm_ds", "package"))
+  }
+
+  test("ddmvm_sd Code Gen") {
+    val testCompiler = new TestClass
+    compileSource(testCompiler)(testCompiler.ddmvm_sd, "ddmvm_sd", generationConfig(testCompiler, "ddmvm_sd", "package"))
   }
 
   test("ddmvm_ss Code Gen") {
     val testCompiler = new TestClass
-    val compiled1 = compileSource(testCompiler)(testCompiler.ddmvm_ss, "ddmvm_ss", generationConfig(testCompiler, "ddmvm_ss", "package"))
+    compileSource(testCompiler)(testCompiler.ddmvm_ss, "ddmvm_ss", generationConfig(testCompiler, "ddmvm_ss", "package"))
   }
 }
