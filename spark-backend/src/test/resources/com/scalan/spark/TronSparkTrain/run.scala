@@ -1,4 +1,4 @@
-package com.scalan.spark.TronSpark_Train
+package com.scalan.spark.TronSparkTrain
 
 import java.io._
 
@@ -124,7 +124,8 @@ object run {
     //
     //  val timeAfterInput = System.currentTimeMillis()
     //
-    //  val trainRes = execTrain(input)
+    val trainRes = execTrain(input)
+    println(s"res = ${trainRes.toList}")
     //  val (mu, (vBu, (vBi, (mP, (mQ, (mY, (iters, (err, (flag, (stepDecrease)))))))))) = trainRes
     //  println("Train finished. sqrtErr: " + err)
     //
@@ -155,11 +156,13 @@ object run {
     globalSparkContext.stop()
   }
 
-  //  private def execTrain(tuple: (ParametersPaired, (RDD[(Long, Array[Int])], (RDD[(Long, Array[Double])], (Int, Double))))) = {
-  //    try {
-  //      new SVDppSpark_Train()(tuple)
-  //    }
-  //  }
+  private def execTrain(tuple: (RDD[(Long, Array[Int])], (RDD[(Long, Array[Double])], (Int,
+    (RDD[(Long, Double)], (Int, (Int, (Double, (Double, Double))))))))) = {
+
+    try {
+      new TronSparkTrain()(tuple)
+    }
+  }
 
   def trainValues(host: String, inputPath: String, split: String, eps: Double, b: Double) = {
 
@@ -186,12 +189,12 @@ object run {
     //  res
 
     // usually used split = ":"
-    def loadLibSVMData(sc: SparkContext, path: String, numPartitions: Int, split: String, b: Double): RDD[(Array[Int], Array[Double], Double)] = {
+    def loadLibSVMData(sc: SparkContext, path: String, numPartitions: Int, split: String, b: Double): (RDD[(Long, Array[Int], Array[Double], Double)], Int) = {
       val parsed = sc.textFile(path, numPartitions).map(_.trim).filter(!_.isEmpty)
+      val parsedWithLineIds = parsed.zipWithIndex.mapPartitions(block => block.map { case (line, id) => (id, line) })
       val isBias = b >= 0
-      val data = parsed.map(line => {
+      val data = parsedWithLineIds.map { case (id, line) => {
         val tokens = line.split(" |\t|\n")
-        val n = tokens.size - 1
         val y = tokens.head.toDouble
         val (indexes, values) = tokens.tail.map { token =>
           val pair = token.split(split)
@@ -199,23 +202,41 @@ object run {
           val value = pair(1).toDouble
           (index, value)
         }.unzip
-        new Tuple3(indexes.toArray, values.toArray, y)
-      })
+        new Tuple4(id, indexes.toArray, values.toArray, y)
+      }}
+      val maxId = data.mapPartitions { blocks => blocks.map { case (id, indexes, values, y) => indexes.max } }.reduce(math.max(_, _))
       val res = if (isBias) {
-        val maxId = data.mapPartitions { blocks => blocks.map { case (indexes, values, y) => indexes.max } }.reduce(math.max(_, _))
         val maxIdBc = sc.broadcast(maxId)
-        data.mapPartitions { blocks => blocks.map { case (indexes, values, y) =>
-          (indexes :+ maxIdBc.value + 1, values :+ b, y)
+        val dataRes = data.mapPartitions { blocks => blocks.map { case (id, indexes, values, y) =>
+          (id, indexes :+ maxIdBc.value + 1, values :+ b, y)
         }}
+        (dataRes, maxId + 1)
       } else {
-        data
+        (data, maxId)
       }
       res
     }
 
-    val res = loadLibSVMData(globalSparkContext, inputPath, 2, split, b)
-    println(s"train values = ${res.collect.length}")
-    println(s"train values = ${val r = res.collect.apply(0); (r._1.toList, r._2.toList, r._3)}")
+    val (data, maxId) = loadLibSVMData(globalSparkContext, inputPath, 2, split, b)
+    println(s"load instances = ${data.collect.length}")
+    println(s"load values = ${val r = data.collect.apply(0); (r._2.toList, r._3.toList, r._4)}, nColumnsMatrix = $maxId")
+
+    val rddIdxs = data.mapPartitions { blocks => blocks.map { case d => (d._1, d._2) } }
+    val rddIdxsPartitioned = (new org.apache.spark.rdd.OrderedRDDFunctions[Long, Array[Int], (Long, Array[Int])](rddIdxs)).repartitionAndSortWithinPartitions(
+      defaultPartitioner(globalSparkContext.defaultParallelism)).cache
+
+    val rddVals = data.mapPartitions { blocks => blocks.map { case d => (d._1, d._3) } }
+    val rddValsPartitioned = (new org.apache.spark.rdd.OrderedRDDFunctions[Long, Array[Double], (Long, Array[Double])](rddVals)).repartitionAndSortWithinPartitions(
+      defaultPartitioner(globalSparkContext.defaultParallelism)).cache
+
+    val nColumnsMatrix = maxId
+
+    val rddVY = data.mapPartitions { blocks => blocks.map { case d => (d._1, d._4) } }
+    val rddVYPartitioned = (new org.apache.spark.rdd.OrderedRDDFunctions[Long, Double, (Long, Double)](rddVY)).repartitionAndSortWithinPartitions(
+      defaultPartitioner(globalSparkContext.defaultParallelism)).cache
+
+    val params = (maxIterationsTRON, (maxIterationsTRCG, (lambda, (eps, stepUpdate))))
+    val res = (rddIdxsPartitioned, (rddValsPartitioned, (nColumnsMatrix, (rddVYPartitioned, params))))
     res
   }
 
