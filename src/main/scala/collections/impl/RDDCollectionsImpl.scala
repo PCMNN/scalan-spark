@@ -1,5 +1,4 @@
 package scalan.spark.collections
-package impl
 
 import scala.annotation.unchecked.uncheckedVariance
 import scalan.OverloadId
@@ -8,6 +7,10 @@ import scalan.common.OverloadHack.Overloaded1
 import scalan.spark.{SparkDslExp, SparkDslSeq, SparkDsl}
 import scala.reflect._
 import scala.reflect.runtime.universe._
+
+package impl {
+
+import scalan.meta.ScalanAst.STraitOrClassDef
 
 // Abs -----------------------------------
 trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
@@ -21,6 +24,14 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
   // familyElem
   class IRDDCollectionElem[A, To <: IRDDCollection[A]](implicit override val eItem: Elem[A])
     extends CollectionElem[A, To] {
+    override lazy val parent: Option[Elem[_]] = Some(collectionElement(element[A]))
+    override lazy val entityDef: STraitOrClassDef = {
+      val module = getModules("RDDCollections")
+      module.entities.find(_.name == "IRDDCollection").get
+    }
+    override lazy val tyArgSubst: Map[String, TypeDesc] = {
+      Map("A" -> Left(eItem))
+    }
     override def isEntityType = true
     override lazy val tag = {
       implicit val tagA = eItem.tag
@@ -51,9 +62,8 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
     override def toString = "IRDDCollection"
   }
   def IRDDCollection: Rep[IRDDCollectionCompanionAbs]
-  implicit def proxyIRDDCollectionCompanion(p: Rep[IRDDCollectionCompanion]): IRDDCollectionCompanion = {
+  implicit def proxyIRDDCollectionCompanion(p: Rep[IRDDCollectionCompanion]): IRDDCollectionCompanion =
     proxyOps[IRDDCollectionCompanion](p)
-  }
 
   // single proxy for each type family
   implicit def proxyIRDDPairCollection[A, B](p: Rep[IRDDPairCollection[A, B]]): IRDDPairCollection[A, B] = {
@@ -62,6 +72,14 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
   // familyElem
   class IRDDPairCollectionElem[A, B, To <: IRDDPairCollection[A, B]](implicit override val eA: Elem[A], override val eB: Elem[B])
     extends PairCollectionElem[A, B, To] {
+    override lazy val parent: Option[Elem[_]] = Some(pairCollectionElement(element[A], element[B]))
+    override lazy val entityDef: STraitOrClassDef = {
+      val module = getModules("RDDCollections")
+      module.entities.find(_.name == "IRDDPairCollection").get
+    }
+    override lazy val tyArgSubst: Map[String, TypeDesc] = {
+      Map("A" -> Left(eA), "B" -> Left(eB))
+    }
     override def isEntityType = true
     override lazy val tag = {
       implicit val tagA = eA.tag
@@ -91,6 +109,14 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
   // familyElem
   class IRDDNestedCollectionElem[A, To <: IRDDNestedCollection[A]](implicit override val eA: Elem[A])
     extends NestedCollectionElem[A, To] {
+    override lazy val parent: Option[Elem[_]] = Some(nestedCollectionElement(element[A]))
+    override lazy val entityDef: STraitOrClassDef = {
+      val module = getModules("RDDCollections")
+      module.entities.find(_.name == "IRDDNestedCollection").get
+    }
+    override lazy val tyArgSubst: Map[String, TypeDesc] = {
+      Map("A" -> Left(eA))
+    }
     override def isEntityType = true
     override lazy val tag = {
       implicit val tagA = eA.tag
@@ -116,6 +142,15 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
   class RDDCollectionElem[A](val iso: Iso[RDDCollectionData[A], RDDCollection[A]])(implicit eItem: Elem[A])
     extends IRDDCollectionElem[A, RDDCollection[A]]
     with ConcreteElem[RDDCollectionData[A], RDDCollection[A]] {
+    override lazy val parent: Option[Elem[_]] = Some(iRDDCollectionElement(element[A]))
+    override lazy val entityDef = {
+      val module = getModules("RDDCollections")
+      module.concreteSClasses.find(_.name == "RDDCollection").get
+    }
+    override lazy val tyArgSubst: Map[String, TypeDesc] = {
+      Map("A" -> Left(eItem))
+    }
+
     override def convertIRDDCollection(x: Rep[IRDDCollection[A]]) = RDDCollection(x.rdd)
     override def getDefaultRep = super[ConcreteElem].getDefaultRep
     override lazy val tag = {
@@ -178,6 +213,15 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
   class RDDIndexedCollectionElem[A](val iso: Iso[RDDIndexedCollectionData[A], RDDIndexedCollection[A]])(implicit eItem: Elem[A])
     extends IRDDCollectionElem[A, RDDIndexedCollection[A]]
     with ConcreteElem[RDDIndexedCollectionData[A], RDDIndexedCollection[A]] {
+    override lazy val parent: Option[Elem[_]] = Some(iRDDCollectionElement(element[A]))
+    override lazy val entityDef = {
+      val module = getModules("RDDCollections")
+      module.concreteSClasses.find(_.name == "RDDIndexedCollection").get
+    }
+    override lazy val tyArgSubst: Map[String, TypeDesc] = {
+      Map("A" -> Left(eItem))
+    }
+
     override def convertIRDDCollection(x: Rep[IRDDCollection[A]]) = RDDIndexedCollection(x.indexedRdd)
     override def getDefaultRep = super[ConcreteElem].getDefaultRep
     override lazy val tag = {
@@ -240,6 +284,15 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
   class PairRDDCollectionElem[A, B](val iso: Iso[PairRDDCollectionData[A, B], PairRDDCollection[A, B]])(implicit eA: Elem[A], eB: Elem[B])
     extends IRDDPairCollectionElem[A, B, PairRDDCollection[A, B]]
     with ConcreteElem[PairRDDCollectionData[A, B], PairRDDCollection[A, B]] {
+    override lazy val parent: Option[Elem[_]] = Some(iRDDPairCollectionElement(element[A], element[B]))
+    override lazy val entityDef = {
+      val module = getModules("RDDCollections")
+      module.concreteSClasses.find(_.name == "PairRDDCollection").get
+    }
+    override lazy val tyArgSubst: Map[String, TypeDesc] = {
+      Map("A" -> Left(eA), "B" -> Left(eB))
+    }
+
     override def convertIRDDPairCollection(x: Rep[IRDDPairCollection[A, B]]) = PairRDDCollection(x.pairRDD)
     override def getDefaultRep = super[ConcreteElem].getDefaultRep
     override lazy val tag = {
@@ -303,6 +356,15 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
   class PairRDDIndexedCollectionElem[A, B](val iso: Iso[PairRDDIndexedCollectionData[A, B], PairRDDIndexedCollection[A, B]])(implicit eA: Elem[A], eB: Elem[B])
     extends IRDDPairCollectionElem[A, B, PairRDDIndexedCollection[A, B]]
     with ConcreteElem[PairRDDIndexedCollectionData[A, B], PairRDDIndexedCollection[A, B]] {
+    override lazy val parent: Option[Elem[_]] = Some(iRDDPairCollectionElement(element[A], element[B]))
+    override lazy val entityDef = {
+      val module = getModules("RDDCollections")
+      module.concreteSClasses.find(_.name == "PairRDDIndexedCollection").get
+    }
+    override lazy val tyArgSubst: Map[String, TypeDesc] = {
+      Map("A" -> Left(eA), "B" -> Left(eB))
+    }
+
     override def convertIRDDPairCollection(x: Rep[IRDDPairCollection[A, B]]) = // Converter is not generated by meta
 !!!("Cannot convert from IRDDPairCollection to PairRDDIndexedCollection: missing fields List(indices)")
     override def getDefaultRep = super[ConcreteElem].getDefaultRep
@@ -368,6 +430,15 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
   class RDDNestedCollectionElem[A](val iso: Iso[RDDNestedCollectionData[A], RDDNestedCollection[A]])(implicit eA: Elem[A])
     extends IRDDNestedCollectionElem[A, RDDNestedCollection[A]]
     with ConcreteElem[RDDNestedCollectionData[A], RDDNestedCollection[A]] {
+    override lazy val parent: Option[Elem[_]] = Some(iRDDNestedCollectionElement(element[A]))
+    override lazy val entityDef = {
+      val module = getModules("RDDCollections")
+      module.concreteSClasses.find(_.name == "RDDNestedCollection").get
+    }
+    override lazy val tyArgSubst: Map[String, TypeDesc] = {
+      Map("A" -> Left(eA))
+    }
+
     override def convertIRDDNestedCollection(x: Rep[IRDDNestedCollection[A]]) = RDDNestedCollection(x.values, x.segments)
     override def getDefaultRep = super[ConcreteElem].getDefaultRep
     override lazy val tag = {
@@ -426,6 +497,8 @@ trait RDDCollectionsAbs extends RDDCollections with SparkDsl {
   // 6) smart constructor and deconstructor
   def mkRDDNestedCollection[A](values: Rep[IRDDCollection[A]], segments: Rep[PairRDDCollection[Int,Int]])(implicit eA: Elem[A]): Rep[RDDNestedCollection[A]]
   def unmkRDDNestedCollection[A](p: Rep[IRDDNestedCollection[A]]): Option[(Rep[IRDDCollection[A]], Rep[PairRDDCollection[Int,Int]])]
+
+  registerModule(scalan.meta.ScalanCodegen.loadModule(RDDCollections_Module.dump))
 }
 
 // Seq -----------------------------------
@@ -1732,3 +1805,11 @@ trait RDDCollectionsExp extends RDDCollectionsDsl with SparkDslExp {
   object IRDDCollectionCompanionMethods {
   }
 }
+
+object RDDCollections_Module {
+  val packageName = "scalan.spark.collections"
+  val name = "RDDCollections"
+  val dump = "H4sIAAAAAAAAANVYTWwbRRSe3cRxbIc0SUNoUS3SYKhAEIcK1EOEqsRJIMh1jDcgZKpK4/XE3Xb/sjuObA4V4oTghrgi1HtvXJAq9YKQEAdOiCJx5lSKUAVUPYB4M/vjXXvXcdykqD6M9ufN+/ne997s8427KGFb6HlbxirWFzVC8aLEr1dsmpPWdarQ9gWj3lTJGtn5aO5r+YK+aovoWBWNXcb2mq1WUcq5WG+Z/rVEdosohXWZ2NSwbIpOF7mFvGyoKpGpYuh5RdOaFNdUki8qNl0uotGaUW/vomtIKKIp2dBli1AiFVRs28R2n48T5pHi36f4fXvL7NjQ8yyKfCCKbQsrFNwHG1OOfIWYUls39LZG0aTr2pbJ3AKZpKKZhkU9E0lQd9moe7ejOoYHaKZ4Be/hPJho5CVqKXoDdmZMLF/FDVICESY+Cg7bRN3Zbpv8fqSI0jbZBYA2NVPlT1omQggycJY7sdjBZ9HHZ5Hhk5OIpWBV+QCzl2XLaLWR8xNGEGqZoOKlfVR4Gsi6Xs99clF+/76U0US2ucVcSfIIx0DRMzFs4KkAHL+rfGbfe+P6ORGlqyit2Cs1m1pYpsGUu2hlsK4blPvsA4itBmRrIS5b3MoKyHRRIiUbmol10ORCOQF5UhVZoUyYPZtwsxMDfZKaxBMVWqbgxzsfEy/nTQGravnOyZef+239PRGJYRMpUCkB8S1PKdBps7K2VvBz4Bph6zGKhBWONFtSrc6a7OOED8eZO7/Xv11CF0UfRNfmYHkDFQn7558yP75wXkTjVc7yDRU3qoCjva4SbcsqGDqtonFjj1jOm+QeVtlVZB6TdbKDmyp10Q3CMgKwUDQfW48mYZgtc+4LHgAZh74lQye5jXLub+n7z28wdlpownnjFOi/yrl/fpncoZy4FI1Y9bqH7hiUNYA/MORpR69kaGR64Z5y6fqnlIMrtML1vVW7Aslc5vtO9cHZ6zN/VZfEP0/e/lJEKYCzplANm7mlAavjCBmPwshMFtwey/nxSvjlEyEWByD0BJ4K87wQdDWAdtJfspCtufg92U4PejLgygnBowgXoihBNinRPC9GGXP3TXhUOFm/bLJx6eTgzVWKs+rd87dElHgLJXagGuwiStSMpl73sgJnFSUtuuo9E8JZgSxgC2t+FvhvHnWC7vKZC2aErmQN1VZ60ERdaKYVvU5apF6Jq6I+bDfJdtNUyas3H1z6+MM3TV46PQ3RV/NsvJqypWhwqO+R1765+c4ft0oJ3mdn3P7yLlabxDliXUA74LIOIC6pwIOioTf2gSMISo6vZw5SEbMAyqaD1uEXRjZK+SOsj9jgsoHNrw9H3RkGSBkr1j709W9Xh2Vz0gQrHncjD4TSMJYPSpyz4ZfTZcerSNbEEeLpnk1DsUEkK4NSIU7Baj8FvYDFxTsokfoIrHZ7+z8yDfqmAod5JNPYUgmC+njw9ISbt35NLo6up+P2Pjas7Rv9oyDvLCNvCb4Pg8YP65wf22OnqE/XESDcw31fRJuBD9CGBiN2H0O93SHw/m2wtQS7NnU+Vjx4WIZ3HeHHIxAegNynIrYdNa89Wsa5fLBzOZCzsUjY0gel3H55yLAxZANritruSkIX0wbAv98XlRNu79x9cIyi6XQIp0kologj6qgaTHcsU8M1l5D7kU1qWD7CKhzvyLiCk+HmAJ3ZnRxsGKOuBv7esl36WWghZraQ3HEYZvJr978ovfjDV7/y0SLNBmtDZ42KqRDCI0UYlnGJmV2z1VCup8NOeq+9qh1lgziP7D9OZTn8YRUAAA=="
+}
+}
+

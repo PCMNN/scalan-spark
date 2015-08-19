@@ -65,7 +65,7 @@ object ScalanStartRootBuild extends Build {
 
   def liteProject(name: String) = ProjectRef(file("../scalan-lite"), name)
 
-  def liteDependency(name: String) = "com.huawei.scalan" %% name % "0.2.9-SNAPSHOT"
+  def liteDependency(name: String) = "com.huawei.scalan" %% name % "0.2.10-SNAPSHOT"
 
   lazy val metaDeps = liteDependency("scalan-meta")
   lazy val sparkmeta = Project(

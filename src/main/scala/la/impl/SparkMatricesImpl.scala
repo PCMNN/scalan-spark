@@ -1,5 +1,4 @@
 package la
-package impl
 
 import scala.annotation.unchecked.uncheckedVariance
 import scalan.OverloadId
@@ -8,6 +7,10 @@ import scala.reflect._
 import scala.reflect.runtime.universe._
 import scalan.common.Default
 import scalan.spark._
+
+package impl {
+
+import scalan.meta.ScalanAst.STraitOrClassDef
 
 // Abs -----------------------------------
 trait SparkMatricesAbs extends SparkMatrices with SparkDsl {
@@ -21,6 +24,14 @@ trait SparkMatricesAbs extends SparkMatrices with SparkDsl {
   // familyElem
   class SparkAbstractMatrixElem[A, To <: SparkAbstractMatrix[A]](implicit val elem: Elem[A])
     extends AbstractMatrixElem[A, To] {
+    override lazy val parent: Option[Elem[_]] = Some(abstractMatrixElement(element[A]))
+    override lazy val entityDef: STraitOrClassDef = {
+      val module = getModules("SparkMatrices")
+      module.entities.find(_.name == "SparkAbstractMatrix").get
+    }
+    override lazy val tyArgSubst: Map[String, TypeDesc] = {
+      Map("A" -> Left(elem))
+    }
     override def isEntityType = true
     override lazy val tag = {
       implicit val tagA = elem.tag
@@ -51,14 +62,22 @@ trait SparkMatricesAbs extends SparkMatrices with SparkDsl {
     override def toString = "SparkAbstractMatrix"
   }
   def SparkAbstractMatrix: Rep[SparkAbstractMatrixCompanionAbs]
-  implicit def proxySparkAbstractMatrixCompanion(p: Rep[SparkAbstractMatrixCompanion]): SparkAbstractMatrixCompanion = {
+  implicit def proxySparkAbstractMatrixCompanion(p: Rep[SparkAbstractMatrixCompanion]): SparkAbstractMatrixCompanion =
     proxyOps[SparkAbstractMatrixCompanion](p)
-  }
 
   // elem for concrete class
   class SparkSparseIndexedMatrixElem[T](val iso: Iso[SparkSparseIndexedMatrixData[T], SparkSparseIndexedMatrix[T]])(implicit elem: Elem[T])
     extends SparkAbstractMatrixElem[T, SparkSparseIndexedMatrix[T]]
     with ConcreteElem[SparkSparseIndexedMatrixData[T], SparkSparseIndexedMatrix[T]] {
+    override lazy val parent: Option[Elem[_]] = Some(sparkAbstractMatrixElement(element[T]))
+    override lazy val entityDef = {
+      val module = getModules("SparkMatrices")
+      module.concreteSClasses.find(_.name == "SparkSparseIndexedMatrix").get
+    }
+    override lazy val tyArgSubst: Map[String, TypeDesc] = {
+      Map("T" -> Left(elem))
+    }
+
     override def convertSparkAbstractMatrix(x: Rep[SparkAbstractMatrix[T]]) = SparkSparseIndexedMatrix(x.rddNonZeroIndexes, x.rddNonZeroValues, x.numColumns)
     override def getDefaultRep = super[ConcreteElem].getDefaultRep
     override lazy val tag = {
@@ -122,6 +141,15 @@ trait SparkMatricesAbs extends SparkMatrices with SparkDsl {
   class SparkDenseIndexedMatrixElem[T](val iso: Iso[SparkDenseIndexedMatrixData[T], SparkDenseIndexedMatrix[T]])(implicit elem: Elem[T])
     extends SparkAbstractMatrixElem[T, SparkDenseIndexedMatrix[T]]
     with ConcreteElem[SparkDenseIndexedMatrixData[T], SparkDenseIndexedMatrix[T]] {
+    override lazy val parent: Option[Elem[_]] = Some(sparkAbstractMatrixElement(element[T]))
+    override lazy val entityDef = {
+      val module = getModules("SparkMatrices")
+      module.concreteSClasses.find(_.name == "SparkDenseIndexedMatrix").get
+    }
+    override lazy val tyArgSubst: Map[String, TypeDesc] = {
+      Map("T" -> Left(elem))
+    }
+
     override def convertSparkAbstractMatrix(x: Rep[SparkAbstractMatrix[T]]) = SparkDenseIndexedMatrix(x.rddValues, x.numColumns)
     override def getDefaultRep = super[ConcreteElem].getDefaultRep
     override lazy val tag = {
@@ -180,6 +208,8 @@ trait SparkMatricesAbs extends SparkMatrices with SparkDsl {
   // 6) smart constructor and deconstructor
   def mkSparkDenseIndexedMatrix[T](rddValues: RDDIndexColl[Array[T]], numColumns: Rep[Int])(implicit elem: Elem[T]): Rep[SparkDenseIndexedMatrix[T]]
   def unmkSparkDenseIndexedMatrix[T](p: Rep[SparkAbstractMatrix[T]]): Option[(Rep[RDDIndexedCollection[Array[T]]], Rep[Int])]
+
+  registerModule(scalan.meta.ScalanCodegen.loadModule(SparkMatrices_Module.dump))
 }
 
 // Seq -----------------------------------
@@ -313,12 +343,12 @@ trait SparkMatricesExp extends SparkMatricesDsl with SparkDslExp {
     }
 
     object columns {
-      def unapply(d: Def[_]): Option[Rep[SparkSparseIndexedMatrix[T]] forSome {type T}] = d match {
-        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SparkSparseIndexedMatrixElem[_]] && method.getName == "columns" =>
-          Some(receiver).asInstanceOf[Option[Rep[SparkSparseIndexedMatrix[T]] forSome {type T}]]
+      def unapply(d: Def[_]): Option[(Rep[SparkSparseIndexedMatrix[T]], Numeric[T]) forSome {type T}] = d match {
+        case MethodCall(receiver, method, Seq(n, _*), _) if receiver.elem.isInstanceOf[SparkSparseIndexedMatrixElem[_]] && method.getName == "columns" =>
+          Some((receiver, n)).asInstanceOf[Option[(Rep[SparkSparseIndexedMatrix[T]], Numeric[T]) forSome {type T}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[Rep[SparkSparseIndexedMatrix[T]] forSome {type T}] = exp match {
+      def unapply(exp: Exp[_]): Option[(Rep[SparkSparseIndexedMatrix[T]], Numeric[T]) forSome {type T}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
@@ -593,12 +623,12 @@ trait SparkMatricesExp extends SparkMatricesDsl with SparkDslExp {
     }
 
     object columns {
-      def unapply(d: Def[_]): Option[Rep[SparkDenseIndexedMatrix[T]] forSome {type T}] = d match {
-        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SparkDenseIndexedMatrixElem[_]] && method.getName == "columns" =>
-          Some(receiver).asInstanceOf[Option[Rep[SparkDenseIndexedMatrix[T]] forSome {type T}]]
+      def unapply(d: Def[_]): Option[(Rep[SparkDenseIndexedMatrix[T]], Numeric[T]) forSome {type T}] = d match {
+        case MethodCall(receiver, method, Seq(n, _*), _) if receiver.elem.isInstanceOf[SparkDenseIndexedMatrixElem[_]] && method.getName == "columns" =>
+          Some((receiver, n)).asInstanceOf[Option[(Rep[SparkDenseIndexedMatrix[T]], Numeric[T]) forSome {type T}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[Rep[SparkDenseIndexedMatrix[T]] forSome {type T}] = exp match {
+      def unapply(exp: Exp[_]): Option[(Rep[SparkDenseIndexedMatrix[T]], Numeric[T]) forSome {type T}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
@@ -894,8 +924,28 @@ trait SparkMatricesExp extends SparkMatricesDsl with SparkDslExp {
         case _ => None
       }
     }
+
+    object columns {
+      def unapply(d: Def[_]): Option[(Rep[SparkAbstractMatrix[A]], Numeric[A]) forSome {type A}] = d match {
+        case MethodCall(receiver, method, Seq(n, _*), _) if receiver.elem.isInstanceOf[SparkAbstractMatrixElem[_, _]] && method.getName == "columns" =>
+          Some((receiver, n)).asInstanceOf[Option[(Rep[SparkAbstractMatrix[A]], Numeric[A]) forSome {type A}]]
+        case _ => None
+      }
+      def unapply(exp: Exp[_]): Option[(Rep[SparkAbstractMatrix[A]], Numeric[A]) forSome {type A}] = exp match {
+        case Def(d) => unapply(d)
+        case _ => None
+      }
+    }
   }
 
   object SparkAbstractMatrixCompanionMethods {
   }
 }
+
+object SparkMatrices_Module {
+  val packageName = "la"
+  val name = "SparkMatrices"
+  val dump = "H4sIAAAAAAAAAM1WTWwbRRSeXcdxbIc0LdCmUiPSYIpAEAckVKQcKtd2UJDzQzYgZCqk8e4k3XZ3djMzjtYcekCc4Ia4ItR7b1yQkHpBSIgDJwRInDmVIlS19ATizeyP18brJKBK7GG0Ozvzfr7ve2/m1l2U5wxd4CZ2MF1yicBLhnqvcVExmlTYorfuWV2HNMju+6e/MNfpZa6jE200eRXzBnfaqBi+NAM/eTfIfgsVMTUJFx7jAp1vKQ9V03McYgrbo1XbdbsCdxxSbdlcrLTQRMezevvoBtJaaNb0qMmIIEbdwZwTHs1PERmRnXwX1Xdv0+/7oFWZRTWVxQ7DtoDwwcdsuH6b+EaPerTnCjQThbbpy7BgTcF2fY+J2EUBzF31rPhzgmKYQKda1/ABroKLvaohmE33YGfZx+Z1vEc2YIlcPgEBc+Ls7vR89Z1roRIn+wDQmus7aibwEULAwMsqiKU+PksJPksSn4pBmI0d+z0sf24xL+ih8NFyCAU+mHjhEBOxBdKkVuXDK+Y7D42yq8vNgQyloDKcBENPZahBUQE4frP9Mb/32s2LOiq1UcnmtQ4XDJsiTXmEVhlT6gkVcwIgZnvA1mIWW8pLDdYMSaJoeq6PKViKoJwGnhzbtIVcLOemI3YyoC8In8RLtcDXknwXMvJVuqljx9m6c/bFZ35tvq0jfdBFEUwaIHwWGxXoccPH7HoMyToGbQSRJzmeEEjbUXDLoRj0x8KYSBJMnr3zm/X1MrqiJ0hGjo9GHpjI859+KH//3CUdTbWV1FcdvNcGMHnTIe4mq3tUtNGUd0BY+KdwgB35NpLMgkV2cdcREcRpbHKAjUALmUXpEwnciioALQagHGp4w6OksrpV+cP49pNbUqIMTYd/wir9y774588zu0KpV6CTzLJgS5swb41aJCA8xnp6u9FQU3WoikEa8jXGcC/B7eksEfhki9kuNJ0D8spXX775++2NvNLBqSj1t7DTJWELiDLvoyCD05YFyq1RkeZbeZ1LEpfDvECz/TSU0WNnkS2w0Q5LtOuCya5LE1c5aI2hNTlcGCXSUsiE4bnk5OI9+92bHwklRy0YbIubnWvQh1bUvnNjlBm35wftZf3+2R8/01ERBNixhYv9yvIRm8ojbBRoEN2ZenQ0qYp6afDnnKp+OXASStEKW0CKkXjtmcEmUU9HnSKv0GcM1HQ+y8HA9vl+Q38yFeCcNiSACQI1H8cz0Yw/xinpkBznk4Kazy4oAPf0dusJ5+6l2zrKv47yu9BfeAvlO16XWjFrcAUQJBCX4zltkDVgCTPsJiypZwH10x8KXy0sa4MJ/odu/Q9wh6urCOX8/61jOb6qxpXjCPyMAqxB6CPS90KG/X8hbzmsHVfc4/KbT+1/41C9pcCYHI3zWNnVRsvuMPLKso+tYtd2ekPMjZL6GB8xIedGbBtBRsbN52iwjc71g/6aaOFjyoOyLE8EpINAQygYWsxoN0bU2+GAufHw043nv/v8F3V8l+QpAdcMmlz008f2IHQl5bdVg4t7KlIQlTw4VJR/A7He6wpIDQAA"
+}
+}
+
