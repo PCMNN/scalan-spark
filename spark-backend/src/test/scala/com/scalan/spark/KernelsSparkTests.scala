@@ -16,6 +16,7 @@ import scalan.BaseTests
 import scalan.it.ItTestsUtil
 import scalan.la.LADsl
 import scalan.common.OverloadHack.Overloaded1
+import scalan.spark.SparkDslExp
 
 trait KernelsSpark {
 
@@ -27,7 +28,8 @@ class KernelsSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUti
   val globalSparkConf = null
   var globalSparkContext: SparkContext = null
 
-  def generationConfig(cmpl: SparkScalanCompiler, pack : String = "gen", command: String = null, getOutput: Boolean = false) =
+  def generationConfig[ScalanCake <: SparkDslExp](cmpl: SparkScalanCompiler[ScalanCake], pack : String = "gen",
+                                                  command: String = null, getOutput: Boolean = false) =
     cmpl.defaultCompilerConfig.copy(scalaVersion = Some("2.10.4"),
       sbt = cmpl.defaultCompilerConfig.sbt.copy(mainPack = Some(s"com.scalan.spark.$pack"),
         resources = Seq("log4j.properties"),
@@ -100,7 +102,14 @@ class KernelsSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUti
     lazy val dsdmvm_sc = fun { x: Rep[(SRDD[(Long, Array[Double])], (Array[Int], (Array[Double], Int)))] => unwrap(dsdmvmSC(wrap(x))) }
   }
 
-  class TestClass extends SparkScalanCompiler with SparkLADslExp with SparkMVM {
+  class Program extends SparkMVM with SparkLADslExp {
+
+    val sparkContext = globalSparkContext
+    val sSparkContext = ExpSSparkContextImpl(globalSparkContext)
+    val repSparkContext = SSparkContext(SSparkConf())
+  }
+
+  class TestClass[ScalanCake <: SparkDslExp](_scalan: ScalanCake) extends SparkScalanCompiler[ScalanCake](_scalan) {
     val sparkContext = globalSparkContext
     val sSparkContext = null
     val conf = null
@@ -111,42 +120,42 @@ class KernelsSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUti
   }
 
   test("dddmvm_dd Code Gen") {
-    val testCompiler = new TestClass
-    compileSource(testCompiler)(testCompiler.dddmvm_dd, "dddmvm_dd", generationConfig(testCompiler, "dddmvm_dd", "package"))
+    val testCompiler = new TestClass(new Program)
+    compileSource(testCompiler)(testCompiler.scalan.dddmvm_dd, "dddmvm_dd", generationConfig(testCompiler, "dddmvm_dd", "package"))
   }
 
   test("dddmvm_ds Code Gen") {
-    val testCompiler = new TestClass
-    compileSource(testCompiler)(testCompiler.dddmvm_ds, "dddmvm_ds", generationConfig(testCompiler, "dddmvm_ds", "package"))
+    val testCompiler = new TestClass(new Program)
+    compileSource(testCompiler)(testCompiler.scalan.dddmvm_ds, "dddmvm_ds", generationConfig(testCompiler, "dddmvm_ds", "package"))
   }
 
   test("dddmvm_sd Code Gen") {
-    val testCompiler = new TestClass
-    compileSource(testCompiler)(testCompiler.dddmvm_sd, "dddmvm_sd", generationConfig(testCompiler, "dddmvm_sd", "package"))
+    val testCompiler = new TestClass(new Program)
+    compileSource(testCompiler)(testCompiler.scalan.dddmvm_sd, "dddmvm_sd", generationConfig(testCompiler, "dddmvm_sd", "package"))
   }
 
   test("dddmvm_ss Code Gen") {
-    val testCompiler = new TestClass
-    compileSource(testCompiler)(testCompiler.dddmvm_ss, "dddmvm_ss", generationConfig(testCompiler, "dddmvm_ss", "package"))
+    val testCompiler = new TestClass(new Program)
+    compileSource(testCompiler)(testCompiler.scalan.dddmvm_ss, "dddmvm_ss", generationConfig(testCompiler, "dddmvm_ss", "package"))
   }
 
   test("dsdmvm_dd Code Gen") {
-    val testCompiler = new TestClass
-    compileSource(testCompiler)(testCompiler.dsdmvm_dd, "dsdmvm_dd", generationConfig(testCompiler, "dsdmvm_dd", "package"))
+    val testCompiler = new TestClass(new Program)
+    compileSource(testCompiler)(testCompiler.scalan.dsdmvm_dd, "dsdmvm_dd", generationConfig(testCompiler, "dsdmvm_dd", "package"))
   }
 
   test("dsdmvm_ds Code Gen") {
-    val testCompiler = new TestClass
-    compileSource(testCompiler)(testCompiler.dsdmvm_ds, "dsdmvm_ds", generationConfig(testCompiler, "dsdmvm_ds", "package"))
+    val testCompiler = new TestClass(new Program)
+    compileSource(testCompiler)(testCompiler.scalan.dsdmvm_ds, "dsdmvm_ds", generationConfig(testCompiler, "dsdmvm_ds", "package"))
   }
 
   test("dsdmvm_sd Code Gen") {
-    val testCompiler = new TestClass
-    compileSource(testCompiler)(testCompiler.dsdmvm_sd, "dsdmvm_sd", generationConfig(testCompiler, "dsdmvm_sd", "package"))
+    val testCompiler = new TestClass(new Program)
+    compileSource(testCompiler)(testCompiler.scalan.dsdmvm_sd, "dsdmvm_sd", generationConfig(testCompiler, "dsdmvm_sd", "package"))
   }
 
   test("dsdmvm_ss Code Gen") {
-    val testCompiler = new TestClass
-    compileSource(testCompiler)(testCompiler.dsdmvm_ss, "dsdmvm_ss", generationConfig(testCompiler, "dsdmvm_ss", "package"))
+    val testCompiler = new TestClass(new Program)
+    compileSource(testCompiler)(testCompiler.scalan.dsdmvm_ss, "dsdmvm_ss", generationConfig(testCompiler, "dsdmvm_ss", "package"))
   }
 }

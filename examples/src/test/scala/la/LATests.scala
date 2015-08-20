@@ -18,7 +18,7 @@ import scalan.spark.{SparkDsl, SparkDslExp}
 import scalan.compilation.{GraphVizConfig, Passes}
 
 class LATests extends BaseTests { suite =>
-
+/*
   class Context  extends SimpleLASparkTests with LADslExp with SparkLADslExp
   with scalan.compilation.DummyCompilerWithPasses {
     val sparkContext = null
@@ -60,7 +60,7 @@ class LATests extends BaseTests { suite =>
     val ctx4 = new Context
     ctx4.emitGraph("sdmvm", ctx4.sdmvm)
   }
-
+*/
 }
 
 

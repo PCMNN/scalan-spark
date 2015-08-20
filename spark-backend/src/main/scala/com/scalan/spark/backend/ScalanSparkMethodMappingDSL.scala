@@ -3,9 +3,13 @@ package com.scalan.spark.backend
 import org.apache.spark.rdd.{RDD, PairRDDFunctions}
 
 import scalan.compilation.language._
-import scalan.spark.SparkDslExp
+import scalan.spark._
+import scalan.Elems
+import scalan.spark.impl.SparkConfsAbs
+import scalan.collections.Seqs
 
-trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {  self: SparkDslExp =>
+trait ScalanSparkMethodMappingDSL extends MethodMappingDSL { self: { val scalan: SparkDslExp } =>
+  import scalan._
 
   trait SparkScalanTags extends MappingTags {
 
@@ -22,7 +26,7 @@ trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {  self: SparkDslExp 
             val reduceByKey = Method('reduceByKey, tyPairRDDFunctions)
             val countByKey = Method('countByKey, tyPairRDDFunctions)
             val foldByKey = Method('foldByKey, tyPairRDDFunctions)
-            val wrappedValueOfBaseType = Method('wrappedValueOfBaseType, typeOf[scalan.Elems#Element[_]])
+            val wrappedValueOfBaseType = Method('wrappedValueOfBaseType, typeOf[Elems#Element[_]])
           }
         }
         val famRDDsAbs = new Family('RDDsAbs) {
@@ -39,7 +43,7 @@ trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {  self: SparkDslExp 
         }
         val sparkContexts = new Family('SparkContexts) {
           val sSparkContextCompanion = new ClassType('SSparkContextCompanion) {
-            val apply = Method('apply, typeOf[scalan.spark.impl.SparkConfsAbs#SSparkConfImpl])
+            val apply = Method('apply, typeOf[SparkConfsAbs#SSparkConfImpl])
           }
         }
       }
@@ -74,7 +78,7 @@ trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {  self: SparkDslExp 
             val foldByKey = Method('foldByKey, tyPairRDDFunctions)
             val groupByKey = Method('groupByKey, tyPairRDDFunctions)
             val groupWithExt = Method('groupWithExt, typeOf[RDD[(Int, (Seq[_], Seq[_]))]] )
-            val wrappedValueOfBaseType = Method('wrappedValueOfBaseType, typeOf[scalan.Elems#Element[_]])
+            val wrappedValueOfBaseType = Method('wrappedValueOfBaseType, typeOf[Elems#Element[_]])
           }
         }
         val famRDDs = new Family('RDDs) {
@@ -84,7 +88,7 @@ trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {  self: SparkDslExp 
         }
         val sparkContexts = new Family('SparkContexts) {
           val sSparkContextCompanion = new ClassType('SSparkContextCompanion) {
-            val apply = Method('apply, typeOf[scalan.spark.impl.SparkConfsAbs#SSparkConfImpl])
+            val apply = Method('apply, typeOf[SparkConfsAbs#SSparkConfImpl])
           }
         }
       }
@@ -104,7 +108,7 @@ trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {  self: SparkDslExp 
             val fromList = Method('fromList, typeOf[Seq[_]], MethodArg(typeOf[List[_]]))
           }
           val sSeqImpl = new ClassType('SSeqImpl, TyArg('A)) {
-            val wrappedValueOfBaseType = Method('wrappedValueOfBaseType, typeOf[scalan.Elems#Element[_]])
+            val wrappedValueOfBaseType = Method('wrappedValueOfBaseType, typeOf[Elems#Element[_]])
           }
         }
       }
@@ -199,11 +203,11 @@ trait ScalanSparkMethodMappingDSL extends MethodMappingDSL {  self: SparkDslExp 
     val mapping = new ScalaMapping {
       val functionMap = scala2Scala
       override val classMap = Map[Class[_], ScalaFunc](
-        classOf[scalan.spark.SparkConfs#SSparkConf] -> sparkClasses.sparkConf,
-        classOf[scalan.spark.SparkContexts#SSparkContext] -> sparkClasses.sparkContext,
-        classOf[scalan.spark.PairRDDFunctionss#SPairRDDFunctions[_, _]] -> sparkClasses.pairRDDFunctions,
-        classOf[scalan.spark.RDDs#SRDD[_]] -> sparkClasses.rdd,
-        classOf[scalan.collections.Seqs#SSeq[_]] -> main.Seq
+        classOf[SparkConfs#SSparkConf] -> sparkClasses.sparkConf,
+        classOf[SparkContexts#SSparkContext] -> sparkClasses.sparkContext,
+        classOf[PairRDDFunctionss#SPairRDDFunctions[_, _]] -> sparkClasses.pairRDDFunctions,
+        classOf[RDDs#SRDD[_]] -> sparkClasses.rdd,
+        classOf[Seqs#SSeq[_]] -> main.Seq
       )
     }
   }
