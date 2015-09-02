@@ -33,7 +33,12 @@ trait SparkMatrices {  self: SparkLADsl =>
     def rows = rddColl.map({arrs: Rep[(Array[Int], Array[T])] => SparseVector(Collection(arrs._1), Collection(arrs._2), numColumns)})
     def rmValues: Rep[Collection[T]] = ???
     def columns(implicit n: Numeric[T]): Rep[Collection[AbstractVector[T]]] = ???
-    def rddValues: RDDIndexColl[Array[T]] = ???
+    def rddValues: RDDIndexColl[Array[T]] = {
+      val paired = rddNonZeroIndexes zip rddNonZeroValues
+      val mapped = paired.pairRDD.map(fun( { case Pair(indexes, values) =>
+        array_updateMany(SArray.replicate(numColumns, zeroValue), indexes, values)}))
+      RDDIndexedCollection(paired.indices zip mapped)
+    }
 
     @OverloadId("rows")
     def apply(iRows: Coll[Int])(implicit o: Overloaded1): SparkMatrix[T] = SparkSparseIndexedMatrix(rddNonZeroIndexes(iRows).convertTo[RDDIndexedCollection[Array[Int]]], rddNonZeroValues(iRows).convertTo[RDDIndexedCollection[Array[T]]] , numColumns)
