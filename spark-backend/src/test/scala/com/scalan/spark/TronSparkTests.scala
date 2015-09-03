@@ -60,7 +60,6 @@ class TronSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil {
 ////        val rddIndices = RDDIndexedCollection(SRDD.fromArraySC[Array[Int]](sc, rows.map { vec => vec.nonZeroIndices.arr }.arr))
 ////        val rddValues = RDDIndexedCollection(sc.makeRDD(rows.map { vec => vec.nonZeroValues.arr }.seq))
 //        val rddValues = RDDIndexedCollection(SRDD.fromArraySC[Array[Double]](sc, rows.map { vec => vec.nonZeroValues.arr }.arr))
-//
 //        SparkSparseIndexedMatrix(rddIndices, rddValues, numColumns)
 
       }
@@ -79,16 +78,8 @@ class TronSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil {
       val data = (inMatrix, vY)
 
       val instance = new SparkTronExt(SRDDImpl(vYRDD).context)
-//      val model = instance.train(data, parameters)
-  val Tuple(maxIterationsTRON, maxIterationsTRCG, lambda, epsInput, stepUpdate) = parameters
-//  val (inMatrix, vY) = data
-  val epsilon = instance.correctEpsilon(epsInput, vY)
-  val Tuple(mX, modelPart) = instance.prepareMatrixForTraining(FALSE, inMatrix)
-      val vB0 = instance.ReplicatedVector(mX.numColumns, zero)
-      val g0 = instance.gradientRegularized(vY, vB0, mX, lambda, stepUpdate)
-      val res = g0.items.arr
-
-      // model.items.arr
+      val model = instance.train(data, parameters)
+      val res = model.items.arr
       res
     }
   }
