@@ -1,11 +1,14 @@
 package scalan.spark
-package impl
 
 import scalan._
 import scalan.common.Default
 import org.apache.spark.{HashPartitioner, Partitioner}
 import scala.reflect._
 import scala.reflect.runtime.universe._
+
+package impl {
+
+import scalan.meta.ScalanAst.STraitOrClassDef
 
 // Abs -----------------------------------
 trait PartitionersAbs extends Partitioners with ScalanCommunityDsl {
@@ -27,6 +30,14 @@ trait PartitionersAbs extends Partitioners with ScalanCommunityDsl {
   // familyElem
   abstract class SPartitionerElem[To <: SPartitioner]
     extends WrapperElem[Partitioner, To] {
+    lazy val parent: Option[Elem[_]] = None
+    lazy val entityDef: STraitOrClassDef = {
+      val module = getModules("Partitioners")
+      module.entities.find(_.name == "SPartitioner").get
+    }
+    lazy val tyArgSubst: Map[String, TypeDesc] = {
+      Map()
+    }
     override def isEntityType = true
     override lazy val tag = {
       weakTypeTag[SPartitioner].asInstanceOf[WeakTypeTag[To]]
@@ -58,9 +69,8 @@ trait PartitionersAbs extends Partitioners with ScalanCommunityDsl {
     override def toString = "SPartitioner"
   }
   def SPartitioner: Rep[SPartitionerCompanionAbs]
-  implicit def proxySPartitionerCompanion(p: Rep[SPartitionerCompanion]): SPartitionerCompanion = {
+  implicit def proxySPartitionerCompanion(p: Rep[SPartitionerCompanion]): SPartitionerCompanion =
     proxyOps[SPartitionerCompanion](p)
-  }
 
   // default wrapper implementation
   abstract class SPartitionerImpl(val wrappedValueOfBaseType: Rep[Partitioner]) extends SPartitioner {
@@ -70,6 +80,14 @@ trait PartitionersAbs extends Partitioners with ScalanCommunityDsl {
   class SPartitionerImplElem(val iso: Iso[SPartitionerImplData, SPartitionerImpl])
     extends SPartitionerElem[SPartitionerImpl]
     with ConcreteElem[SPartitionerImplData, SPartitionerImpl] {
+    override lazy val parent: Option[Elem[_]] = Some(sPartitionerElement)
+    override lazy val entityDef = {
+      val module = getModules("Partitioners")
+      module.concreteSClasses.find(_.name == "SPartitionerImpl").get
+    }
+    override lazy val tyArgSubst: Map[String, TypeDesc] = {
+      Map()
+    }
     lazy val eTo = this
     override def convertSPartitioner(x: Rep[SPartitioner]) = SPartitionerImpl(x.wrappedValueOfBaseType)
     override def getDefaultRep = super[ConcreteElem].getDefaultRep
@@ -94,7 +112,7 @@ trait PartitionersAbs extends Partitioners with ScalanCommunityDsl {
     lazy val eTo = new SPartitionerImplElem(this)
   }
   // 4) constructor and deconstructor
-  abstract class SPartitionerImplCompanionAbs extends CompanionBase[SPartitionerImplCompanionAbs] with SPartitionerImplCompanion {
+  abstract class SPartitionerImplCompanionAbs extends CompanionBase[SPartitionerImplCompanionAbs] {
     override def toString = "SPartitionerImpl"
 
     def apply(wrappedValueOfBaseType: Rep[Partitioner]): Rep[SPartitionerImpl] =
@@ -127,6 +145,8 @@ trait PartitionersAbs extends Partitioners with ScalanCommunityDsl {
   // 6) smart constructor and deconstructor
   def mkSPartitionerImpl(wrappedValueOfBaseType: Rep[Partitioner]): Rep[SPartitionerImpl]
   def unmkSPartitionerImpl(p: Rep[SPartitioner]): Option[(Rep[Partitioner])]
+
+  registerModule(scalan.meta.ScalanCodegen.loadModule(Partitioners_Module.dump))
 }
 
 // Seq -----------------------------------
@@ -236,3 +256,11 @@ trait PartitionersExp extends PartitionersDsl with ScalanCommunityDslExp {
     }
   }
 }
+
+object Partitioners_Module {
+  val packageName = "scalan.spark"
+  val name = "Partitioners"
+  val dump = "H4sIAAAAAAAAALVVv28TMRR+uZam+SFoK4HULoUqgEAlqVg6dEClBIQUmopDgAJCci5OeuDzubZbEgYGRtgQK0LsbCz8A0iIgQkBEjMTPwbEjwnEs+8uvVYEWMhgne3n7733fZ+dRx9hh5JwQHmEEV4OqCZl134vKl1yq1z7uncmbK0zeoK2b+154p3hx5UDuxowskrUCcUakIs+ql3R/3bpWg1yhHtU6VAqDftqNkPFCxmjnvZDXvGDYF2TJqOVmq/0Qg2Gm2GrtwY3IVODMS/knqSaukuMKEVVvD5KTUV+f56z815dbObgFdNFJdXFOUl8jeVjjrEo/iwVbo+HvBdo2BmXVhemLIzJ+oEIpU5SZBFuNWwl02FOcAEmalfJBqlgik7F1dLnHTxZEMS7Rjp0GUNM+DAWrChrn+sJOx+qQV7RNSTodCCYXekKAEAFjtoiypv8lPv8lA0/JZdKnzD/BjGbKzLs9iD6ZYYAugIhZv8CkSDQKm+Vbl/2Ln13C4FjDndNKVnb4QgCTQ9wg5UCeXx29q76fOrhvAP5BuR9tdhUWhJPpyWP2SoQzkNta+4TSGQH1ZoZpJbNsogx2yyR88JAEI5IMZVF1In5nq9NsFkrxuoMoD6rBU1CM12R6fe7d0C/1jdLhLGV95NH9n+oXnTA2Zoih5AuGl8moBqK7gqRxqMhp9LyaoZcTPHgZP22D77/1Ho6B5edPlkx9r/pgxA71JtXhZeHjjkw2rBuPslIp4F8qSqjQV0uhVw3YDTcoDLayW4QZr5+q1e2RdtknemYxXT7Q9i+hr0D752ghpsF6/FMQkAhsuky8lM6uVL65j6/98i4UEIx2oku4k9//sfbnW1tDaphz3VJhKCt84St03r7OFHUSGuL3KVhCG90zE+8UhgsQyyGGaZs+ISdaxhLa5dc0anU6b9KkDw1XxtzzpfJ1w8cyCHTTV8HRJTm/vGC/EfTwzaSTOQFy2xU0YgZppPtP3k5RaJRNR9p54YBHZ/57F95eEdbA2e6W9/KevMqPk4L9vCkzVOCTaBNXVDy3ensS2keIkmEGce3S2TG/VsXUdliCgofn2IsnxJEXrNVzGIPMwNEdWNKUdeb3+8vH37x+J19CfJGHETkesufg1Wiu82Oo65JhS9/qlQNw0YtW+wvFlb3zIkHAAA="
+}
+}
+

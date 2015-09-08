@@ -1,11 +1,14 @@
 package scalan.spark
-package impl
 
 import scalan._
 import scalan.common.Default
 import org.apache.spark.broadcast.Broadcast
 import scala.reflect._
 import scala.reflect.runtime.universe._
+
+package impl {
+
+import scalan.meta.ScalanAst.STraitOrClassDef
 
 // Abs -----------------------------------
 trait BroadcastsAbs extends Broadcasts with ScalanCommunityDsl {
@@ -46,6 +49,14 @@ trait BroadcastsAbs extends Broadcasts with ScalanCommunityDsl {
   // familyElem
   abstract class SBroadcastElem[A, To <: SBroadcast[A]](implicit val eA: Elem[A])
     extends WrapperElem1[A, To, Broadcast, SBroadcast]()(eA, container[Broadcast], container[SBroadcast]) {
+    lazy val parent: Option[Elem[_]] = None
+    lazy val entityDef: STraitOrClassDef = {
+      val module = getModules("Broadcasts")
+      module.entities.find(_.name == "SBroadcast").get
+    }
+    lazy val tyArgSubst: Map[String, TypeDesc] = {
+      Map("A" -> Left(eA))
+    }
     override def isEntityType = true
     override lazy val tag = {
       implicit val tagA = eA.tag
@@ -78,9 +89,8 @@ trait BroadcastsAbs extends Broadcasts with ScalanCommunityDsl {
     override def toString = "SBroadcast"
   }
   def SBroadcast: Rep[SBroadcastCompanionAbs]
-  implicit def proxySBroadcastCompanion(p: Rep[SBroadcastCompanion]): SBroadcastCompanion = {
+  implicit def proxySBroadcastCompanion(p: Rep[SBroadcastCompanion]): SBroadcastCompanion =
     proxyOps[SBroadcastCompanion](p)
-  }
 
   // default wrapper implementation
   abstract class SBroadcastImpl[A](val wrappedValueOfBaseType: Rep[Broadcast[A]])(implicit val eA: Elem[A]) extends SBroadcast[A] {
@@ -94,6 +104,14 @@ trait BroadcastsAbs extends Broadcasts with ScalanCommunityDsl {
   class SBroadcastImplElem[A](val iso: Iso[SBroadcastImplData[A], SBroadcastImpl[A]])(implicit eA: Elem[A])
     extends SBroadcastElem[A, SBroadcastImpl[A]]
     with ConcreteElem1[A, SBroadcastImplData[A], SBroadcastImpl[A], SBroadcast] {
+    override lazy val parent: Option[Elem[_]] = Some(sBroadcastElement(element[A]))
+    override lazy val entityDef = {
+      val module = getModules("Broadcasts")
+      module.concreteSClasses.find(_.name == "SBroadcastImpl").get
+    }
+    override lazy val tyArgSubst: Map[String, TypeDesc] = {
+      Map("A" -> Left(eA))
+    }
     lazy val eTo = this
     override def convertSBroadcast(x: Rep[SBroadcast[A]]) = SBroadcastImpl(x.wrappedValueOfBaseType)
     override def getDefaultRep = super[ConcreteElem1].getDefaultRep
@@ -119,7 +137,7 @@ trait BroadcastsAbs extends Broadcasts with ScalanCommunityDsl {
     lazy val eTo = new SBroadcastImplElem[A](this)
   }
   // 4) constructor and deconstructor
-  abstract class SBroadcastImplCompanionAbs extends CompanionBase[SBroadcastImplCompanionAbs] with SBroadcastImplCompanion {
+  abstract class SBroadcastImplCompanionAbs extends CompanionBase[SBroadcastImplCompanionAbs] {
     override def toString = "SBroadcastImpl"
 
     def apply[A](wrappedValueOfBaseType: Rep[Broadcast[A]])(implicit eA: Elem[A]): Rep[SBroadcastImpl[A]] =
@@ -152,6 +170,8 @@ trait BroadcastsAbs extends Broadcasts with ScalanCommunityDsl {
   // 6) smart constructor and deconstructor
   def mkSBroadcastImpl[A](wrappedValueOfBaseType: Rep[Broadcast[A]])(implicit eA: Elem[A]): Rep[SBroadcastImpl[A]]
   def unmkSBroadcastImpl[A](p: Rep[SBroadcast[A]]): Option[(Rep[Broadcast[A]])]
+
+  registerModule(scalan.meta.ScalanCodegen.loadModule(Broadcasts_Module.dump))
 }
 
 // Seq -----------------------------------
@@ -372,3 +392,11 @@ trait BroadcastsExp extends BroadcastsDsl with ScalanCommunityDslExp {
     case _ => super.rewriteDef(d)
   }
 }
+
+object Broadcasts_Module {
+  val packageName = "scalan.spark"
+  val name = "Broadcasts"
+  val dump = "H4sIAAAAAAAAALVVPWwcRRR+u/b5fHcmTiBYRMLCWAcIlNwZJIiQi+hsXxCw8VneCNARIc3tzl02mZ1d78yZPYoUlNChtAilT0dDRYeEKKgQIFFDE0IRAalAvJn9vcDFScEWo52ffe+b7/ve25u3oSIieFY4hBHe8qkkLVu/d4Rs2l0uPTm5ELhjRnfo8MOVL5wLfEuYsNyHhctE7AjWh1ry0o3D/N2mBxbUCHeokEEkJDxt6QxtJ2CMOtILeNvz/bEkA0bblifkpgXzg8CdHMA1MCw47gTciaik9jYjQlCRri9ShcjL5zU9n/TCIgdvq1u0S7e4GBFPInzMcTw5v09De8IDPvElHEuh9UIFC89UPT8MIpmlqGK4y4GbTec5wQV41LpCDkkbU4zatow8PsIvGyFxrpIR3cUj6vg8AhaUDS9OQj2fs6Au6AES9LofMr0ShwCACrykQbQKflo5Py3FT9OmkUeY9wFRm3tREE8geYw5gDjEEKePCJFFoF3uNj+65Lx71274pvo4VlCq+oYLGOipGW7QUiCPX+9/Iu68duOsCfU+1D3RGQgZEUeWJU/ZahDOA6kx5wSSaIRqrc9SS2fp4Jl7LFFzAj8kHCOlVC6hTsxzPKkOq7WlVJ0Z1FdlSLOjRhwa+X3XZtxX+2abMLZ369SZZ37tvmOCOZ2ihiFtNH6UBZVQt7eigLgOETJNoMZlCUZHs6yGWlyM1fsAyKl47tZv7lcbcMnMCUzzPZhmGKIifvy+8d3z50xY7GuHn2dk1EcORZdRvxdtB1z2YTE4pFGyUz0kTL39p4ZVlw7JmMmU2TIlc0iJhLWZtRhSxdem9r2REdBIrLsbcNo8v9f80/7m+k3lzAiWkp2kOP/2zv7107Gh1KaVsPJ+RMKQum8RNqa94RYRVMmdET6HVT4tQe3hpEkFUsOqPvp46bMnjAy/3pdg0k4Wb15xemQKbD2FV7KGsJorujrLldrFK/vWSXb73JcmVN6AyhCFEhZUBsGYu1l5YAuVNJZb2ZoxLRSWA4mInzkpaSZroEHkWE/+C/WRjsu67R/9DfP3Uz98ZkINjTXwpE/C5sYD9oj/se5hWpiGOvm2NlKCaEEN69n2w5ZziaAz9yMIK05XZn51r3n61V92rr+pe8xyQYk+lt6sXPkSHlE1SzxOo+yyJTSqqupJ7diBT0+s3/Heu/Gx1A3EiKf/X73BFfxhbOrvntTxX4Y8XDGsYs7HCjq2y7IkjgnVeCKfv1jAeWXaVlUktuBVplXOWwIteVUj2EH86zMItFN90WTX7n66+8K3n/+sWasrp2AL4fm/u7BFfE8rWLRVKvwTl3jDwlXW0VD/ARTLB+EZCQAA"
+}
+}
+

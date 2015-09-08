@@ -11,7 +11,6 @@ import org.scalatest.BeforeAndAfterAll
 
 import scala.language.reflectiveCalls
 import scalan.la.{LADslExp, LADsl}
-import scalan.ml.{MLDslExp, MLDsl}
 import scalan.util.FileUtil
 import scalan.{BaseTests, ScalanDsl}
 import scalan.spark.collections.{RDDCollectionsDsl, RDDCollectionsDslExp}
@@ -19,8 +18,8 @@ import scalan.spark.{SparkDsl, SparkDslExp}
 import scalan.compilation.{GraphVizConfig, Passes}
 
 class LATests extends BaseTests { suite =>
-
-  class Context  extends SimpleLASparkTests with MLDslExp with SparkLADslExp
+/*
+  class Context  extends SimpleLASparkTests with LADslExp with SparkLADslExp
   with scalan.compilation.DummyCompilerWithPasses {
     val sparkContext = null
     val sSparkContext = null
@@ -61,7 +60,7 @@ class LATests extends BaseTests { suite =>
     val ctx4 = new Context
     ctx4.emitGraph("sdmvm", ctx4.sdmvm)
   }
-
+*/
 }
 
 

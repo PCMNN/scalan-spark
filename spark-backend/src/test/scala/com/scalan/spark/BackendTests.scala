@@ -9,7 +9,7 @@ import org.scalatest.BeforeAndAfterAll
 
 import scala.language.reflectiveCalls
 import scalan.it.ItTestsUtil
-import scalan.spark.SparkDsl
+import scalan.spark.{SparkDslExp, SparkDsl}
 import scalan.{BaseTests, ScalanDsl}
 
 class BackendTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil { suite =>
@@ -64,7 +64,7 @@ class BackendTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil { s
     }}
   }
 
-  def generationConfig(cmpl: SparkScalanCompiler, pack : String = "gen", command: String = null, getOutput: Boolean = false) =
+  def generationConfig[ScalanCake <: SparkDslExp](cmpl: SparkScalanCompiler[ScalanCake], pack : String = "gen", command: String = null, getOutput: Boolean = false) =
     cmpl.defaultCompilerConfig.copy(scalaVersion = Some("2.10.4"),
       sbt = cmpl.defaultCompilerConfig.sbt.copy(mainPack = Some(s"com.scalan.spark.$pack"),
         resources = Seq("log4j.properties"),
@@ -72,22 +72,28 @@ class BackendTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil { s
         toSystemOut = !getOutput,
         commands = if (command == null) cmpl.defaultCompilerConfig.sbt.commands else Seq(command)))
 
+  class Program extends BackendSparkTests with SparkDslExp {
+
+    val sparkContext = globalSparkContext
+    val sSparkContext = ExpSSparkContextImpl(globalSparkContext)
+    val repSparkContext = SSparkContext(SSparkConf())
+  }
   test("Broadcast/RDD Code Gen") {
 
-    val testCompiler = new SparkScalanCompiler with BackendSparkTests {
-      self =>
+    val testCompiler = new SparkScalanCompiler(new Program) {
+      import scalan._
       val sparkContext = globalSparkContext
       val sSparkContext = ExpSSparkContextImpl(globalSparkContext)
       val conf = SSparkConf().setAppName(toRep("BTests")).setMaster(toRep("local[8]"))
       val repSparkContext: Rep[SSparkContext] = SSparkContext(conf)
     }
 
-    val compiled = compileSource(testCompiler)(testCompiler.broadcastPi, "broadcastPi", generationConfig(testCompiler, "broadcastPi", "package"))
-    val compiled1 = compileSource(testCompiler)(testCompiler.broadcastDouble, "broadcastDouble", generationConfig(testCompiler, "broadcastDouble", "package"))
-    val compiled2 = compileSource(testCompiler)(testCompiler.readE, "readE", generationConfig(testCompiler, "readE", "package"))
-    val compiled3 = compileSource(testCompiler)(testCompiler.emptyRDD, "emptyRDD", generationConfig(testCompiler, "emptyRDD", "package"))
-    val compiled4 = compileSource(testCompiler)(testCompiler.mapRDD, "mapRDD", generationConfig(testCompiler, "mapRDD", "package"))
-    val compiled5 = compileSource(testCompiler)(testCompiler.newRDD, "newRDD", generationConfig(testCompiler, "newRDD", "package"))
+    val compiled = compileSource(testCompiler)(testCompiler.scalan.broadcastPi, "broadcastPi", generationConfig(testCompiler, "broadcastPi", "package"))
+    val compiled1 = compileSource(testCompiler)(testCompiler.scalan.broadcastDouble, "broadcastDOuble", generationConfig(testCompiler, "broadcastDouble", "package"))
+    val compiled2 = compileSource(testCompiler)(testCompiler.scalan.readE, "readE", generationConfig(testCompiler, "readE", "package"))
+    val compiled3 = compileSource(testCompiler)(testCompiler.scalan.emptyRDD, "emptyRDD", generationConfig(testCompiler, "emptyRDD", "package"))
+    val compiled4 = compileSource(testCompiler)(testCompiler.scalan.mapRDD, "mapRDD", generationConfig(testCompiler, "mapRDD", "package"))
+    val compiled5 = compileSource(testCompiler)(testCompiler.scalan.newRDD, "newRDD", generationConfig(testCompiler, "newRDD", "package"))
   }
 
 }

@@ -6,7 +6,7 @@ import org.scalatest.BeforeAndAfterAll
 import scala.language.reflectiveCalls
 import scalan._
 
-class SerialTests extends BaseTests with BeforeAndAfterAll { suite =>
+class SerialTests extends BaseTests with BeforeAndAfterAll with TestContexts { suite =>
   val globalSparkConf = new SparkConf().setAppName("Serialization Tests").setMaster("local[4]")
   var globalSparkContext: SparkContext = null
 
@@ -25,7 +25,7 @@ class SerialTests extends BaseTests with BeforeAndAfterAll { suite =>
   }
 
   ignore("simpleSerialSparkStaged") {
-    val ctx = new TestContext(this, "simpleSerialSparkStaged") with SimpleSerialTests with SparkDslExp {
+    val ctx = new TestContext("simpleSerialSparkStaged") with SimpleSerialTests with SparkDslExp {
       val sparkContext = globalSparkContext
       val sSparkContext = ExpSSparkContextImpl(globalSparkContext)
       val repSparkContext = SSparkContext(SSparkConf())

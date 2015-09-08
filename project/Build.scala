@@ -11,7 +11,7 @@ object ScalanStartRootBuild extends Build {
     //("com.novocode" % "junit-interface" % "0.11" % "test").exclude("junit", "junit-dep").exclude("org.scala-tools.testing", "test-interface"),
     "org.scalatest" %% "scalatest" % "2.2.1" % "test",
     "org.scalacheck" %% "scalacheck" % "1.11.5" % "test",
-    "org.apache.spark" %% "spark-core" % "1.2.0"
+    "org.apache.spark" %% "spark-core" % "1.4.1"
   )
 
   val testSettings = inConfig(ItTest)(Defaults.testTasks /*++ baseAssemblySettings*/) ++ Seq(
@@ -65,7 +65,7 @@ object ScalanStartRootBuild extends Build {
 
   def liteProject(name: String) = ProjectRef(file("../scalan-lite"), name)
 
-  def liteDependency(name: String) = "com.huawei.scalan" %% name % "0.2.9-SNAPSHOT"
+  def liteDependency(name: String) = "com.huawei.scalan" %% name % "0.2.10-SNAPSHOT"
 
   lazy val metaDeps = liteDependency("scalan-meta")
   lazy val sparkmeta = Project(
@@ -87,14 +87,16 @@ object ScalanStartRootBuild extends Build {
       common,
       common % "test" classifier "tests",
       library
-      )
+      ),
+      fork in Test := true
     )
   lazy val examples = Project("scalan-spark-examples", file("examples")).
     dependsOn(start.allConfigDependency).addTestConfigsAndCommonSettings.
     settings(libraryDependencies ++= Seq(
       ml,
       ml % "test" classifier "tests"
-      )
+      ),
+      fork in Test := true
     )
 
   val virtScala = Option(System.getenv("SCALA_VIRTUALIZED_VERSION")).getOrElse("2.11.2")
@@ -107,7 +109,8 @@ object ScalanStartRootBuild extends Build {
       "org.scala-lang.virtualized" % "scala-library" % virtScala,
       "org.scala-lang.virtualized" % "scala-compiler" % virtScala),
     scalaOrganization := "org.scala-lang.virtualized",
-    scalaVersion := virtScala
+    scalaVersion := virtScala,
+    fork in Test := true
 )
 
   def itFilter(name: String): Boolean =

@@ -6,8 +6,9 @@ import org.scalatest.BeforeAndAfterAll
 import scala.language.reflectiveCalls
 import scalan._
 import scalan.spark.collections.{RDDCollectionsDslExp, RDDCollectionsDslSeq, RDDCollectionsDsl}
+import scalan.it.BaseCtxItTests
 
-class SmokeTests extends BaseTests with BeforeAndAfterAll { suite =>
+class SmokeTests extends BaseCtxItTests with BeforeAndAfterAll { suite =>
   val globalSparkConf = new SparkConf().setAppName("R/W Broadcast").setMaster("local")
   var globalSparkContext: SparkContext = null
 
@@ -49,7 +50,7 @@ class SmokeTests extends BaseTests with BeforeAndAfterAll { suite =>
   }
 
   test("simpleSparkStaged") {
-    val ctx = new TestContext(this, "simpleSparkStaged") with SimpleSparkTests with SparkDslExp with RDDCollectionsDslExp {
+    val ctx = new TestContext("simpleSparkStaged") with SimpleSparkTests with SparkDslExp with RDDCollectionsDslExp {
       val sparkContext = globalSparkContext
       val sSparkContext = ExpSSparkContextImpl(globalSparkContext)
       val repSparkContext = SSparkContext(SSparkConf())
@@ -63,7 +64,7 @@ class SmokeTests extends BaseTests with BeforeAndAfterAll { suite =>
     ctx.emit("mapRDDColl", ctx.mapRDDColl)
   }
   test("simpleSparkCollectionsStaged") {
-    val ctx = new TestContext(this, "simpleCollectionSparkStaged") with SimpleSparkTests with SparkDslExp with RDDCollectionsDslExp {
+    val ctx = new TestContext("simpleCollectionSparkStaged") with SimpleSparkTests with SparkDslExp with RDDCollectionsDslExp {
       val sparkContext = globalSparkContext
       val sSparkContext = ExpSSparkContextImpl(globalSparkContext)
       val repSparkContext = SSparkContext(SSparkConf())

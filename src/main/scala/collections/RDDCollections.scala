@@ -14,6 +14,7 @@ import scalan.spark.{SparkDslExp, SparkDslSeq, SparkDsl}
  */
 trait RDDCollections { self: SparkDsl with RDDCollectionsDsl =>
   type RDDColl[A] = Rep[IRDDCollection[A]]
+  type RDDIndexColl[A] = Rep[RDDIndexedCollection[A]]
   trait IRDDCollection[A] extends Collection[A] {
     implicit def eItem: Elem[A]
     def rdd: RepRDD[A]

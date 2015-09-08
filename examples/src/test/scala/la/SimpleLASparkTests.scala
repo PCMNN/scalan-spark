@@ -1,11 +1,11 @@
 package la
 
-import scalan.ml.{MLDsl}
+import scalan.la.LADsl
 
 /**
  * Created by afilippov on 4/15/15.
  */
-trait SimpleLASparkTests extends MLDsl with SparkLADsl {
+trait SimpleLASparkTests extends LADsl with SparkLADsl {
 
   def dvDotDV(in1: Coll[Int], in2: Coll[Int]) = {
     val (vector1, vector2): (Vector[Int], Vector[Int]) = (DenseVector(in1), DenseVector(in2))
@@ -38,12 +38,12 @@ trait SimpleLASparkTests extends MLDsl with SparkLADsl {
     (matrix * vector).items.arr
   }
 
-  lazy val sdmvm = fun { p: Rep[(SRDD[(Array[Int], Array[Double])], (Int, Array[Double]))] =>
+  /*lazy val sdmvm = fun { p: Rep[(SRDD[(Array[Int], Array[Double])], (Int, Array[Double]))] =>
     val Tuple(m, numCols, v) = p
     val idxs = m.map(fun{in => in._1})
     val vals = m.map(fun{in => in._2})
     val matrix: Matrix[Double] = SparkSparseMatrix(RDDCollection(idxs), RDDCollection(vals), numCols)
     val vector: Vector[Double] = DenseVector(Collection(v))
     (matrix * vector).items.arr
-  }
+  }*/
 }

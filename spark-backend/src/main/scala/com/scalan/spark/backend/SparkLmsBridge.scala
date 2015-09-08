@@ -6,7 +6,8 @@ package com.scalan.spark.backend
 import scalan.{CommunityMethodMappingDSL, ScalanCommunityDslExp}
 import scalan.compilation.lms.CommunityBridge
 
-trait SparkLmsBridge extends CommunityBridge { self: ScalanCommunityDslExp with CommunityMethodMappingDSL =>
+trait SparkLmsBridge extends CommunityBridge { self: CommunityMethodMappingDSL =>
+  import scalan._
 
   val lms: SparkLmsBackendBase
 

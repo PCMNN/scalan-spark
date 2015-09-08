@@ -1,11 +1,14 @@
 package scalan.spark
-package impl
 
 import scalan._
 import scalan.common.Default
 import org.apache.spark.SparkConf
 import scala.reflect._
 import scala.reflect.runtime.universe._
+
+package impl {
+
+import scalan.meta.ScalanAst.STraitOrClassDef
 
 // Abs -----------------------------------
 trait SparkConfsAbs extends SparkConfs with ScalanCommunityDsl {
@@ -27,6 +30,14 @@ trait SparkConfsAbs extends SparkConfs with ScalanCommunityDsl {
   // familyElem
   abstract class SSparkConfElem[To <: SSparkConf]
     extends WrapperElem[SparkConf, To] {
+    lazy val parent: Option[Elem[_]] = None
+    lazy val entityDef: STraitOrClassDef = {
+      val module = getModules("SparkConfs")
+      module.entities.find(_.name == "SSparkConf").get
+    }
+    lazy val tyArgSubst: Map[String, TypeDesc] = {
+      Map()
+    }
     override def isEntityType = true
     override lazy val tag = {
       weakTypeTag[SSparkConf].asInstanceOf[WeakTypeTag[To]]
@@ -58,9 +69,8 @@ trait SparkConfsAbs extends SparkConfs with ScalanCommunityDsl {
     override def toString = "SSparkConf"
   }
   def SSparkConf: Rep[SSparkConfCompanionAbs]
-  implicit def proxySSparkConfCompanion(p: Rep[SSparkConfCompanion]): SSparkConfCompanion = {
+  implicit def proxySSparkConfCompanion(p: Rep[SSparkConfCompanion]): SSparkConfCompanion =
     proxyOps[SSparkConfCompanion](p)
-  }
 
   // default wrapper implementation
   abstract class SSparkConfImpl(val wrappedValueOfBaseType: Rep[SparkConf]) extends SSparkConf {
@@ -84,6 +94,14 @@ trait SparkConfsAbs extends SparkConfs with ScalanCommunityDsl {
   class SSparkConfImplElem(val iso: Iso[SSparkConfImplData, SSparkConfImpl])
     extends SSparkConfElem[SSparkConfImpl]
     with ConcreteElem[SSparkConfImplData, SSparkConfImpl] {
+    override lazy val parent: Option[Elem[_]] = Some(sSparkConfElement)
+    override lazy val entityDef = {
+      val module = getModules("SparkConfs")
+      module.concreteSClasses.find(_.name == "SSparkConfImpl").get
+    }
+    override lazy val tyArgSubst: Map[String, TypeDesc] = {
+      Map()
+    }
     lazy val eTo = this
     override def convertSSparkConf(x: Rep[SSparkConf]) = SSparkConfImpl(x.wrappedValueOfBaseType)
     override def getDefaultRep = super[ConcreteElem].getDefaultRep
@@ -108,7 +126,7 @@ trait SparkConfsAbs extends SparkConfs with ScalanCommunityDsl {
     lazy val eTo = new SSparkConfImplElem(this)
   }
   // 4) constructor and deconstructor
-  abstract class SSparkConfImplCompanionAbs extends CompanionBase[SSparkConfImplCompanionAbs] with SSparkConfImplCompanion {
+  abstract class SSparkConfImplCompanionAbs extends CompanionBase[SSparkConfImplCompanionAbs] {
     override def toString = "SSparkConfImpl"
 
     def apply(wrappedValueOfBaseType: Rep[SparkConf]): Rep[SSparkConfImpl] =
@@ -141,6 +159,8 @@ trait SparkConfsAbs extends SparkConfs with ScalanCommunityDsl {
   // 6) smart constructor and deconstructor
   def mkSSparkConfImpl(wrappedValueOfBaseType: Rep[SparkConf]): Rep[SSparkConfImpl]
   def unmkSSparkConfImpl(p: Rep[SSparkConf]): Option[(Rep[SparkConf])]
+
+  registerModule(scalan.meta.ScalanCodegen.loadModule(SparkConfs_Module.dump))
 }
 
 // Seq -----------------------------------
@@ -293,3 +313,11 @@ trait SparkConfsExp extends SparkConfsDsl with ScalanCommunityDslExp {
     }
   }
 }
+
+object SparkConfs_Module {
+  val packageName = "scalan.spark"
+  val name = "SparkConfs"
+  val dump = "H4sIAAAAAAAAALVVv28TMRR+uZam+SF+SpXKUqhSEAiSiqVDB9SmKUIKTcUhQAEhORcnHPh87tktFwYGRtgQK0LsbCz8A0iIgQkBEjNTgQHxYwLx7LtLk4oTXchgne3n9773fZ+dp59hlwzgiHQII7zsUUXKtvlekKpk17hyVe+c315ndIl27k48d87xRWnBniaMXSdySbIm5KKPWij63zZdq0OOcIdK5QdSweG6qVBxfMaoo1yfV1zPW1ekxWil7ko1X4fRlt/urcEdyNRhr+NzJ6CK2lVGpKQyXh+nGpHbn+fMvNcQWzV4RXdRGejiQkBchfCxxt4o/jwVdo/7vOcp2B1DawgNC2Oyrif8QCUlspjuut9OpqOc4ALsr98gG6SCJboVWwUu7+LJgiDOTdKlKxiiw0cRsKSsc6EnzHykDnlJ15Cgs55gZiUUAIAKnDIgylv8lPv8lDU/JZsGLmHubaI3VwM/7EH0y4wAhAJTnPhHiiQDrfF26d5V58pPu+BZ+nCooWRNh2OYaCrFDUYK5PHl+Qfy65kncxbkm5B35UJLqoA4alDymK0C4dxXBnOfQBJ0Ua3pNLVMlQWM2WaJnON7gnDMFFNZRJ2Y67hKB+u1YqxOCvVZJWgSmglFpt/voZR+jW+qhLHVzcmTM59qly2whkvkMKWNxg+SpAryti1IcLPq845hVQ+5mOD0Uv2mj25+ab+YhatWn6o4887UwRS75Pu3hTfHTlsw3jReXmak20S2ZI1RrxEgMtWEcX+DBtFOdoMw/fVXtbJt2iHrTMUcDjY/gs0rOJR66wTVzMwbh2cSAgqRSVd8TkvLq6Uf9quHT7UHAyhGO9E1/O3O/fqwu6OMPRVM3AqIELR9kbB12ugsEkm1sAbkHgUjeJ9jfuKVXJoIsRR6OGiC95s5PgNbuiWX8+DA2X/Snzwy35uz1rfJd48tyCHLLVd5RJRmd3g1/qPdYZiggo68ZFiNEI3pYSrZTnfxAIFaz3ykmu17dN/0V/fak/vKWDcTDr+RjdYNfJTmzeFJU6W0DVGxFlaTlmeHt3aGxkiGZjmwFV0d5DCSU+hx33Z59TgzvJjVdZNE+GAVY+GlXjPITmD/0yl2sGMx0BF3fj5aOf762UfzeuS1rGh+rob+UIyG4TYTj5vy+G8xAFTBqNbZQP0D8It7Qb0HAAA="
+}
+}
+
