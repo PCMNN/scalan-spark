@@ -197,7 +197,7 @@ object run {
       res
     }
 
-    val numPartitions = 2
+    val numPartitions = globalSparkContext.defaultParallelism
     val (data, nColumnsMatrix) = loadLibSVMData(globalSparkContext, inputPath, numPartitions, split, b)
 
     val rddIdxs = data.mapPartitions { blocks => blocks.map { case d => (d._1, d._2) } }
