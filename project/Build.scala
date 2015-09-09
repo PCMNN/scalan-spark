@@ -76,7 +76,7 @@ object ScalanStartRootBuild extends Build {
   lazy val core = liteDependency("scalan-core")
   lazy val common = liteDependency("scalan-common")
   lazy val library = liteDependency("scalan-library")
-  lazy val ml = "com.huawei.scalan" %% "scalan-ml" % "0.3.0"
+//  lazy val ml = "com.huawei.scalan" %% "scalan-ml" % "0.3.0"
 
   lazy val start = Project(
     id = "scalan-spark",
@@ -93,8 +93,8 @@ object ScalanStartRootBuild extends Build {
   lazy val examples = Project("scalan-spark-examples", file("examples")).
     dependsOn(start.allConfigDependency).addTestConfigsAndCommonSettings.
     settings(libraryDependencies ++= Seq(
-      ml,
-      ml % "test" classifier "tests"
+//      ml,
+//      ml % "test" classifier "tests"
       ),
       fork in Test := true
     )
@@ -104,8 +104,8 @@ object ScalanStartRootBuild extends Build {
   lazy val backend = liteDependency("scalan-lms-backend")
   lazy val sparkBackend = Project("spark-backend",file("spark-backend")).dependsOn(start.allConfigDependency).
     settings(libraryDependencies ++= Seq(backend,
-      ml,
-      ml % "test" classifier "tests",
+//      ml,
+//      ml % "test" classifier "tests",
       "org.scala-lang.virtualized" % "scala-library" % virtScala,
       "org.scala-lang.virtualized" % "scala-compiler" % virtScala),
     scalaOrganization := "org.scala-lang.virtualized",
