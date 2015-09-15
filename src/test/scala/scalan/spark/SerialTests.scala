@@ -22,9 +22,14 @@ class SerialTests extends BaseTests with BeforeAndAfterAll with TestContexts { s
 
       result
     }}
+
+    lazy val zipRdd = fun { (in: Rep[(SRDD[(Long, Int)], SRDD[(Long, Double)])]) =>
+      val Pair(aRdd, bRdd) = in
+      aRdd zip bRdd
+    }
   }
 
-  ignore("simpleSerialSparkStaged") {
+  test("simpleSerialSparkStaged") {
     val ctx = new TestContext("simpleSerialSparkStaged") with SimpleSerialTests with SparkDslExp {
       val sparkContext = globalSparkContext
       val sSparkContext = ExpSSparkContextImpl(globalSparkContext)
@@ -32,6 +37,15 @@ class SerialTests extends BaseTests with BeforeAndAfterAll with TestContexts { s
     }
 
     ctx.emit("plusOne", ctx.plusOne)
+  }
+
+  test("zipRdd") {
+    val ctx = new TestContext("simpleSerialSparkStaged") with SimpleSerialTests with SparkDslExp {
+      val sparkContext = globalSparkContext
+      val sSparkContext = ExpSSparkContextImpl(globalSparkContext)
+      val repSparkContext = SSparkContext(SSparkConf())
+    }
+    ctx.emit("zipRdd", ctx.zipRdd)
   }
 
   ignore("simpleSerialSparkSeq") {
