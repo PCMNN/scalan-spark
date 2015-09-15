@@ -1,3 +1,4 @@
+/*
 package com.scalan.spark
 
 import java.io.File
@@ -98,3 +99,4 @@ class BackendTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil { s
 
 }
 
+*/

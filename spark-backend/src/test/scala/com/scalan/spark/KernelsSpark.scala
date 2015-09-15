@@ -1,3 +1,4 @@
+/*
 package com.scalan.spark
 
 /**
@@ -192,3 +193,4 @@ trait KernelsSpark {
     lazy val ssdmmm_sc = fun { x: Rep[(SRDD[(Long, Array[Int])], (SRDD[(Long, Array[Double])], (SRDD[(Long, Array[Int])], (SRDD[(Long, Array[Double])], Int))))] => unwrap(ssdmmmSC(wrap(x))) }
   }
 }
+*/

@@ -1,3 +1,4 @@
+/*
 package com.scalan.spark
 
 /**
@@ -118,3 +119,4 @@ class MVMSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil wi
     compileSource(testCompiler)(testCompiler.scalan.ssdmvm_ss, "ssdmvm_ss", generationConfig(testCompiler, "ssdmvm_ss", "package"))
   }
 }
+*/
