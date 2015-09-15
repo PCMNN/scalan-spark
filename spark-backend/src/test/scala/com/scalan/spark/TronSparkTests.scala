@@ -1,3 +1,4 @@
+/*
 package com.scalan.spark
 
 /**
@@ -104,3 +105,4 @@ class TronSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil {
     val compiled1 = compileSource(testCompiler)(testCompiler.tronSparkTrain, "TronSparkTrain", generationConfig(testCompiler, "TronSparkTrain", "package"))
   }
 }
+*/
