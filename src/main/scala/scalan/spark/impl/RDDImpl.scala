@@ -738,6 +738,8 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
       val pIso = SRDDIso(pairIso(v1.innerIso, iso2))
       val zipped = v1.source zip rdd2
       ViewSRDD(zipped)(pIso)
+//    case zz@SRDDMethods.zip(HasViews(source1, iso1: Iso[a, _]), rdd2: RepRDD[b]@unchecked) =>
+//      zz
     case SRDDMethods.zip(rdd1: RepRDD[b]@unchecked, Def(v2: ViewSRDD[a, _])) =>
       implicit val eB = v2.source.elem.eItem
       implicit val eA = rdd1.elem.eItem
