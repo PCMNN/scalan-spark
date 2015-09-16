@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="SBT: com.huawei.scalan:scalan-core_2.11:0.2.10-SNAPSHOT:tests:jar">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.ivy2/local/com.huawei.scalan/scalan-core_2.11/0.2.10-SNAPSHOT/jars/scalan-core_2.11-tests.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

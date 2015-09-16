@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="SBT: com.huawei.scalan:scalan-meta_2.11:0.2.10-SNAPSHOT:jar">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.ivy2/local/com.huawei.scalan/scalan-meta_2.11/0.2.10-SNAPSHOT/jars/scalan-meta_2.11.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$USER_HOME$/.ivy2/local/com.huawei.scalan/scalan-meta_2.11/0.2.10-SNAPSHOT/docs/scalan-meta_2.11-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.ivy2/local/com.huawei.scalan/scalan-meta_2.11/0.2.10-SNAPSHOT/srcs/scalan-meta_2.11-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

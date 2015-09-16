@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/scalan-spark.iml" filepath="$PROJECT_DIR$/.idea/modules/scalan-spark.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/scalan-spark-build.iml" filepath="$PROJECT_DIR$/.idea/modules/scalan-spark-build.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/scalan-spark-examples.iml" filepath="$PROJECT_DIR$/.idea/modules/scalan-spark-examples.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/scalan-spark-examples-build.iml" filepath="$PROJECT_DIR$/.idea/modules/scalan-spark-examples-build.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/spark-backend.iml" filepath="$PROJECT_DIR$/.idea/modules/spark-backend.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/spark-backend-build.iml" filepath="$PROJECT_DIR$/.idea/modules/spark-backend-build.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/spark-meta.iml" filepath="$PROJECT_DIR$/.idea/modules/spark-meta.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/spark-meta-build.iml" filepath="$PROJECT_DIR$/.idea/modules/spark-meta-build.iml" />
+    </modules>
+  </component>
+</project>
