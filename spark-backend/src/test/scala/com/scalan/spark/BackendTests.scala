@@ -1,4 +1,3 @@
-/*
 package com.scalan.spark
 
 import java.io.File
@@ -90,7 +89,7 @@ class BackendTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil { s
     }
 
     val compiled = compileSource(testCompiler)(testCompiler.scalan.broadcastPi, "broadcastPi", generationConfig(testCompiler, "broadcastPi", "package"))
-    val compiled1 = compileSource(testCompiler)(testCompiler.scalan.broadcastDouble, "broadcastDOuble", generationConfig(testCompiler, "broadcastDouble", "package"))
+    val compiled1 = compileSource(testCompiler)(testCompiler.scalan.broadcastDouble, "broadcastDouble", generationConfig(testCompiler, "broadcastDouble", "package"))
     val compiled2 = compileSource(testCompiler)(testCompiler.scalan.readE, "readE", generationConfig(testCompiler, "readE", "package"))
     val compiled3 = compileSource(testCompiler)(testCompiler.scalan.emptyRDD, "emptyRDD", generationConfig(testCompiler, "emptyRDD", "package"))
     val compiled4 = compileSource(testCompiler)(testCompiler.scalan.mapRDD, "mapRDD", generationConfig(testCompiler, "mapRDD", "package"))
@@ -99,4 +98,3 @@ class BackendTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil { s
 
 }
 
-*/
