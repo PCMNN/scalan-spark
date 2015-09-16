@@ -2,15 +2,17 @@ package scalan.spark
 
 import java.io.File
 import org.apache.spark._
+import org.apache.spark.rdd.RDD
 import org.scalatest.BeforeAndAfterAll
 import scala.language.reflectiveCalls
 import scalan._
+import scalan.spark.collections.{RDDCollectionsDsl, RDDCollectionsDslSeq, RDDCollectionsDslExp}
 
 class SerialTests extends BaseTests with BeforeAndAfterAll with TestContexts { suite =>
   val globalSparkConf = new SparkConf().setAppName("Serialization Tests").setMaster("local[4]")
   var globalSparkContext: SparkContext = null
 
-  trait SimpleSerialTests extends ScalanDsl with SparkDsl {
+  trait SimpleSerialTests extends ScalanDsl with SparkDsl with RDDCollectionsDsl {
     val prefix = suite.prefix
     val subfolder = "serial"
 
@@ -27,29 +29,42 @@ class SerialTests extends BaseTests with BeforeAndAfterAll with TestContexts { s
       val Pair(aRdd, bRdd) = in
       aRdd zip bRdd
     }
+//    lazy val zipRddVector = fun { (in: Rep[(SRDD[(Long, Array[Int])], SRDD[(Long, Array[Double])])]) =>
+//      val Pair(aRdd, bRdd) = in
+//      val avRdd = aRdd.map { fun { p: Rep[(Long, Array[Int])] => (p._1, DenseVector(CollectionOverArray(p._2))) } }
+//      val bvRdd = bRdd.map { fun { p: Rep[(Long, Array[Double])] => (p._1, DenseVector(CollectionOverArray(p._2))) } }
+//      val zvRdd = avRdd zip bvRdd
+//      zvRdd.map { zp: Rep[((Long, AbstractVector[Int]), (Long, AbstractVector[Double]))] => zp._1._1 + zp._2 }
+//    }
+    lazy val zipRddVector = fun { rdd: Rep[RDD[(Long, Array[Int])]] =>
+      val res = RDDIndexedCollection(SRDDImpl(rdd))
+//      res.map(rdd => rdd.map { p: Rep[(Long, Array[Int])] => p._2.map(x => x.toLong + p._1)}).arr
+      res.map(rdd => rdd.map { p: Rep[Int] => p + 1 }).arr
+    }
   }
 
   test("simpleSerialSparkStaged") {
-    val ctx = new TestContext("simpleSerialSparkStaged") with SimpleSerialTests with SparkDslExp {
+    val ctx = new TestContext("simpleSerialSparkStaged") with SimpleSerialTests with SparkDslExp with RDDCollectionsDslExp {
       val sparkContext = globalSparkContext
       val sSparkContext = ExpSSparkContextImpl(globalSparkContext)
       val repSparkContext = SSparkContext(SSparkConf())
     }
 
     ctx.emit("plusOne", ctx.plusOne)
+    ctx.emit("zipRdd", ctx.zipRdd)
   }
 
-  test("zipRdd") {
-    val ctx = new TestContext("simpleSerialSparkStaged") with SimpleSerialTests with SparkDslExp {
+  test("zipRddVector") {
+    val ctx = new TestContext("simpleSerialSparkStaged") with SimpleSerialTests with SparkDslExp with RDDCollectionsDslExp {
       val sparkContext = globalSparkContext
       val sSparkContext = ExpSSparkContextImpl(globalSparkContext)
       val repSparkContext = SSparkContext(SSparkConf())
     }
-    ctx.emit("zipRdd", ctx.zipRdd)
+    ctx.emit("zipRddVector", ctx.zipRddVector)
   }
 
   ignore("simpleSerialSparkSeq") {
-    val ctx = new ScalanCtxSeq with SimpleSerialTests with SparkDslSeq {
+    val ctx = new ScalanCtxSeq with SimpleSerialTests with SparkDslSeq with RDDCollectionsDslSeq {
       val sparkContext = globalSparkContext
       val sSparkContext = SeqSSparkContextImpl(globalSparkContext)
       val repSparkContext = SSparkContext(SSparkConf())
