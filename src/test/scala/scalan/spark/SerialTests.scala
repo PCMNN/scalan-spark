@@ -24,7 +24,7 @@ class SerialTests extends BaseTests with BeforeAndAfterAll with TestContexts { s
     }}
   }
 
-  ignore("simpleSerialSparkStaged") {
+  test("simpleSerialSparkStaged") {
     val ctx = new TestContext("simpleSerialSparkStaged") with SimpleSerialTests with SparkDslExp {
       val sparkContext = globalSparkContext
       val sSparkContext = ExpSSparkContextImpl(globalSparkContext)
