@@ -3,6 +3,7 @@
 
 # Scalan specific
 test-out
+spark-backend/it-out
 
 # topic-ml-adel specific
 /it-out/
