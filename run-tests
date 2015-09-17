@@ -1,0 +1,1 @@
+sbt "; test; it:test; scalan-spark-examples/it:test; scalan-spark-examples/test; spark-backend/test "
