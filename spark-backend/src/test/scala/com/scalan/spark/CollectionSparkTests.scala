@@ -11,9 +11,24 @@ import la.SparkLADslExp
 
 class CollectionSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil { suite =>
   trait CollectionSamplesExp extends SparkLADslExp {
-    lazy val zipRddVector = fun { rdd: Rep[RDD[(Long, Array[Int])]] =>
-      val res = RDDIndexedCollection(SRDDImpl(rdd))
-      res.map(rdd => rdd.map { p: Rep[Int] => p + 1 }).arr
+    lazy val denseVector = fun { arr: Rep[Array[Double]] => DenseVector(Collection.fromArray(arr)) }
+    lazy val sparkSparseIndexedMatrix = fun { in: Rep[(RDD[(Long, Array[Int])], (RDD[(Long, Array[Double])], Int))] =>
+      val Tuple(idxsMatrixRDD, valsMatrixRDD, nColumnsMatrix) = in
+      val rddCollIdxsMatrix = RDDIndexedCollection(SRDDImpl(idxsMatrixRDD))
+      val rddCollValsMatrix = RDDIndexedCollection(SRDDImpl(valsMatrixRDD))
+      SparkSparseIndexedMatrix(rddCollIdxsMatrix, rddCollValsMatrix, nColumnsMatrix)
+    }
+
+    lazy val spsmdv = fun { in: Rep[(RDD[(Long, Array[Int])], (RDD[(Long, Array[Double])], (Int, Array[Double])))] =>
+      val Tuple(idxsMatrixRDD, valsMatrixRDD, nColumnsMatrix, vData) = in
+      val m = sparkSparseIndexedMatrix(idxsMatrixRDD, valsMatrixRDD, nColumnsMatrix)
+      val v = denseVector(vData)
+      (m * v).items.arr
+    }
+    lazy val smReduceByColumns = fun { in: Rep[(RDD[(Long, Array[Int])], (RDD[(Long, Array[Double])], Int))] =>
+      val Tuple(idxsMatrixRDD, valsMatrixRDD, nColumnsMatrix) = in
+      val m = sparkSparseIndexedMatrix(idxsMatrixRDD, valsMatrixRDD, nColumnsMatrix)
+      m.reduceByColumns.items.arr
     }
   }
   class ProgramExp extends CollectionSamplesExp {
@@ -30,8 +45,10 @@ class CollectionSparkTests extends BaseTests with BeforeAndAfterAll with ItTests
         toSystemOut = !getOutput,
         commands = if (command == null) cmpl.defaultCompilerConfig.sbt.commands else Seq(command)))
 
-  ignore("Collection/RDD Code Gen") { // Don't know how to mirror ExpSRDDImpl
-    val testCompiler = new TestCompiler(new ProgramExp)
-    val compiled = compileSource(testCompiler)(testCompiler.scalan.zipRddVector, "zipRddVector", generationConfig(testCompiler, "zipRddVector", "package"))
-  }
+  val testCompiler = new TestCompiler(new ProgramExp)
+  import testCompiler.scalan._
+  def commonCompileScenario[A: Elem, B:Elem](testFun: Rep[A => B], testName: String) =
+    compileSource(testCompiler)(testFun, testName, generationConfig(testCompiler, testName, "package"))
+  test("code gen - spsmdv") { val compiled = commonCompileScenario(spsmdv, "spsmdv") }
+  test("code gen - smReduceByColumns") { val compiled = commonCompileScenario(smReduceByColumns, "smReduceByColumns") }
 }
