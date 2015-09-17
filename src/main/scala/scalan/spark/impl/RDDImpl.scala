@@ -723,13 +723,15 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
       super.unapplyViews(s)
   }).asInstanceOf[Option[Unpacked[T]]]
 
-  type SRDDFlatMapArgs[A, B] = (Rep[SRDD[A]], Rep[A => SSeq[B]])
-
   override def rewriteDef[T](d: Def[T]) = d match {
     //case SRDDMethods.map(xs, Def(IdentityLambda())) => xs // generated
     case SRDDMethods.map(xs, Def(l: Lambda[_, _])) if l.isIdentity => xs
+
     case SRDDMethods.context(HasViews(source, contIso: SRDDIso[a, b])) =>
       source.asRep[SRDD[a]].context
+
+    case SRDDMethods.count(HasViews(source, contIso: SRDDIso[a, b])) =>
+      source.asRep[SRDD[a]].count
 
     case SRDDMethods.zip(Def(v1: ViewSRDD[a, _]), rdd2: RepRDD[b]@unchecked) =>
       implicit val eA = v1.source.elem.eItem
@@ -738,8 +740,6 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
       val pIso = SRDDIso(pairIso(v1.innerIso, iso2))
       val zipped = v1.source zip rdd2
       ViewSRDD(zipped)(pIso)
-//    case zz@SRDDMethods.zip(HasViews(source1, iso1: Iso[a, _]), rdd2: RepRDD[b]@unchecked) =>
-//      zz
     case SRDDMethods.zip(rdd1: RepRDD[b]@unchecked, Def(v2: ViewSRDD[a, _])) =>
       implicit val eB = v2.source.elem.eItem
       implicit val eA = rdd1.elem.eItem
@@ -758,11 +758,13 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
     case mc@MethodCall(Def(wrapper: ExpSRDDImpl[_]), m, args, neverInvoke) if !isValueAccessor(m) =>
       val resultElem = mc.selfType
       val wrapperIso = getIsoByElem(resultElem)
-      wrapperIso match {
-        case iso: Iso[base, ext] =>
+      (wrapper.wrappedValueOfBaseType, wrapperIso) match {
+        case (HasViews(source, iso1: Iso[p,q]), iso: Iso[base, ext]) =>
           val eRes = iso.eFrom
-          val newCall = unwrapMethodCall(mc, wrapper.wrappedValueOfBaseType, eRes)
+          val newCall = unwrapMethodCall(mc, source, eRes)
           iso.to(newCall)
+        case _ =>
+          super.rewriteDef(d)
       }
 
     case SRDDMethods.map(xs, f) => (xs, f) match {
@@ -792,7 +794,7 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
         super.rewriteDef(d)
     }
 
-    case SRDDMethods.flatMap(t: SRDDFlatMapArgs[_, c]@unchecked) => t match {
+    case SRDDMethods.flatMap(xs, f: Rep[Function1[_, c]@unchecked]) => (xs, f) match {
       case (xs: RepRDD[a]@unchecked, f@Def(Lambda(_, _, _, UnpackableExp(_, iso: SSeqIso[b, c])))) => {
         val f1 = f.asRep[a => SSeq[c]]
         val baseIso = iso.iso
@@ -808,7 +810,7 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
       }
       case (Def(view: ViewSRDD[a, b]), _) => {
         val iso = view.innerIso
-        val ff = t._2.asRep[b => SSeq[c]]
+        val ff = f.asRep[b => SSeq[c]]
         implicit val eA = iso.eFrom
         implicit val eB = iso.eTo
         val eR = ff.elem.eRange
@@ -846,7 +848,6 @@ trait RDDsExp extends RDDsDsl with ScalanCommunityDslExp {
 
       implicit val eAB = compIso.eTo
       ViewSRDD(arr)(SRDDIso(compIso))
-
 
     case _ => super.rewriteDef(d)
   }
