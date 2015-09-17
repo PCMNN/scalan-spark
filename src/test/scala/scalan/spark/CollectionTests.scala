@@ -13,18 +13,18 @@ class CollectionTests extends BaseTests with BeforeAndAfterAll with TestContexts
   trait CollectionSamples extends ScalanDsl with SparkLADsl {
     val prefix = suite.prefix
     val subfolder = "collection"
-    lazy val zipRddVector = fun { rdd: Rep[RDD[(Long, Array[Int])]] =>
+    lazy val rddCollMap = fun { rdd: Rep[RDD[(Long, Array[Int])]] =>
       val res = RDDIndexedCollection(SRDDImpl(rdd))
       res.map(rdd => rdd.map { p: Rep[Int] => p + 1 }).arr
     }
   }
 
-  test("zipRddVectorSparkStaged") {
-    val ctx = new TestContext("zipRddVectorSparkStaged") with CollectionSamples with SparkLADslExp {
+  test("rddCollMapSparkStaged") {
+    val ctx = new TestContext("rddCollMapSparkStaged") with CollectionSamples with SparkLADslExp {
       val sparkContext = globalSparkContext
       val sSparkContext = ExpSSparkContextImpl(globalSparkContext)
       val repSparkContext = SSparkContext(SSparkConf())
     }
-    ctx.emit("zipRddVector", ctx.zipRddVector)
+    ctx.emit("rddCollMap", ctx.rddCollMap)
   }
 }

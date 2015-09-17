@@ -11,6 +11,10 @@ import la.SparkLADslExp
 
 class CollectionSparkTests extends BaseTests with BeforeAndAfterAll with ItTestsUtil { suite =>
   trait CollectionSamplesExp extends SparkLADslExp {
+    lazy val rddCollMap = fun { rdd: Rep[RDD[(Long, Array[Int])]] =>
+      val res = RDDIndexedCollection(SRDDImpl(rdd))
+      res.map(rdd => rdd.map { p: Rep[Int] => p + 1 }).arr
+    }
     lazy val denseVector = fun { arr: Rep[Array[Double]] => DenseVector(Collection.fromArray(arr)) }
     lazy val sparkSparseIndexedMatrix = fun { in: Rep[(RDD[(Long, Array[Int])], (RDD[(Long, Array[Double])], Int))] =>
       val Tuple(idxsMatrixRDD, valsMatrixRDD, nColumnsMatrix) = in
@@ -49,6 +53,7 @@ class CollectionSparkTests extends BaseTests with BeforeAndAfterAll with ItTests
   import testCompiler.scalan._
   def commonCompileScenario[A: Elem, B:Elem](testFun: Rep[A => B], testName: String) =
     compileSource(testCompiler)(testFun, testName, generationConfig(testCompiler, testName, "package"))
+  test("code gen - rddCollMap") { val compiled = commonCompileScenario(rddCollMap, "rddCollMap") }
   test("code gen - spsmdv") { val compiled = commonCompileScenario(spsmdv, "spsmdv") }
   test("code gen - smReduceByColumns") { val compiled = commonCompileScenario(smReduceByColumns, "smReduceByColumns") }
 }
