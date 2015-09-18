@@ -29,7 +29,7 @@ trait SparkLmsBridge extends CommunityBridge { self: CommunityMethodMappingDSL =
               val array = m.symMirror[Array[Double]](xs)
               val median = m.symMirror[Double](a)
               val dev = m.symMirror[Double](e)
-              val exp = lms.array_randomGaussian[a](median, dev, array)(mA)
+              val exp = lms.array_randomGaussianSparkLms[a](median, dev, array)(mA)
               m.addSym(sym, exp)
           }
       }
