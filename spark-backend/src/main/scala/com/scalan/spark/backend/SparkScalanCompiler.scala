@@ -15,7 +15,7 @@ class SparkCodegen[BackendCake <: SparkLmsBackendBase](backend: BackendCake)
   extends ScalaCommunityCodegen[BackendCake](backend) with SparkScalaGenArrayOps
 
 class SparkScalanCompiler[ScalanCake <: SparkDslExp](_scalan: ScalanCake)
-  extends CommunityLmsCompilerScala[ScalanCake](_scalan) with ScalanSparkMethodMappingDSL with SparkLmsBridge {
+  extends CommunityLmsCompilerScala[ScalanCake](_scalan) with SparkLmsBridge {
   import scalan._
 
   override val lms = new SparkLmsBackend //CommunityLmsBackend

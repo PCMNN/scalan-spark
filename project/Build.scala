@@ -9,8 +9,8 @@ object ScalanStartRootBuild extends Build {
     //"org.scalaz.stream" %% "scalaz-stream" % "0.6a",
     //"junit" % "junit" % "4.11" % "test",
     //("com.novocode" % "junit-interface" % "0.11" % "test").exclude("junit", "junit-dep").exclude("org.scala-tools.testing", "test-interface"),
-    "org.scalatest" %% "scalatest" % "2.2.1" % "test",
-    "org.scalacheck" %% "scalacheck" % "1.11.5" % "test",
+    "org.scalatest" %% "scalatest" % "2.2.5" % "test",
+    "org.scalacheck" %% "scalacheck" % "1.12.2" % "test",
     "org.apache.spark" %% "spark-core" % "1.4.1"
   )
 
@@ -65,7 +65,7 @@ object ScalanStartRootBuild extends Build {
 
   def liteProject(name: String) = ProjectRef(file("../scalan-lite"), name)
 
-  def liteDependency(name: String) = "com.huawei.scalan" %% name % "0.2.10-SNAPSHOT"
+  def liteDependency(name: String) = "com.huawei.scalan" %% name % "0.2.11-SNAPSHOT"
 
   lazy val metaDeps = liteDependency("scalan-meta")
   lazy val sparkmeta = Project(
@@ -93,8 +93,8 @@ object ScalanStartRootBuild extends Build {
   lazy val examples = Project("scalan-spark-examples", file("examples")).
     dependsOn(start.allConfigDependency).addTestConfigsAndCommonSettings.
     settings(libraryDependencies ++= Seq(
-      ml,
-      ml % "test" classifier "tests"
+      //ml,
+     //ml % "test" classifier "tests"
       ),
       fork in Test := true
     )
@@ -102,10 +102,10 @@ object ScalanStartRootBuild extends Build {
   val virtScala = Option(System.getenv("SCALA_VIRTUALIZED_VERSION")).getOrElse("2.11.2")
 
   lazy val backend = liteDependency("scalan-lms-backend")
-  lazy val sparkBackend = Project("spark-backend",file("spark-backend")).dependsOn(start.allConfigDependency).
+  lazy val sparkBackend = Project("spark-backend",file("spark-backend")).dependsOn(start.allConfigDependency).addTestConfigsAndCommonSettings.
     settings(libraryDependencies ++= Seq(backend,
-//      ml,
-//      ml % "test" classifier "tests",
+      //ml,
+      //ml % "test" classifier "tests",
       "org.scala-lang.virtualized" % "scala-library" % virtScala,
       "org.scala-lang.virtualized" % "scala-compiler" % virtScala),
     scalaOrganization := "org.scala-lang.virtualized",

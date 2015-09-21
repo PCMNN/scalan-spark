@@ -20,7 +20,7 @@ trait SparkMatrices {  self: SparkLADsl =>
     def rddValues: RDDIndexColl[Array[A]]
     def sc: Rep[SSparkContext]
     def zeroValue = eT.defaultRepValue
-    def columns(implicit n: Numeric[A]): Rep[Collection[AbstractVector[A]]]
+    def columns: Rep[Collection[AbstractVector[A]]]
   }
   trait SparkAbstractMatrixCompanion extends TypeFamily1[SparkAbstractMatrix] {
   }
@@ -32,7 +32,7 @@ trait SparkMatrices {  self: SparkLADsl =>
     def sc: Rep[SSparkContext] = rddNonZeroIndexes.indexedRdd.context
     def rows = rddColl.map({arrs: Rep[(Array[Int], Array[T])] => SparseVector(Collection(arrs._1), Collection(arrs._2), numColumns)})
     def rmValues: Rep[Collection[T]] = ???
-    def columns(implicit n: Numeric[T]): Rep[Collection[AbstractVector[T]]] = ???
+    def columns: Rep[Collection[AbstractVector[T]]] = ???
     def rddValues: RDDIndexColl[Array[T]] = {
       val paired = rddNonZeroIndexes zip rddNonZeroValues
       val mapped = paired.pairRDD.map(fun( { case Pair(indexes, values) =>
@@ -127,7 +127,7 @@ trait SparkMatrices {  self: SparkLADsl =>
     def sc = rddValues.rdd.context
     def rows = rddValues.map({arr: Rep[Array[T]] => DenseVector(Collection(arr))})
     def rmValues: Rep[Collection[T]] = ???
-    def columns(implicit n: Numeric[T]): Rep[Collection[AbstractVector[T]]] = ???
+    def columns: Rep[Collection[AbstractVector[T]]] = ???
     def rddNonZeroIndexes: RDDIndexColl[Array[Int]] = rddValues.mapBy( fun { arr: Arr[T] =>
       val delta = toRep(0.001)
       (SArray.rangeFrom0(arr.length) zip arr).filter(x => (x._2 !== zeroValue)).map(x => x._1)})

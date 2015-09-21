@@ -24,7 +24,7 @@ trait SparkLmsBridge extends CommunityBridge { self: CommunityMethodMappingDSL =
     case ArrayRandomGaussian(a, e, xs) =>
       xs.elem match {
         case el: ArrayElem[_] =>
-          createManifest(el.eItem) match {
+          elemToManifest(el.eItem) match {
             case (mA: Manifest[a]) =>
               val array = m.symMirror[Array[Double]](xs)
               val median = m.symMirror[Double](a)

@@ -8,8 +8,7 @@ import scalan.Elems
 import scalan.spark.impl.SparkConfsAbs
 import scalan.collections.Seqs
 
-trait ScalanSparkMethodMappingDSL extends MethodMappingDSL { self: { val scalan: SparkDslExp } =>
-  import scalan._
+trait ScalanSparkMethodMappingDSL extends MethodMappingDSL { self: SparkDslExp =>
 
   trait SparkScalanTags extends MappingTags {
 
