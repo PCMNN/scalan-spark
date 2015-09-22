@@ -22,9 +22,6 @@ object SparkBoilerplateTool extends BoilerplateTool {
       "Partitioner.scala",
       "Broadcast.scala"
     ),
-    baseContextTrait = "ScalanCommunityDsl",
-    seqContextTrait = "ScalanCommunityDslSeq",
-    stagedContextTrait = "ScalanCommunityDslExp",
     extraImports = List(
       "scala.reflect._",
       "scala.reflect.runtime.universe._",
