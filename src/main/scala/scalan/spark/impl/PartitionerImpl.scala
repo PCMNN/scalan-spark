@@ -11,7 +11,7 @@ package impl {
 import scalan.meta.ScalanAst.STraitOrClassDef
 
 // Abs -----------------------------------
-trait PartitionersAbs extends Partitioners with ScalanCommunityDsl {
+trait PartitionersAbs extends Partitioners with scalan.Scalan {
   self: SparkDsl =>
 
   // single proxy for each type family
@@ -150,7 +150,7 @@ trait PartitionersAbs extends Partitioners with ScalanCommunityDsl {
 }
 
 // Seq -----------------------------------
-trait PartitionersSeq extends PartitionersDsl with ScalanCommunityDslSeq {
+trait PartitionersSeq extends PartitionersDsl with scalan.ScalanSeq {
   self: SparkDslSeq =>
   lazy val SPartitioner: Rep[SPartitionerCompanionAbs] = new SPartitionerCompanionAbs with UserTypeSeq[SPartitionerCompanionAbs] {
     lazy val selfType = element[SPartitionerCompanionAbs]
@@ -188,7 +188,7 @@ trait PartitionersSeq extends PartitionersDsl with ScalanCommunityDslSeq {
 }
 
 // Exp -----------------------------------
-trait PartitionersExp extends PartitionersDsl with ScalanCommunityDslExp {
+trait PartitionersExp extends PartitionersDsl with scalan.ScalanExp {
   self: SparkDslExp =>
   lazy val SPartitioner: Rep[SPartitionerCompanionAbs] = new SPartitionerCompanionAbs with UserTypeDef[SPartitionerCompanionAbs] {
     lazy val selfType = element[SPartitionerCompanionAbs]

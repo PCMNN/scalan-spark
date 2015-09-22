@@ -11,7 +11,7 @@ package impl {
 import scalan.meta.ScalanAst.STraitOrClassDef
 
 // Abs -----------------------------------
-trait SparkConfsAbs extends SparkConfs with ScalanCommunityDsl {
+trait SparkConfsAbs extends SparkConfs with scalan.Scalan {
   self: SparkDsl =>
 
   // single proxy for each type family
@@ -164,7 +164,7 @@ trait SparkConfsAbs extends SparkConfs with ScalanCommunityDsl {
 }
 
 // Seq -----------------------------------
-trait SparkConfsSeq extends SparkConfsDsl with ScalanCommunityDslSeq {
+trait SparkConfsSeq extends SparkConfsDsl with scalan.ScalanSeq {
   self: SparkDslSeq =>
   lazy val SSparkConf: Rep[SSparkConfCompanionAbs] = new SSparkConfCompanionAbs with UserTypeSeq[SSparkConfCompanionAbs] {
     lazy val selfType = element[SSparkConfCompanionAbs]
@@ -211,7 +211,7 @@ trait SparkConfsSeq extends SparkConfsDsl with ScalanCommunityDslSeq {
 }
 
 // Exp -----------------------------------
-trait SparkConfsExp extends SparkConfsDsl with ScalanCommunityDslExp {
+trait SparkConfsExp extends SparkConfsDsl with scalan.ScalanExp {
   self: SparkDslExp =>
   lazy val SSparkConf: Rep[SSparkConfCompanionAbs] = new SSparkConfCompanionAbs with UserTypeDef[SSparkConfCompanionAbs] {
     lazy val selfType = element[SSparkConfCompanionAbs]

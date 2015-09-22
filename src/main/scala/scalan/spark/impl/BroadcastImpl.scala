@@ -11,7 +11,7 @@ package impl {
 import scalan.meta.ScalanAst.STraitOrClassDef
 
 // Abs -----------------------------------
-trait BroadcastsAbs extends Broadcasts with ScalanCommunityDsl {
+trait BroadcastsAbs extends Broadcasts with scalan.Scalan {
   self: SparkDsl =>
 
   // single proxy for each type family
@@ -175,7 +175,7 @@ trait BroadcastsAbs extends Broadcasts with ScalanCommunityDsl {
 }
 
 // Seq -----------------------------------
-trait BroadcastsSeq extends BroadcastsDsl with ScalanCommunityDslSeq {
+trait BroadcastsSeq extends BroadcastsDsl with scalan.ScalanSeq {
   self: SparkDslSeq =>
   lazy val SBroadcast: Rep[SBroadcastCompanionAbs] = new SBroadcastCompanionAbs with UserTypeSeq[SBroadcastCompanionAbs] {
     lazy val selfType = element[SBroadcastCompanionAbs]
@@ -215,7 +215,7 @@ trait BroadcastsSeq extends BroadcastsDsl with ScalanCommunityDslSeq {
 }
 
 // Exp -----------------------------------
-trait BroadcastsExp extends BroadcastsDsl with ScalanCommunityDslExp {
+trait BroadcastsExp extends BroadcastsDsl with scalan.ScalanExp {
   self: SparkDslExp =>
   lazy val SBroadcast: Rep[SBroadcastCompanionAbs] = new SBroadcastCompanionAbs with UserTypeDef[SBroadcastCompanionAbs] {
     lazy val selfType = element[SBroadcastCompanionAbs]

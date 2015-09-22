@@ -13,7 +13,7 @@ package impl {
 import scalan.meta.ScalanAst.STraitOrClassDef
 
 // Abs -----------------------------------
-trait SparkContextsAbs extends SparkContexts with ScalanCommunityDsl {
+trait SparkContextsAbs extends SparkContexts with scalan.Scalan {
   self: SparkDsl =>
 
   // single proxy for each type family
@@ -176,7 +176,7 @@ trait SparkContextsAbs extends SparkContexts with ScalanCommunityDsl {
 }
 
 // Seq -----------------------------------
-trait SparkContextsSeq extends SparkContextsDsl with ScalanCommunityDslSeq {
+trait SparkContextsSeq extends SparkContextsDsl with scalan.ScalanSeq {
   self: SparkDslSeq =>
   lazy val SSparkContext: Rep[SSparkContextCompanionAbs] = new SSparkContextCompanionAbs with UserTypeSeq[SSparkContextCompanionAbs] {
     lazy val selfType = element[SSparkContextCompanionAbs]
@@ -229,7 +229,7 @@ trait SparkContextsSeq extends SparkContextsDsl with ScalanCommunityDslSeq {
 }
 
 // Exp -----------------------------------
-trait SparkContextsExp extends SparkContextsDsl with ScalanCommunityDslExp {
+trait SparkContextsExp extends SparkContextsDsl with scalan.ScalanExp {
   self: SparkDslExp =>
   lazy val SSparkContext: Rep[SSparkContextCompanionAbs] = new SSparkContextCompanionAbs with UserTypeDef[SSparkContextCompanionAbs] {
     lazy val selfType = element[SSparkContextCompanionAbs]
@@ -353,28 +353,6 @@ trait SparkContextsExp extends SparkContextsDsl with ScalanCommunityDslExp {
         case _ => None
       }
     }
-  }
-  override def rewriteDef[T](d: Def[T]) = d match {
-    // Rule: W(a).m(args) ==> iso.to(a.m(unwrap(args)))
-    case mc@MethodCall(Def(wrapper: ExpSSparkContextImpl), m, args, neverInvoke) if !isValueAccessor(m) =>
-      val resultElem = mc.selfType
-      val wrapperIso = getIsoByElem(resultElem)
-      wrapperIso match {
-        case iso: Iso[base, ext] =>
-          val eRes = iso.eFrom
-          val newCall = unwrapMethodCall(mc, wrapper.wrappedValueOfBaseType, eRes)
-          iso.to(newCall)
-      }
-    case SSparkContextMethods.makeRDD(sc, HasViews(source, seqIso: SSeqIso[a,b]), numPartitions) => {
-      val iso = seqIso.iso
-      implicit val eA = iso.eFrom
-      ViewSRDD(sc.makeRDD(source.asRep[SSeq[a]], numPartitions))(SRDDIso(iso))
-    }
-    case SSparkContextMethods.broadcast(sc, HasViews(source, iso: Iso[a,b])) => {
-      implicit val eA = iso.eFrom
-      ViewSBroadcast(sc.broadcast(source.asRep[a]))(SBroadcastIso(iso))
-    }
-    case _ => super.rewriteDef(d)
   }
 }
 

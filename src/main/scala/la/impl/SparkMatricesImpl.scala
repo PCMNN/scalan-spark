@@ -343,12 +343,12 @@ trait SparkMatricesExp extends SparkMatricesDsl with SparkDslExp {
     }
 
     object columns {
-      def unapply(d: Def[_]): Option[(Rep[SparkSparseIndexedMatrix[T]], Numeric[T]) forSome {type T}] = d match {
-        case MethodCall(receiver, method, Seq(n, _*), _) if receiver.elem.isInstanceOf[SparkSparseIndexedMatrixElem[_]] && method.getName == "columns" =>
-          Some((receiver, n)).asInstanceOf[Option[(Rep[SparkSparseIndexedMatrix[T]], Numeric[T]) forSome {type T}]]
+      def unapply(d: Def[_]): Option[Rep[SparkSparseIndexedMatrix[T]] forSome {type T}] = d match {
+        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SparkSparseIndexedMatrixElem[_]] && method.getName == "columns" =>
+          Some(receiver).asInstanceOf[Option[Rep[SparkSparseIndexedMatrix[T]] forSome {type T}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[(Rep[SparkSparseIndexedMatrix[T]], Numeric[T]) forSome {type T}] = exp match {
+      def unapply(exp: Exp[_]): Option[Rep[SparkSparseIndexedMatrix[T]] forSome {type T}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
@@ -623,12 +623,12 @@ trait SparkMatricesExp extends SparkMatricesDsl with SparkDslExp {
     }
 
     object columns {
-      def unapply(d: Def[_]): Option[(Rep[SparkDenseIndexedMatrix[T]], Numeric[T]) forSome {type T}] = d match {
-        case MethodCall(receiver, method, Seq(n, _*), _) if receiver.elem.isInstanceOf[SparkDenseIndexedMatrixElem[_]] && method.getName == "columns" =>
-          Some((receiver, n)).asInstanceOf[Option[(Rep[SparkDenseIndexedMatrix[T]], Numeric[T]) forSome {type T}]]
+      def unapply(d: Def[_]): Option[Rep[SparkDenseIndexedMatrix[T]] forSome {type T}] = d match {
+        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SparkDenseIndexedMatrixElem[_]] && method.getName == "columns" =>
+          Some(receiver).asInstanceOf[Option[Rep[SparkDenseIndexedMatrix[T]] forSome {type T}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[(Rep[SparkDenseIndexedMatrix[T]], Numeric[T]) forSome {type T}] = exp match {
+      def unapply(exp: Exp[_]): Option[Rep[SparkDenseIndexedMatrix[T]] forSome {type T}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
@@ -926,12 +926,12 @@ trait SparkMatricesExp extends SparkMatricesDsl with SparkDslExp {
     }
 
     object columns {
-      def unapply(d: Def[_]): Option[(Rep[SparkAbstractMatrix[A]], Numeric[A]) forSome {type A}] = d match {
-        case MethodCall(receiver, method, Seq(n, _*), _) if receiver.elem.isInstanceOf[SparkAbstractMatrixElem[_, _]] && method.getName == "columns" =>
-          Some((receiver, n)).asInstanceOf[Option[(Rep[SparkAbstractMatrix[A]], Numeric[A]) forSome {type A}]]
+      def unapply(d: Def[_]): Option[Rep[SparkAbstractMatrix[A]] forSome {type A}] = d match {
+        case MethodCall(receiver, method, _, _) if receiver.elem.isInstanceOf[SparkAbstractMatrixElem[_, _]] && method.getName == "columns" =>
+          Some(receiver).asInstanceOf[Option[Rep[SparkAbstractMatrix[A]] forSome {type A}]]
         case _ => None
       }
-      def unapply(exp: Exp[_]): Option[(Rep[SparkAbstractMatrix[A]], Numeric[A]) forSome {type A}] = exp match {
+      def unapply(exp: Exp[_]): Option[Rep[SparkAbstractMatrix[A]] forSome {type A}] = exp match {
         case Def(d) => unapply(d)
         case _ => None
       }
